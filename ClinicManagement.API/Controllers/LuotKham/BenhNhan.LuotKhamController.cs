@@ -20,5 +20,19 @@ namespace ClinicManagement.API.Controllers
                 ? NotFound(new { message = $"Không tìm thấy hồ sơ điều trị với Id = {luotKhamId}" })
                 : Success(result);
         }
+
+        [HttpGet("benh-nhan/{luotKhamId}/thong-tin-benh-nhan")]
+        public async Task<IActionResult> GetThongTinBenhNhanTrongLuotKham(int luotKhamId)
+        {
+            var query = new GetThongTinBenhNhanTrongLuotKhamQuery
+            {
+                LuotKhamId = luotKhamId
+            };
+
+            var result = await _mediator.Send(query);
+            return result == null
+                ? NotFound(new { message = $"Không tìm thấy thông tin bệnh nhân cho lượt khám Id = {luotKhamId}" })
+                : Success(result);
+        }
     }
 }

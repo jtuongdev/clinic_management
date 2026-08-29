@@ -31,11 +31,6 @@ const ContextBar: React.FC = () => {
           <span className="meta-item">Cập nhật: <strong>08:30</strong></span>
         </div>
       )}
-      <div className="context-actions">
-        {/* Tuỳ theo route có thể thêm nút riêng, nhưng ở đây để mặc định */}
-        <button className="btn"><i className="fa-solid fa-rotate"></i> Làm mới</button>
-        <button className="btn primary"><i className="fa-solid fa-download"></i> Xuất báo cáo</button>
-      </div>
     </div>
   );
 };

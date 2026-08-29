@@ -6,12 +6,11 @@
 
 .panel-exam {
   display: none;
-  flex-direction: column;
-
+  flex-direction: row;
+  gap: 14px;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   min-height: 0;
-
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -28,11 +27,10 @@
 
 .exam-layout {
   display: flex;
-
+  flex: 1;
   width: 100%;
   height: 100%;
   min-height: 0;
-
   gap: 14px;
   overflow: hidden;
 }
@@ -341,39 +339,29 @@
    ========================================================= */
 
 .workspace-bar {
-  flex: 0 0 46px;
-
-  min-height: 46px;
-
   background: #fff;
-
   border: 1px solid var(--line);
-  border-radius: 9px 9px 0 0;
-
+  border-radius: 10px 10px 0 0;
+  padding: 13px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  padding: 0 13px;
-
+  gap: 15px;
+  flex-wrap: wrap;
   box-sizing: border-box;
-
-  overflow: hidden;
 }
 
 .workspace-title {
-  flex: 0 0 auto;
-
-  font-weight: 700;
-
-  color: #254a60;
-
   display: flex;
   align-items: center;
-
-  gap: 8px;
-
+  gap: 10px;
+  color: #204c64;
+  font-weight: 700;
   white-space: nowrap;
+}
+
+.workspace-title i {
+  font-size: 19px;
 }
 
 
@@ -384,54 +372,45 @@
 .workflow {
   display: flex;
   align-items: center;
-
-  gap: 4px;
-
+  justify-content: flex-start;
+  gap: 2px;
   min-width: 0;
+  overflow: auto;
+  flex-wrap: nowrap;
+  padding: 0 4px;
 }
 
 .workflow button {
-  height: 31px;
-
-  padding: 0 11px;
-
   border: 0;
-  border-radius: 6px;
-
-  background: #f5f7f8;
-
-  color: #536675;
-
-  font-size: 11px;
+  background: transparent;
+  padding: 12px 15px;
+  color: #637582;
   font-weight: 600;
-
-  display: flex;
-  align-items: center;
-
-  gap: 6px;
-
+  font-size: 12px;
+  border-bottom: 3px solid transparent;
   white-space: nowrap;
-
+  flex: 0 0 auto;
   cursor: pointer;
-
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.workflow button:hover {
-  background: #eaf1f4;
-  color: var(--primary);
+.workflow button:hover:not(:disabled) {
+  color: #24677f;
+}
+
+.workflow button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: #9aa8b3;
 }
 
 .workflow button.active {
-  background: var(--primary);
-  color: #fff;
+  color: #176580;
+  border-bottom-color: var(--primary);
 }
 
-.workflow button.active:hover {
-  background: var(--primary);
-  color: #fff;
+.workflow button.active:hover:not(:disabled) {
+  color: #176580;
 }
 
 
@@ -441,23 +420,13 @@
    ========================================================= */
 
 .exam-content {
-  flex: 1;
-  min-height: 0;
-
-  height: auto;
-
   background: #fff;
-
   border: 1px solid var(--line);
   border-top: 0;
-
-  border-radius: 0 0 9px 9px;
-
-  display: flex;
-  flex-direction: column;
-
-  overflow: hidden;
-
+  border-radius: 0 0 10px 10px;
+  padding: 16px;
+  flex: 1;
+  overflow: auto;
   box-sizing: border-box;
 }
 

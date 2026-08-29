@@ -5,7 +5,9 @@ using ClinicManagement.Application.DTOs.BenhNhan;
 using ClinicManagement.Application.Features.BenhNhan.Commands;
 using ClinicManagement.Application.Features.BenhNhan.Queries;
 using ClinicManagement.Application.Features.ThongKe.Queries;
+using ClinicManagement.Domain.Common.Enums;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ClinicManagement.API.Controllers
@@ -179,9 +181,13 @@ namespace ClinicManagement.API.Controllers
             return Success(result);
         }
 
-        
-
-                
-
+        // GET: api/benhnhan/loai-tien-su
+        [HttpGet("loai-tien-su")]
+        public async Task<IActionResult> GetLoaiTienSu()
+        {
+            var query = new GetLoaiTienSuOptionsQuery();
+            var result = await _mediator.Send(query);
+            return Success(result);
+        }
     }
 }

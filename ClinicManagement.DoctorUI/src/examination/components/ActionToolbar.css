@@ -1,0 +1,130 @@
+.action-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.action-toolbar.right {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.action-toolbar.left {
+  justify-content: flex-start;
+}
+
+.action-toolbar-btn {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-toolbar-btn i {
+  font-size: 11px;
+}
+
+.action-toolbar-btn.primary.solid {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.action-toolbar-btn.primary.solid:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.action-toolbar-btn.success.solid {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.action-toolbar-btn.success.solid:hover:not(:disabled) {
+  background: #167a4a;
+}
+
+.action-toolbar-btn.warning.solid {
+  background: var(--warning);
+  border-color: var(--warning);
+  color: #fff;
+}
+
+.action-toolbar-btn.warning.solid:hover:not(:disabled) {
+  background: #b76b08;
+}
+
+.action-toolbar-btn.danger.solid {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.action-toolbar-btn.danger.solid:hover:not(:disabled) {
+  background: #b82a28;
+}
+
+.action-toolbar-btn.secondary.solid {
+  background: #fff;
+  border-color: var(--line);
+  color: #425466;
+}
+
+.action-toolbar-btn.secondary.solid:hover:not(:disabled) {
+  background: #f7fafc;
+}
+
+.action-toolbar-btn.ghost.outline,
+.action-toolbar-btn.secondary.outline,
+.action-toolbar-btn.primary.outline,
+.action-toolbar-btn.success.outline,
+.action-toolbar-btn.warning.outline,
+.action-toolbar-btn.danger.outline {
+  background: transparent;
+}
+
+.action-toolbar-btn.primary.outline {
+  color: var(--primary);
+  border-color: rgba(32, 99, 138, 0.25);
+}
+
+.action-toolbar-btn.success.outline {
+  color: var(--success);
+  border-color: rgba(17, 133, 78, 0.25);
+}
+
+.action-toolbar-btn.warning.outline {
+  color: #b76b08;
+  border-color: rgba(183, 107, 8, 0.25);
+}
+
+.action-toolbar-btn.danger.outline {
+  color: var(--danger);
+  border-color: rgba(190, 63, 60, 0.25);
+}
+
+.action-toolbar-btn.secondary.outline {
+  color: #425466;
+  border-color: var(--line);
+}
+
+.action-toolbar-btn.ghost.outline {
+  color: #526779;
+  border-color: var(--line);
+}

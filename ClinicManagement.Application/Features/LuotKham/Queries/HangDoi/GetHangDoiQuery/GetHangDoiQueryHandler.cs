@@ -29,13 +29,16 @@ namespace ClinicManagement.Application.Features.LuotKham.Queries
 
             var dtos = items.Select(l => new BenhNhanListDto
             {
-                Id = l.BenhNhan.Id,
+                // Id của DTO hàng đợi phải là Id của lượt khám, không phải Id của bệnh nhân.
+                // Nếu dùng Id bệnh nhân, UI sẽ gọi route /luotkham/benh-nhan/{benhNhanId}/thong-tin-benh-nhan
+                // nhưng API thực tế nhận luotKhamId => dẫn tới 404.
+                Id = l.Id,
                 MaBenhNhanNoiBo = l.BenhNhan.BenhNhanCoSo.FirstOrDefault()?.MaBenhNhanNoiBo ?? string.Empty,
                 HoTen = $"{l.BenhNhan.Ho} {l.BenhNhan.Ten}",
                 GioiTinh = l.BenhNhan.GioiTinh.ToString(),
                 Tuoi = CalculateAge(l.BenhNhan.NgaySinh),
                 DienThoai = l.BenhNhan.DienThoai,
-                MaLuotKhamGanNhat = $"KH-{l.Id:D3}",
+                MaLuotKhamGanNhat = l.Id.ToString(),
                 Khoa = l.Khoa?.Ten ?? string.Empty,
                 BacSi = l.BacSi?.HoTen ?? string.Empty,
                 TrangThaiLuotKham = l.TrangThai.ToString(),

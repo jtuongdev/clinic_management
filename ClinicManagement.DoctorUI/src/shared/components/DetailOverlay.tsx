@@ -7,6 +7,20 @@ interface DetailOverlayProps {
   onGoExam: () => void;
 }
 
+const formatVisitCode = (value?: string | number | null) => {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  const raw = String(value).trim();
+  const normalized = raw
+    .replace(/^(LK|KH)\s*[:\-]?\s*/i, '')
+    .replace(/^LƯỢT\s+KHÁM\s*[:\-]?\s*/i, '')
+    .replace(/\s+/g, '');
+
+  return normalized;
+};
+
 const DetailOverlay: React.FC<DetailOverlayProps> = ({ patient, onClose, onGoExam }) => {
   if (!patient) return null;
 
@@ -24,7 +38,7 @@ const DetailOverlay: React.FC<DetailOverlayProps> = ({ patient, onClose, onGoExa
             <div className="avatar-lg">{patient.avatar || 'NA'}</div>
             <div>
               <div className="profile-name">{patient.name || 'Nguyễn Thị An'}</div>
-              <div className="profile-code">{patient.code || 'BN-10234'} · {patient.visit || 'LK-20260826-001'}</div>
+              <div className="profile-code">{patient.code || 'BN-10234'} · {formatVisitCode(patient.visit || '1001')}</div>
             </div>
           </div>
           <div className="detail-grid">

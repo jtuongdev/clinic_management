@@ -120,8 +120,9 @@ namespace ClinicManagement.Domain.Examination
             ChanDoans.Add(chanDoan);
         }
 
-        public void AddSinhHieu(int? huyetApTamThu, int? huyetApTamTruong, int? mach, 
-                               decimal? nhietDo, decimal? canNang, decimal? chieuCao, decimal? spO2)
+        public void AddSinhHieu(int? huyetApTamThu, int? huyetApTamTruong, int? mach,
+                               decimal? nhietDo, decimal? canNang, decimal? chieuCao, decimal? spO2,
+                               int createdBy = 0)
         {
             SinhHieus ??= new List<SinhHieu>();
 
@@ -134,7 +135,9 @@ namespace ClinicManagement.Domain.Examination
                 NhietDo = nhietDo,
                 CanNang = canNang,
                 ChieuCao = chieuCao,
-                SpO2 = spO2
+                SpO2 = spO2,
+                ThoiDiemDo = DateTime.UtcNow,
+                CreatedBy = createdBy > 0 ? createdBy : null
             };
             SinhHieus.Add(sinhHieu);
         }
@@ -144,6 +147,13 @@ namespace ClinicManagement.Domain.Examination
                 throw new InvalidOperationException(
                     "Chỉ có thể phân bác sĩ cho lượt khám đang chờ khám.");
             MaBacSi = maBacSi;
+        }
+
+        public void SetLyDoKham(string lyDoKham)
+        {
+            LyDoKham = string.IsNullOrWhiteSpace(lyDoKham) 
+                ? string.Empty 
+                : lyDoKham.Trim();
         }
 
     }

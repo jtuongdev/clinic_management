@@ -44,7 +44,7 @@ namespace ClinicManagement.Application.Features.LuotKham.Queries
                 GioiTinh = x.BenhNhan.GioiTinh.ToString(),
                 Tuoi = CalculateAge(x.BenhNhan.NgaySinh),
                 DienThoai = x.BenhNhan.DienThoai,
-                MaLuotKhamGanNhat = $"KH-{x.LuotKhamGanNhat.Id:D3}",
+                MaLuotKhamGanNhat = x.LuotKhamGanNhat.Id.ToString(),
                 Khoa = x.LuotKhamGanNhat.Khoa?.Ten ?? string.Empty,
                 BacSi = x.LuotKhamGanNhat.BacSi?.HoTen ?? string.Empty,
                 TrangThaiLuotKham = x.LuotKhamGanNhat.TrangThai.ToString(),

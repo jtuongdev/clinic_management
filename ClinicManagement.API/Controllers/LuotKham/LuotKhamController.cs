@@ -139,6 +139,5 @@ namespace ClinicManagement.API.Controllers
             return Success(result);
         }
 
-        
     }
 }

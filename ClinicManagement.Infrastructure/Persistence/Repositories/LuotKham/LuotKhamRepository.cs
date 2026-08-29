@@ -338,6 +338,8 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .Include(l => l.BenhNhan)
                     .ThenInclude(b => b.BenhNhanCoSo)
+                .Include(l => l.BenhNhan)
+                    .ThenInclude(b => b.TienSuBenhs)
                 .Include(l => l.BacSi)
                 .Include(l => l.Khoa)
                 .Include(l => l.CoSo)
@@ -357,6 +359,19 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         }
 
         public async Task<LuotKham?> GetChiTietHoSoDieuTriAsync(int luotKhamId, CancellationToken cancellationToken = default)
+        {
+            return await _context.LuotKhams
+                .AsNoTracking()
+                .Include(l => l.BenhNhan)
+                    .ThenInclude(b => b.BenhNhanCoSo)
+                .Include(l => l.BenhNhan)
+                    .ThenInclude(b => b.BaoHiems)
+                .Include(l => l.Khoa)
+                .Include(l => l.PhongKham)
+                .FirstOrDefaultAsync(l => l.Id == luotKhamId && !l.IsDeleted, cancellationToken);
+        }
+
+        public async Task<LuotKham?> GetThongTinBenhNhanTrongLuotKhamAsync(int luotKhamId, CancellationToken cancellationToken = default)
         {
             return await _context.LuotKhams
                 .AsNoTracking()
@@ -443,11 +458,12 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         public async Task<(IReadOnlyList<LuotKham> Items, int TotalCount)> GetHangDoiExtendedAsync(
             int maBacSi,
             int pageIndex = 1,
-            int pageSize = 10,
+            int pageSize = 1000,
             CancellationToken cancellationToken = default)
         {
             if (pageIndex < 1) pageIndex = 1;
-            if (pageSize < 1) pageSize = 10;
+            if (pageSize < 1) pageSize = 1000;
+            if (pageSize > 2000) pageSize = 2000;
 
             var query = _context.LuotKhams
                 .AsNoTracking()

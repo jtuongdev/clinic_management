@@ -63,6 +63,7 @@ namespace ClinicManagement.Domain.Repositories
         Task<IEnumerable<LuotKham>> GetAllWithIncludesAsync(CancellationToken cancellationToken = default);
         Task<LuotKham?> GetDetailByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<LuotKham?> GetChiTietHoSoDieuTriAsync(int luotKhamId, CancellationToken cancellationToken = default);
+        Task<LuotKham?> GetThongTinBenhNhanTrongLuotKhamAsync(int luotKhamId, CancellationToken cancellationToken = default);
         Task<int> GetMaxSoThuTuAsync(DateTime ngayKham, int maKhoa, CancellationToken cancellationToken = default);
         IQueryable<LuotKham> GetThongTrangThaiLuotKham(int? maCoSo = null, int? maKhoa = null);
 

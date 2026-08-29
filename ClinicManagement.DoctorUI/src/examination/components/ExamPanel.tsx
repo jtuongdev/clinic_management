@@ -1,23 +1,22 @@
 // src/examination/pages/ExamPage.tsx
 import React, { useState } from 'react';
-import ActionBar, { type ActionItem } from '../../components/common/ActionBar';
-import ExamSidebar from '../components/ExamSidebar';
+import ActionToolbar, { type ActionToolbarItem } from './ActionToolbar';
+import ExamSidebar from './ExamSidebar';
 import {
   PatientWorkspace,
   ExaminationWorkspace,
-  MedicalRecordWorkspace,
   TreatmentWorkspace,
   ElectronicRecordWorkspace,
-} from '../components';
+} from './index';
 import { useQueue } from '../hooks/useQueueExamination';
 import { useExam } from '../hooks/useExam';
-import { type BenhNhanListDto } from '../types/queue.examination.type';
+import { examinationApi } from '../api/examination.api';
+import type { BenhNhanListDto } from '../types/examination.types';
 import '../../styles/components/ExamPanel.css';
 
 const workflowItems = [
   { key: 'patient', label: 'Bệnh nhân', icon: 'fa-user' },
   { key: 'examination', label: 'Khám bệnh', icon: 'fa-stethoscope' },
-  { key: 'medical-record', label: 'Bệnh án', icon: 'fa-folder-open' },
   { key: 'treatment', label: 'Xử trí', icon: 'fa-clipboard-check' },
   { key: 'electronic-record', label: 'Bệnh án điện tử', icon: 'fa-file-circle-check' },
 ];
@@ -36,80 +35,134 @@ const ExamPage: React.FC = () => {
   } = useExam();
 
   const [selectedPatient, setSelectedPatient] = useState<BenhNhanListDto | null>(null);
-  const [showActionBar, setShowActionBar] = useState(false);
+  const [isExamStarted, setIsExamStarted] = useState(false);
+  const [isStartingExam, setIsStartingExam] = useState(false);
 
-  // Xử lý action từ ActionBar
-  const handleAction = (id: number | string, actionKey: string) => {
-    const patient = patients.find(p => p.id === id);
-    if (!patient) return;
+  const isSelectedPatientAlreadyExamining =
+    !!selectedPatient &&
+    ['DANG_KHAM', 'DangKham', 'exam'].includes(String(selectedPatient.trangThaiLuotKham ?? '').trim());
 
+  const handleSelectPatient = (patient: BenhNhanListDto) => {
+    setSelectedPatient(patient);
+    setIsExamStarted(false);
+    setActiveWorkspace('patient');
+    // TODO: Gọi API lấy chi tiết bệnh án
+  };
+
+  const handleStartExam = async () => {
+    if (!selectedPatient || !selectedPatient.id || isSelectedPatientAlreadyExamining) {
+      alert('Bệnh nhân đang được khám. Không thể bắt đầu khám lại.');
+      return;
+    }
+
+    try {
+      setIsStartingExam(true);
+      const response = await examinationApi.startExam(selectedPatient.id);
+      const payload = response.data?.data;
+
+      if (!response.data?.success || !payload) {
+        throw new Error(response.data?.message || 'Không thể bắt đầu khám');
+      }
+
+      setIsExamStarted(true);
+      setActiveWorkspace('examination');
+    } catch (error) {
+      console.error('Start exam failed:', error);
+      const message = error instanceof Error ? error.message : 'Không thể bắt đầu khám. Vui lòng thử lại.';
+      alert(message.includes('đang được khám') || message.includes('đang được khám lại') ? 'Bệnh nhân đang được khám. Không thể bắt đầu khám lại.' : message);
+    } finally {
+      setIsStartingExam(false);
+    }
+  };
+
+  const handleExamAction = (actionKey: string) => {
     switch (actionKey) {
+      case 'refresh':
+        setSearchQueue('');
+        setSelectedPatient(null);
+        setIsExamStarted(false);
+        setActiveWorkspace('patient');
+        break;
       case 'start-exam':
-        alert(`Bắt đầu khám cho bệnh nhân ${patient.hoTen} (${patient.maBenhNhanNoiBo})`);
-        setActiveWorkspace('treatment');
+        if (!selectedPatient) {
+          setActiveWorkspace('patient');
+          break;
+        }
+        void handleStartExam();
         break;
-      case 'view-record':
-        alert(`Xem hồ sơ của bệnh nhân ${patient.hoTen} (${patient.maBenhNhanNoiBo})`);
-        setActiveWorkspace('medical-record');
+      case 'pause-exam':
+        if (!isExamStarted) {
+          break;
+        }
+        setIsExamStarted(false);
+        setActiveWorkspace('patient');
+        alert('Đã tạm ngưng quá trình khám bệnh.');
         break;
-      case 'print':
-        alert(`In phiếu cho bệnh nhân ${patient.hoTen} (${patient.maBenhNhanNoiBo})`);
-        break;
-      case 'export':
-        alert(`Xuất bệnh án cho bệnh nhân ${patient.hoTen} (${patient.maBenhNhanNoiBo})`);
+      case 'cancel-exam':
+        setSelectedPatient(null);
+        setIsExamStarted(false);
+        setActiveWorkspace('patient');
         break;
       default:
         break;
     }
-    setShowActionBar(false);
   };
 
-  // Định nghĩa các action cho ActionBar
-  const actions: ActionItem[] = [
+  const examActions: ActionToolbarItem<string>[] = [
     {
-      label: 'Xem hồ sơ',
-      icon: 'file-lines',
-      onClick: (id) => handleAction(id, 'view-record'),
-      color: 'primary',
+      key: 'refresh',
+      label: 'Làm mới',
+      icon: 'rotate',
+      color: 'secondary',
+      variant: 'outline',
+      payload: 'refresh',
+      onClick: ({ payload }) => handleExamAction(payload ?? 'refresh'),
     },
     {
-      label: 'Bắt đầu khám',
-      icon: 'play',
-      onClick: (id) => handleAction(id, 'start-exam'),
+      key: 'start-exam',
+      label: isStartingExam ? 'Đang bắt đầu...' : 'Bắt đầu khám',
+      icon: isStartingExam ? 'spinner' : 'play',
       color: 'success',
+      payload: 'start-exam',
+      disabled: !selectedPatient || isStartingExam || isSelectedPatientAlreadyExamining,
+      onClick: ({ payload }) => handleExamAction(payload ?? 'start-exam'),
     },
     {
-      label: 'In phiếu',
-      icon: 'print',
-      onClick: (id) => handleAction(id, 'print'),
+      key: 'pause-exam',
+      label: 'Tạm ngưng',
+      icon: 'pause',
       color: 'warning',
+      payload: 'pause-exam',
+      disabled: !selectedPatient || (!isExamStarted && !isSelectedPatientAlreadyExamining),
+      onClick: ({ payload }) => handleExamAction(payload ?? 'pause-exam'),
     },
     {
-      label: 'Xuất bệnh án',
-      icon: 'file-export',
-      onClick: (id) => handleAction(id, 'export'),
-      color: 'info',
+      key: 'cancel-exam',
+      label: 'Huỷ',
+      icon: 'xmark',
+      color: 'danger',
+      payload: 'cancel-exam',
+      disabled: !selectedPatient,
+      onClick: ({ payload }) => handleExamAction(payload ?? 'cancel-exam'),
     },
   ];
 
-  const handleSelectPatient = (patient: BenhNhanListDto) => {
-    setSelectedPatient(patient);
-    setShowActionBar(true);
-    // TODO: Gọi API lấy chi tiết bệnh án
-  };
-
-  const handleCloseActionBar = () => {
-    setShowActionBar(false);
-  };
+  const workflowActions = workflowItems.map((item) => {
+    const isLockedTab =
+      !selectedPatient ||
+      (!isExamStarted && !isSelectedPatientAlreadyExamining && (item.key === 'examination' || item.key === 'treatment'));
+    return {
+      ...item,
+      disabled: isLockedTab,
+    };
+  });
 
   const renderWorkspace = () => {
     switch (activeWorkspace) {
       case 'patient':
-        return <PatientWorkspace data={examData} />;
+        return selectedPatient ? <PatientWorkspace data={examData} luotKhamId={selectedPatient.id} /> : <PatientWorkspace />;
       case 'examination':
-        return <ExaminationWorkspace data={examData} />;
-      case 'medical-record':
-        return <MedicalRecordWorkspace data={examData} />;
+        return <ExaminationWorkspace data={examData} luotKhamId={selectedPatient?.id} />;
       case 'treatment':
         return <TreatmentWorkspace data={examData} onSave={handleSave} onFinish={handleFinish} />;
       case 'electronic-record':
@@ -143,32 +196,26 @@ const ExamPage: React.FC = () => {
               <i className="fa-solid fa-file-medical"></i> Hồ sơ điều trị
             </div>
             <div className="workflow">
-              {workflowItems.map((item) => (
+              {workflowActions.map((item) => (
                 <button
                   key={item.key}
                   className={activeWorkspace === item.key ? 'active' : ''}
-                  onClick={() => setActiveWorkspace(item.key as any)}
+                  onClick={() => !item.disabled && setActiveWorkspace(item.key as any)}
+                  disabled={item.disabled}
                 >
                   <i className={`fa-solid ${item.icon}`}></i>
                   <span>{item.label}</span>
                 </button>
               ))}
             </div>
+
+            {selectedPatient && <ActionToolbar actions={examActions} align="right" />}
           </div>
 
           <div className="exam-content">{renderWorkspace()}</div>
         </div>
       </div>
 
-      {/* ===== ActionBar ===== */}
-      <ActionBar
-        isVisible={showActionBar && !!selectedPatient}
-        onClose={handleCloseActionBar}
-        selectedId={selectedPatient?.id ?? null}
-        actions={actions}
-        title="Bệnh nhân"
-        entityName={selectedPatient?.hoTen || 'không xác định'}
-      />
     </div>
   );
 };

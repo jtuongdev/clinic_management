@@ -25,7 +25,8 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
     {
         // Validate pageIndex và pageSize trước khi truy vấn
         if (pageIndex < 1) pageIndex = 1;
-        if (pageSize < 1) pageSize = 10; // Mặc định nếu client truyền <= 0
+        if (pageSize < 1) pageSize = 1000;
+        if (pageSize > 2000) pageSize = 2000;
 
         var query = _context.LuotKhams
             .AsNoTracking()

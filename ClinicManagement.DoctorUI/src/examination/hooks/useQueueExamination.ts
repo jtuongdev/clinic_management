@@ -1,17 +1,10 @@
 // src/hooks/useQueue.ts
 import { useState, useEffect, useCallback } from 'react';
 import { examinationApi } from '../api/examination.api';
-import { type BenhNhanListDto } from '../types/queue.examination.type';
+import type { BenhNhanListDto, UseQueueResult } from '../types/examination.types';
 import { useAuth } from '../../Auth/context/AuthProvider';
 
-interface UseQueueResult {
-  patients: BenhNhanListDto[];
-  loading: boolean;
-  error: string | null;
-  fetchQueue: (pageIndex?: number, pageSize?: number) => Promise<void>;
-}
-
-export function useQueue(initialPageIndex: number = 1, initialPageSize: number = 50): UseQueueResult {
+export function useQueue(initialPageIndex: number = 1, initialPageSize: number = 1000): UseQueueResult {
   const { user } = useAuth();
   const [patients, setPatients] = useState<BenhNhanListDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

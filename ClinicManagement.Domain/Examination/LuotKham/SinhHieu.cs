@@ -18,5 +18,23 @@ namespace ClinicManagement.Domain.Examination
 
         // Navigation
         public virtual LuotKham LuotKham { get; set; }
+
+        public void Update(
+            int? huyetApTamThu,
+            int? huyetApTamTruong,
+            int? mach,
+            decimal? nhietDo,
+            decimal? canNang,
+            decimal? chieuCao,
+            decimal? spO2)
+        {
+            HuyetApTamThu = huyetApTamThu;
+            HuyetApTamTruong = huyetApTamTruong;
+            Mach = mach;
+            NhietDo = nhietDo;
+            CanNang = canNang;
+            ChieuCao = chieuCao;
+            SpO2 = spO2;
+        }
     }
 }

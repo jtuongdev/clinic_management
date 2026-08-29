@@ -1,0 +1,37 @@
+using System.Threading.Tasks;
+using ClinicManagement.Application.DTOs.LuotKham.Examination;
+using ClinicManagement.Application.Features.LuotKham.Commands;
+using ClinicManagement.Application.Features.LuotKham.Queries;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ClinicManagement.API.Controllers
+{
+    public partial class LuotKhamController : BaseController
+    {
+        /// <summary>
+        /// Lưu dữ liệu khám ban đầu cho một lượt khám.
+        /// Mục tiêu: ghi nhận lý do khám, sinh hiệu, ghi chú lâm sàng và chẩn đoán sơ bộ.
+        /// Không dùng để lưu toàn bộ hồ sơ bệnh án chi tiết.
+        /// </summary>
+        /// <param name="luotKhamId">ID lượt khám cần cập nhật thông tin khám ban đầu.</param>
+        /// <param name="request">Dữ liệu khám ban đầu.</param>
+        /// <returns>Thông tin lượt khám sau khi lưu.</returns>
+        [HttpPost("{luotKhamId}/examination")]
+        public async Task<IActionResult> SaveInitialExamination(int luotKhamId, [FromBody] SaveExaminationRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var command = new SaveExaminationCommand
+            {
+                LuotKhamId = luotKhamId,
+                CreatedBy = CurrentUserId,
+                ExaminationData = request
+            };
+
+            var result = await _mediator.Send(command);
+            return Success(result, "Lưu dữ liệu khám ban đầu thành công");
+        }
+    }
+}

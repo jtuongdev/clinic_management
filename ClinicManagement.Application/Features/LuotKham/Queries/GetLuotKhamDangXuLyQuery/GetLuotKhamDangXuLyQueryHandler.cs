@@ -47,7 +47,7 @@ namespace ClinicManagement.Application.Features.LuotKham.Queries
             return items.Select(l => new LuotKhamDangXuLyDto
             {
                 Id = l.Id,
-                MaLuotKham = $"KH-{l.Id:D3}",
+                MaLuotKham = l.Id.ToString(),
                 TenBenhNhan = l.BenhNhan != null ? $"{l.BenhNhan.Ho} {l.BenhNhan.Ten}" : "Không xác định",
                 Khoa = l.Khoa?.Ten ?? "Không xác định",
                 BacSi = l.BacSi?.HoTen ?? "Chưa phân công",

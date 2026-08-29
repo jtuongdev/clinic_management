@@ -40,7 +40,7 @@ namespace ClinicManagement.Application.Features.LuotKham.Queries
                     HoTen = $"{benhNhan.Ho} {benhNhan.Ten}",
                     GioiTinh = benhNhan.GioiTinh.ToString(),
                     Tuoi = CalculateAge(benhNhan.NgaySinh),
-                    MaLuotKham = $"KH-{l.Id:D3}",
+                    MaLuotKham = l.Id.ToString(),
                     TenKhoa = l.Khoa?.Ten ?? string.Empty,
                     ThoiGianCapNhat = l.ThoiGianBatDauKham ?? l.NgayKham,
                     TrangThai = l.TrangThai.ToString()

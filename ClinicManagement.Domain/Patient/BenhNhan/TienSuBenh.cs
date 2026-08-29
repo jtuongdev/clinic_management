@@ -14,5 +14,12 @@ namespace ClinicManagement.Domain.Patient
         public int? CreatedBy { get; set; }
 
         public virtual BenhNhan BenhNhan { get; set; } = null!;
+
+        public void Update(LoaiTienSu loaiTienSu, string ten, string ghiChu)
+        {
+            LoaiTienSu = loaiTienSu;
+            Ten = ten;
+            GhiChu = ghiChu;
+        }
     }
 }

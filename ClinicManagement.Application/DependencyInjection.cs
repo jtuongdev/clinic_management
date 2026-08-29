@@ -1,8 +1,6 @@
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
-using AutoMapper; 
 
 namespace ClinicManagement.Application
 {
@@ -10,18 +8,21 @@ namespace ClinicManagement.Application
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            // MediatR
+            var currentAssembly = Assembly.GetExecutingAssembly();
+
+            // MediatR: Tự động quét và đăng ký tất cả Command, Query, Handler trong tầng Application
             services.AddMediatR(cfg =>
             {
-                cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+                cfg.RegisterServicesFromAssembly(currentAssembly);
             });
 
-            // FluentValidation
-            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            // FluentValidation: Tự động quét tất cả Validator trong tầng Application
+            services.AddValidatorsFromAssembly(currentAssembly);
             
+            // AutoMapper: Tự động quét tất cả Mapping Profile trong tầng Application
             services.AddAutoMapper(cfg =>
             {
-                cfg.AddMaps(Assembly.GetExecutingAssembly());
+                cfg.AddMaps(currentAssembly);
             });
 
             return services;

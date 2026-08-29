@@ -1,15 +1,6 @@
 import React from 'react';
-import { type BenhNhanListDto } from '../types/queue.examination.type';
+import type { ExamSidebarProps } from '../types/examination.types';
 import '../../styles/components/ExamPanel.css';
-
-interface ExamSidebarProps {
-  patients: BenhNhanListDto[];
-  selectedPatient: BenhNhanListDto | null;
-  searchQueue: string;
-  onSearchChange: (value: string) => void;
-  onSelectPatient: (patient: BenhNhanListDto) => void;
-  loading?: boolean;
-}
 
 const ExamSidebar: React.FC<ExamSidebarProps> = ({
   patients = [],
@@ -58,9 +49,10 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
             Không có bệnh nhân trong danh sách
           </div>
         ) : (
-          filteredPatients.map((p) => {
+          filteredPatients.map((p, index) => {
             const isExamining = p.trangThaiLuotKham === 'DangKham' || p.trangThaiLuotKham === 'exam';
             const isUrgent = p.trangThaiLuotKham === 'UuTien' || p.trangThaiLuotKham === 'urgent';
+            const displayOrder = p.soThuTu ?? index + 1;
 
             return (
               <div
@@ -68,8 +60,7 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
                 className={`exam-queue-item ${selectedPatient?.id === p.id ? 'active' : ''} ${isExamining ? 'examining' : ''}`}
                 onClick={() => onSelectPatient(p)}
               >
-                {/* Số thứ tự từ database backend */}
-                <div className="exam-queue-stt">{p.soThuTu ?? '-'}</div>
+                <div className="exam-queue-stt">{displayOrder}</div>
                 <div className="exam-queue-info">
                   <div className="exam-queue-name">
                     {p.hoTen}

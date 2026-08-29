@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQueueExtended } from '../hook/useQueuExaminationList';
 import { type HangDoiDto } from '../type/queue.type';
 import '../../styles/components/QueuePanel.css';
@@ -6,6 +6,22 @@ import '../../styles/components/QueuePanel.css';
 interface QueuePanelProps {
   onOpenDetail?: (patient: HangDoiDto) => void;
 }
+
+const formatVisitCode = (value?: string | number | null) => {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  const raw = String(value).trim();
+  const normalized = raw
+    .replace(/^(LK|KH)\s*[:\-]?\s*/i, '')
+    .replace(/^LƯỢT\s+KHÁM\s*[:\-]?\s*/i, '')
+    .replace(/\s+/g, '');
+
+  return normalized;
+};
+
+const ALL_QUEUE_PAGE_SIZE = 1000;
 
 export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
   // State bộ lọc cục bộ
@@ -17,18 +33,13 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
   const {
     patients,
     totalCount,
-    pageIndex,
-    pageSize,
     loading,
     error,
-    fetchQueue,
-    goToPage,
-    setPageSize,
     refresh,
   } = useQueueExtended({
     autoFetch: true,
     initialPage: 1,
-    initialPageSize: 10,
+    initialPageSize: ALL_QUEUE_PAGE_SIZE,
   });
 
   // Lọc danh sách theo từ khóa và bộ lọc
@@ -231,7 +242,7 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                     </td>
                   </tr>
                 ) : (
-                  filteredPatients.map((patient) => {
+                  filteredPatients.map((patient, index) => {
                     const statusClass = getStatusClass(patient.trangThai);
                     const statusLabel = getStatusLabel(patient.trangThai);
                     const timeDisplay = patient.thoiGianCapNhat
@@ -240,10 +251,11 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                           minute: '2-digit',
                         })
                       : '--:--';
-
+                    const displayOrder = patient.soThuTu ?? index + 1;
+ 
                     return (
                       <tr key={patient.id} className={statusClass === 'exam' ? 'current' : ''}>
-                        <td><div className="queue-no">{patient.soThuTu ?? '--'}</div></td>
+                        <td><div className="queue-no">{displayOrder}</div></td>
                         <td>
                           <div className="patient">
                             <div className="avatar-sm">
@@ -264,7 +276,7 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                         </td>
                         <td>
                           <div className="visit">
-                            <strong>{patient.maLuotKham}</strong>
+                            <strong>{formatVisitCode(patient.maLuotKham)}</strong>
                             <br />
                             {patient.tenKhoa}
                           </div>
@@ -323,38 +335,10 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
           )}
         </div>
 
-        <div className="queue-footer">
+        <div className="queue-footer" style={{ justifyContent: 'flex-start' }}>
           <div className="footer-note">
             <i className="fa-solid fa-circle-info"></i>
-            Hiển thị {filteredPatients.length} / {totalCount} bệnh nhân
-          </div>
-          <div className="pagination">
-            <button
-              className="page"
-              onClick={() => goToPage(pageIndex - 1)}
-              disabled={pageIndex <= 1 || loading}
-            >
-              <i className="fa-solid fa-chevron-left"></i>
-            </button>
-            <button className="page active">{pageIndex}</button>
-            <button
-              className="page"
-              onClick={() => goToPage(pageIndex + 1)}
-              disabled={filteredPatients.length < pageSize || loading}
-            >
-              <i className="fa-solid fa-chevron-right"></i>
-            </button>
-            <select
-              className="select"
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              style={{ width: 'auto', padding: '4px 8px', height: 'auto' }}
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-            </select>
+            Hiển thị {filteredPatients.length} / {totalCount} bệnh nhân (đang tải toàn bộ hàng đợi)
           </div>
         </div>
       </section>

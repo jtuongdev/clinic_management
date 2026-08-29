@@ -45,7 +45,7 @@ export function useQueueExtended(options: UseQueueExtendedOptions = {}): UseQueu
   const {
     maBacSi,
     initialPage = 1,
-    initialPageSize = 10,
+    initialPageSize = 1000,
     autoFetch = true,
   } = options;
 
@@ -113,8 +113,8 @@ export function useQueueExtended(options: UseQueueExtendedOptions = {}): UseQueu
 
   // Thay đổi số bản ghi mỗi trang (tự động về trang 1)
   const setPageSize = useCallback((size: number) => {
-    if (size < 1) size = 10;
-    if (size > 100) size = 100;
+    if (size < 1) size = 1000;
+    if (size > 2000) size = 2000;
     setPageSizeState(size);
     setPageIndex(1);
   }, []);

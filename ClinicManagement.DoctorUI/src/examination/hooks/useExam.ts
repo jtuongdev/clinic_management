@@ -3,15 +3,15 @@ import type { ExamWorkspace, QueuePatient, ExamDetail } from '../types';
 
 // Mock data
 export const mockQueue: QueuePatient[] = [
-  { id: 1, stt: '01', name: 'Nguyễn Thị An', code: 'BN-10234', avatar: 'NA', gender: 'Nữ', age: 39, visit: 'LK-20260826-001', department: 'Nội tổng quát', priority: 'urgent', time: '08:12', status: 'exam', alert: true },
-  { id: 2, stt: '02', name: 'Trần Văn Bình', code: 'BN-10789', avatar: 'TB', gender: 'Nam', age: 46, visit: 'LK-20260826-002', department: 'Nội tổng quát', priority: 'normal', time: '08:20', status: 'wait', alert: false },
-  { id: 3, stt: '03', name: 'Lê Thị Hoa', code: 'BN-11234', avatar: 'LH', gender: 'Nữ', age: 32, visit: 'LK-20260826-003', department: 'Nội tổng quát', priority: 'urgent', time: '08:25', status: 'wait', alert: true },
-  { id: 4, stt: '04', name: 'Phạm Văn Hùng', code: 'BN-09876', avatar: 'PH', gender: 'Nam', age: 59, visit: 'LK-20260826-004', department: 'Nội tổng quát', priority: 'normal', time: '08:31', status: 'wait', alert: false },
-  { id: 5, stt: '05', name: 'Đỗ Minh Tâm', code: 'BN-12121', avatar: 'DT', gender: 'Nữ', age: 22, visit: 'LK-20260826-005', department: 'Nội tổng quát', priority: 'normal', time: '08:36', status: 'wait', alert: false },
+  { id: 1, stt: '01', name: 'Nguyễn Thị An', code: 'BN-10234', avatar: 'NA', gender: 'Nữ', age: 39, visit: '1001', department: 'Nội tổng quát', priority: 'urgent', time: '08:12', status: 'exam', alert: true },
+  { id: 2, stt: '02', name: 'Trần Văn Bình', code: 'BN-10789', avatar: 'TB', gender: 'Nam', age: 46, visit: '1002', department: 'Nội tổng quát', priority: 'normal', time: '08:20', status: 'wait', alert: false },
+  { id: 3, stt: '03', name: 'Lê Thị Hoa', code: 'BN-11234', avatar: 'LH', gender: 'Nữ', age: 32, visit: '1003', department: 'Nội tổng quát', priority: 'urgent', time: '08:25', status: 'wait', alert: true },
+  { id: 4, stt: '04', name: 'Phạm Văn Hùng', code: 'BN-09876', avatar: 'PH', gender: 'Nam', age: 59, visit: '1004', department: 'Nội tổng quát', priority: 'normal', time: '08:31', status: 'wait', alert: false },
+  { id: 5, stt: '05', name: 'Đỗ Minh Tâm', code: 'BN-12121', avatar: 'DT', gender: 'Nữ', age: 22, visit: '1005', department: 'Nội tổng quát', priority: 'normal', time: '08:36', status: 'wait', alert: false },
 ];
 
 export const mockExamDetail: ExamDetail = {
-  visit: 'LK-20250401-023',
+  visit: '1023',
   department: 'Nội tổng quát',
   room: 'Phòng 03',
   status: 'Đang xử trí',
@@ -29,25 +29,16 @@ export const mockExamDetail: ExamDetail = {
     reason: 'Ho khan, khó thở nhẹ, sốt 2 ngày.',
     history: 'Bệnh nhân có tiền sử viêm phổi năm 2024.',
     vitals: {
-      temperature: '38.5°C',
-      pulse: '95 nhịp/phút',
-      bloodPressure: '130/85 mmHg',
-      respiration: '20 lần/phút',
-      spo2: '96%'
+      temperature: '38.5',
+      pulse: '95',
+      bloodPressure: '130/85',
+      respiration: '20',
+      spo2: '96',
+      canNang: '58',
+      chieuCao: '165'
     },
-    clinicalExam: 'Phổi: ran ẩm đáy phổi trái. Tim mạch: bình thường.',
     symptoms: 'Ho khan, sốt, khó thở nhẹ.',
     initialAssessment: 'Nhiễm trùng đường hô hấp cấp, nghi ngờ viêm phổi cộng đồng.'
-  },
-  medicalRecord: {
-    personalHistory: 'Viêm dạ dày (2024), chưa ghi nhận phẫu thuật.',
-    allergies: 'Penicillin (cảnh báo)',
-    underlyingDiseases: 'Chưa ghi nhận bệnh mạn tính.',
-    familyHistory: 'Không ghi nhận bệnh di truyền.',
-    visitHistory: [
-      { date: '20/03/2025', visit: 'LK-20250320-011', diagnosis: 'Viêm phổi', doctor: 'BS. Nguyễn Văn A', status: 'Hoàn thành' },
-      { date: '10/02/2025', visit: 'LK-20250210-032', diagnosis: 'Đau họng', doctor: 'BS. Trần Thị B', status: 'Hoàn thành' },
-    ]
   },
   treatment: {
     diagnosis: {
@@ -79,7 +70,7 @@ export const mockExamDetail: ExamDetail = {
 };
 
 export const useExam = () => {
-  const [activeWorkspace, setActiveWorkspace] = useState<ExamWorkspace>('treatment');
+  const [activeWorkspace, setActiveWorkspace] = useState<ExamWorkspace>('patient');
   const [selectedPatient, setSelectedPatient] = useState<QueuePatient | null>(mockQueue[0]);
   const [searchQueue, setSearchQueue] = useState('');
   const [examData, setExamData] = useState<ExamDetail>(mockExamDetail);

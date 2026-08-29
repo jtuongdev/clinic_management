@@ -43,7 +43,7 @@ namespace ClinicManagement.Application.Features.LuotKham.Queries
             return new HoSoDieuTriDto
             {
                 Id = luotKham.Id,
-                MaLuotKham = $"KH-{luotKham.Id:D3}",
+                MaLuotKham = luotKham.Id.ToString(),
                 Khoa = luotKham.Khoa?.Ten ?? string.Empty,
                 Phong = luotKham.PhongKham?.Ten ?? string.Empty,
                 TrangThai = luotKham.TrangThai.ToString(),

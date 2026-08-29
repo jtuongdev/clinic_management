@@ -13,7 +13,7 @@ namespace ClinicManagement.API.Controllers
         public async Task<IActionResult> GetHangDoi(
             [FromQuery] int? maBacSi,
             [FromQuery] int pageIndex = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 1000)
         {
             // Nếu không truyền maBacSi, lấy của chính mình
             int bacSiId = maBacSi ?? CurrentUserId;
@@ -30,8 +30,8 @@ namespace ClinicManagement.API.Controllers
             }
             // Validate mạnh mẽ
             if (pageIndex < 1) pageIndex = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 100) pageSize = 100;
+            if (pageSize < 1) pageSize = 1000;
+            if (pageSize > 2000) pageSize = 2000;
 
             Console.WriteLine($"maBacSi = {maBacSi}, pageIndex = {pageIndex}, pageSize = {pageSize}");
 
@@ -49,7 +49,7 @@ namespace ClinicManagement.API.Controllers
         public async Task<IActionResult> GetHangDoiExtended(
             [FromQuery] int maBacSi = 0,
             [FromQuery] int pageIndex = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 1000)
         {
             // Xác định maBacSi: nếu không truyền, lấy từ token
             int bacSiId = maBacSi > 0 ? maBacSi : CurrentUserId;
@@ -60,10 +60,10 @@ namespace ClinicManagement.API.Controllers
                 return Failure("Bạn không có quyền xem hàng đợi của bác sĩ khác", 403);
             }
 
-            // Validate phân trang
+            // Tạm thời load toàn bộ hàng đợi để không giới hạn số lượng trên UI
             if (pageIndex < 1) pageIndex = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 100) pageSize = 100;
+            if (pageSize < 1) pageSize = 1000;
+            if (pageSize > 2000) pageSize = 2000;
 
             var query = new GetHangDoiExtendedQuery
             {
