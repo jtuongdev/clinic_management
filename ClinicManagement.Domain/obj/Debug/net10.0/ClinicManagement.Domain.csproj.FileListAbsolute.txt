@@ -1,0 +1,11 @@
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/bin/Debug/net10.0/ClinicManagement.Domain.deps.json
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/bin/Debug/net10.0/ClinicManagement.Domain.dll
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/bin/Debug/net10.0/ClinicManagement.Domain.pdb
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ClinicManagement.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ClinicManagement.Domain.AssemblyInfoInputs.cache
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ClinicManagement.Domain.AssemblyInfo.cs
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ClinicManagement.Domain.csproj.CoreCompileInputs.cache
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ClinicManagement.Domain.dll
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/refint/ClinicManagement.Domain.dll
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ClinicManagement.Domain.pdb
+/Users/jtuong/Documents/ClinicManagement/ClinicManagement.Domain/obj/Debug/net10.0/ref/ClinicManagement.Domain.dll

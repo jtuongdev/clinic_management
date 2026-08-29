@@ -1,0 +1,1069 @@
+
+/* =========================================================
+   EXAM PANEL
+   Full-screen fixed workspace
+   ========================================================= */
+
+.panel-exam {
+  display: none;
+  flex-direction: column;
+
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.panel-exam.active {
+  display: flex;
+}
+
+
+/* =========================================================
+   MAIN LAYOUT
+   Sidebar + Main workspace
+   ========================================================= */
+
+.exam-layout {
+  display: flex;
+
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+
+  gap: 14px;
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   SIDEBAR - QUEUE
+   ========================================================= */
+
+.exam-sidebar {
+  width: 280px;
+  height: 100%;
+  min-height: 0;
+
+  flex: 0 0 280px;
+
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+
+  box-shadow: var(--shadow);
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+}
+
+
+/* Sidebar header */
+
+.exam-sidebar-header {
+  flex: 0 0 46px;
+
+  padding: 0 16px;
+
+  border-bottom: 1px solid var(--line);
+  background: #f8fafb;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+}
+
+.exam-sidebar-header h4 {
+  margin: 0;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color: #204c64;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exam-sidebar-header h4 i {
+  font-size: 13px;
+}
+
+
+/* Patient count */
+
+.exam-sidebar-header .badge-count {
+  font-size: 10px;
+  font-weight: 700;
+
+  padding: 4px 8px;
+
+  border-radius: 10px;
+
+  background: #edf5fa;
+  color: var(--primary);
+
+  white-space: nowrap;
+}
+
+
+/* Sidebar search */
+
+.exam-sidebar-search {
+  flex: 0 0 52px;
+
+  padding: 9px 12px;
+
+  border-bottom: 1px solid var(--line);
+
+  box-sizing: border-box;
+}
+
+.exam-sidebar-search .search {
+  position: relative;
+  width: 100%;
+}
+
+.exam-sidebar-search .search input {
+  width: 100%;
+  height: 34px;
+
+  border: 1px solid var(--line);
+  border-radius: 6px;
+
+  padding: 0 32px 0 10px;
+
+  outline: none;
+
+  font-size: 12px;
+
+  box-sizing: border-box;
+}
+
+.exam-sidebar-search .search input:focus {
+  border-color: var(--primary);
+}
+
+.exam-sidebar-search .search i {
+  position: absolute;
+
+  right: 10px;
+  top: 9px;
+
+  color: #9aa9b5;
+
+  pointer-events: none;
+}
+
+
+/* Sidebar list */
+
+.exam-sidebar-list {
+  flex: 1;
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  scrollbar-width: thin;
+}
+
+
+/* Queue item */
+
+.exam-queue-item {
+  min-height: 58px;
+
+  padding: 10px 14px;
+
+  border-bottom: 1px solid #edf1f4;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  box-sizing: border-box;
+}
+
+.exam-queue-item:hover {
+  background: #f7fafc;
+}
+
+.exam-queue-item.active {
+  background: #edf5fa;
+
+  border-left: 4px solid var(--primary);
+
+  padding-left: 10px;
+}
+
+.exam-queue-item.examining {
+  background: #e8f8f0;
+
+  border-left: 4px solid var(--success);
+}
+
+
+/* Queue STT */
+
+.exam-queue-stt {
+  width: 24px;
+  height: 24px;
+
+  flex: 0 0 24px;
+
+  border-radius: 50%;
+
+  background: #eef1f4;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 700;
+  font-size: 11px;
+
+  color: #506273;
+}
+
+.exam-queue-item.active .exam-queue-stt {
+  background: var(--primary);
+  color: #fff;
+}
+
+
+/* Queue patient info */
+
+.exam-queue-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.exam-queue-name {
+  font-weight: 700;
+
+  color: #294253;
+
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  font-size: 12px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exam-queue-code {
+  font-size: 10px;
+
+  color: #81909b;
+
+  margin-top: 2px;
+}
+
+
+/* Queue status */
+
+.exam-queue-status {
+  flex: 0 0 auto;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  gap: 4px;
+}
+
+.exam-queue-status .status,
+.exam-queue-status .priority {
+  font-size: 9px;
+  font-weight: 700;
+
+  padding: 2px 8px;
+
+  border-radius: 10px;
+
+  white-space: nowrap;
+}
+
+.exam-queue-status .status.exam {
+  background: var(--success-soft);
+  color: #208053;
+}
+
+.exam-queue-status .priority.urgent {
+  background: var(--danger-soft);
+  color: #c1433f;
+}
+
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+.exam-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   WORKSPACE HEADER
+   Fixed height
+   ========================================================= */
+
+.workspace-bar {
+  flex: 0 0 46px;
+
+  min-height: 46px;
+
+  background: #fff;
+
+  border: 1px solid var(--line);
+  border-radius: 9px 9px 0 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 13px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+}
+
+.workspace-title {
+  flex: 0 0 auto;
+
+  font-weight: 700;
+
+  color: #254a60;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   WORKFLOW NAVIGATION
+   ========================================================= */
+
+.workflow {
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.workflow button {
+  height: 31px;
+
+  padding: 0 11px;
+
+  border: 0;
+  border-radius: 6px;
+
+  background: #f5f7f8;
+
+  color: #536675;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.workflow button:hover {
+  background: #eaf1f4;
+  color: var(--primary);
+}
+
+.workflow button.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.workflow button.active:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+
+/* =========================================================
+   EXAM CONTENT
+   This area occupies ALL remaining height
+   ========================================================= */
+
+.exam-content {
+  flex: 1;
+  min-height: 0;
+
+  height: auto;
+
+  background: #fff;
+
+  border: 1px solid var(--line);
+  border-top: 0;
+
+  border-radius: 0 0 9px 9px;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   SUB TABS
+   Fixed height
+   ========================================================= */
+
+.subtabs {
+  flex: 0 0 43px;
+
+  min-height: 43px;
+
+  padding: 0 14px;
+
+  border-bottom: 1px solid var(--line);
+
+  display: flex;
+  align-items: stretch;
+
+  gap: 3px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  box-sizing: border-box;
+
+  scrollbar-width: thin;
+}
+
+.subtab {
+  flex: 0 0 auto;
+
+  border: 0;
+  border-bottom: 2px solid transparent;
+
+  background: transparent;
+
+  padding: 11px 13px 10px;
+
+  color: #667684;
+
+  font-weight: 600;
+  font-size: 11px;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.subtab:hover {
+  color: var(--primary);
+}
+
+.subtab.active {
+  color: var(--primary);
+
+  border-bottom-color: var(--primary);
+}
+
+
+/* =========================================================
+   TAB PANELS
+   IMPORTANT:
+   Only this area scrolls
+   ========================================================= */
+
+.tab-panels {
+  flex: 1;
+  min-height: 0;
+
+  height: auto;
+
+  padding: 13px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  box-sizing: border-box;
+
+  scrollbar-width: thin;
+}
+
+
+/* Prevent content from changing parent height */
+
+.tab-panel {
+  display: none;
+
+  width: 100%;
+
+  box-sizing: border-box;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+
+.section {
+  width: 100%;
+
+  border: 1px solid var(--line);
+  border-radius: 8px;
+
+  margin-bottom: 11px;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section-head {
+  min-height: 42px;
+
+  padding: 0 12px;
+
+  background: #f8fafb;
+
+  border-bottom: 1px solid var(--line);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+}
+
+.section-head h3 {
+  margin: 0;
+
+  font-size: 12px;
+
+  color: #2d5268;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+.section-body {
+  padding: 12px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   SUMMARY
+   ========================================================= */
+
+.summary-strip {
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 8px;
+
+  margin-bottom: 11px;
+}
+
+.summary-box {
+  min-width: 0;
+
+  border: 1px solid var(--line);
+
+  border-radius: 7px;
+
+  padding: 9px 10px;
+
+  background: #fff;
+
+  box-sizing: border-box;
+}
+
+.summary-box .label {
+  font-size: 9px;
+
+  color: var(--muted);
+
+  font-weight: 600;
+}
+
+.summary-box .value {
+  margin-top: 3px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color: #294b5f;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.grid-4 {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.5fr)
+    minmax(0, 1fr)
+    minmax(0, 0.8fr);
+
+  gap: 10px;
+}
+
+.grid-2 {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 10px;
+}
+
+
+/* =========================================================
+   ADDITIONAL WORKSPACE GRID
+   ========================================================= */
+
+.grid-2col {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.45fr)
+    minmax(280px, 0.9fr);
+
+  gap: 15px;
+
+  min-width: 0;
+}
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.form-grid .field {
+  min-width: 0;
+}
+
+.form-grid .field.wide {
+  grid-column: span 2;
+}
+
+.form-grid .field.full {
+  grid-column: 1 / -1;
+}
+
+.form-grid .readonly {
+  background: #f7f9fa;
+  color: #506775;
+}
+
+
+/* =========================================================
+   FOOTER
+   Fixed bottom action bar
+   ========================================================= */
+
+.footer-actions {
+  flex: 0 0 auto;
+
+  min-height: 50px;
+
+  border-top: 1px solid var(--line);
+
+  background: #fafcfd;
+
+  padding: 8px 13px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+}
+
+.save-state {
+  min-width: 0;
+
+  font-size: 10px;
+
+  color: #748692;
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.save-state i {
+  color: var(--success);
+
+  flex: 0 0 auto;
+}
+
+.actions {
+  flex: 0 0 auto;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  flex-wrap: nowrap;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-wrap {
+  width: 100%;
+
+  overflow-x: auto;
+
+  box-sizing: border-box;
+}
+
+.table-wrap table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  min-width: 650px;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.exam-sidebar-list::-webkit-scrollbar,
+.tab-panels::-webkit-scrollbar,
+.subtabs::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.exam-sidebar-list::-webkit-scrollbar-track,
+.tab-panels::-webkit-scrollbar-track,
+.subtabs::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.exam-sidebar-list::-webkit-scrollbar-thumb,
+.tab-panels::-webkit-scrollbar-thumb,
+.subtabs::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5db;
+
+  border-radius: 10px;
+}
+
+.exam-sidebar-list::-webkit-scrollbar-thumb:hover,
+.tab-panels::-webkit-scrollbar-thumb:hover,
+.subtabs::-webkit-scrollbar-thumb:hover,
+.table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #aebbc3;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1200px) {
+
+  .workflow button {
+    padding: 0 9px;
+  }
+
+  .workflow button span {
+    display: none;
+  }
+
+  .workflow button i {
+    font-size: 13px;
+  }
+
+  .summary-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid .field.wide {
+    grid-column: span 1;
+  }
+
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .exam-layout {
+    gap: 8px;
+  }
+
+  .exam-sidebar {
+    width: 240px;
+
+    flex-basis: 240px;
+  }
+
+  .workspace-title {
+    display: none;
+  }
+
+  .summary-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .panel-exam {
+    height: 100dvh;
+  }
+
+  .exam-layout {
+    flex-direction: column;
+
+    gap: 8px;
+
+    overflow: hidden;
+  }
+
+  .exam-sidebar {
+    width: 100%;
+
+    height: 190px;
+    max-height: 190px;
+
+    flex: 0 0 190px;
+  }
+
+  .exam-sidebar-list {
+    display: flex;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .exam-queue-item {
+    min-width: 210px;
+
+    border-bottom: 0;
+    border-right: 1px solid #edf1f4;
+  }
+
+  .exam-queue-item.active {
+    border-left: 4px solid var(--primary);
+    border-right: none;
+  }
+
+  .exam-main {
+    min-height: 0;
+  }
+
+  .workspace-bar {
+    padding: 0 8px;
+  }
+
+  .workflow {
+    width: 100%;
+
+    overflow-x: auto;
+  }
+
+  .workflow button {
+    flex: 0 0 auto;
+  }
+
+  .summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-4,
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid .field.wide {
+    grid-column: auto;
+  }
+
+  .footer-actions {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .save-state {
+    width: 100%;
+  }
+
+  .actions {
+    width: 100%;
+
+    overflow-x: auto;
+
+    padding-bottom: 2px;
+  }
+
+  .actions .btn {
+    flex: 0 0 auto;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  .exam-sidebar {
+    height: 160px;
+    max-height: 160px;
+
+    flex-basis: 160px;
+  }
+
+  .exam-sidebar-header {
+    padding: 0 10px;
+  }
+
+  .exam-sidebar-search {
+    padding: 8px;
+  }
+
+  .tab-panels {
+    padding: 8px;
+  }
+
+  .section-body {
+    padding: 9px;
+  }
+
+  .section-head {
+    padding: 0 9px;
+  }
+
+  .subtabs {
+    padding: 0 8px;
+  }
+
+  .subtab {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+}
+

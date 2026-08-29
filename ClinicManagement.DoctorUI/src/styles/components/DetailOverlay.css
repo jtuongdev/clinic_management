@@ -1,0 +1,114 @@
+/* src/styles/components/DetailOverlay.css */
+.detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(22, 40, 52, .18);
+    display: none;
+    z-index: 30;
+}
+.detail-overlay.show {
+    display: block;
+}
+.detail-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 430px;
+    background: #fff;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, .12);
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+}
+.detail-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+}
+.detail-head strong {
+    font-size: 15px;
+}
+.detail-body {
+    padding: 18px;
+    overflow: auto;
+    flex: 1;
+}
+.profile {
+    display: flex;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+}
+.profile .avatar-lg {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: #eaf3f7;
+    color: #246d88;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+.profile-name {
+    font-size: 15px;
+    font-weight: 700;
+}
+.profile-code {
+    font-size: 11px;
+    color: #7d8b97;
+    margin-top: 3px;
+}
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+}
+.info-box {
+    background: #f7f9fb;
+    border: 1px solid #edf0f3;
+    border-radius: 7px;
+    padding: 10px;
+}
+.info-label {
+    font-size: 10px;
+    color: #8593a0;
+    text-transform: uppercase;
+}
+.info-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #344b5b;
+    margin-top: 4px;
+}
+.detail-section {
+    margin-top: 18px;
+}
+.detail-section h4 {
+    font-size: 12px;
+    margin-bottom: 9px;
+    color: #365064;
+}
+.alert {
+    padding: 10px;
+    border-radius: 7px;
+    background: var(--danger-soft);
+    color: #a53d39;
+    font-size: 11px;
+    line-height: 1.5;
+}
+.detail-actions {
+    padding: 14px 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 8px;
+    background: #fff;
+}
+.detail-actions .btn {
+    flex: 1;
+    justify-content: center;
+}

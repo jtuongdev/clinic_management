@@ -1,0 +1,94 @@
+/* src/styles/components/Header.css */
+.header {
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+.header-main {
+    height: 58px;
+    padding: 0 18px;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-weight: 700;
+    padding-right: 18px;
+    margin-right: 5px;
+    border-right: 1px solid rgba(255, 255, 255, .18);
+}
+.brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .15);
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+}
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+}
+.nav a {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, .86);
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: 12px;
+  transition: .2s;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav a:hover,
+.nav a.active {
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+}
+.nav a.active {
+  box-shadow: inset 0 -2px 0 #fff;
+}
+.nav button {
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, .86);
+    height: 36px;
+    padding: 0 13px;
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 12px;
+    transition: .2s;
+    white-space: nowrap;
+}
+.nav button:hover,
+.nav button.active {
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+}
+.nav button.active {
+    box-shadow: inset 0 -2px 0 #fff;
+}
+.user-menu {
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, .18);
+    font-weight: 600;
+}

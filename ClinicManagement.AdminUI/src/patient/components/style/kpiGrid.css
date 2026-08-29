@@ -1,0 +1,75 @@
+.kpi-grid {
+  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 14px;
+}
+
+.kpi-grid .ant-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.kpi-grid .kpi-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.kpi-grid .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+}
+
+.kpi-grid .ant-card-body {
+  padding: 14px 16px;
+}
+
+.kpi-grid .ant-statistic-title {
+  margin-bottom: 5px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.kpi-grid .ant-statistic-content {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.kpi-grid .ant-statistic-content-prefix {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Màn hình nhỏ vẫn cố gắng giữ 1 hàng */
+@media (max-width: 900px) {
+  .kpi-grid {
+    gap: 8px;
+  }
+
+  .kpi-grid .ant-card-body {
+    padding: 10px;
+  }
+
+  .kpi-grid .ant-statistic-title {
+    font-size: 9px;
+  }
+
+  .kpi-grid .ant-statistic-content {
+    font-size: 18px;
+  }
+}

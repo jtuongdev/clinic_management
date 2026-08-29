@@ -1,0 +1,49 @@
+/* Reset & Variables */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+:root {
+    --primary: #176b87;
+    --primary-2: #0f5871;
+    --primary-soft: #eaf5f8;
+    --primary-dark: #17627f;
+    --text: #243447;
+    --muted: #718096;
+    --line: #dfe7ec;
+    --bg: #f4f7f9;
+    --white: #fff;
+    --success: #1f9d61;
+    --success-soft: #eaf8f0;
+    --warning: #d98216;
+    --warning-soft: #fff5e7;
+    --danger: #d94b45;
+    --danger-soft: #fff0ef;
+    --info: #397aa3;
+    --shadow: 0 2px 10px rgba(24, 52, 72, .07);
+    --info-soft: #edf2fb;
+}
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    font-family: Inter, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 13px;
+}
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+button {
+    cursor: pointer;
+}
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}

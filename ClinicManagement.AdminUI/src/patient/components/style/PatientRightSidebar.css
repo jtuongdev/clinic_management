@@ -1,0 +1,88 @@
+/* ============================================
+   PATIENT RIGHT SIDEBAR
+   ============================================ */
+
+.patient-right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.patient-right-sidebar .ant-card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: #fff;
+}
+
+.patient-right-sidebar .ant-card .ant-card-head {
+  padding: 10px 16px;
+  min-height: 40px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.patient-right-sidebar .ant-card .ant-card-head .ant-card-head-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.patient-right-sidebar .ant-card .ant-card-body {
+  padding: 10px 16px 14px;
+}
+
+/* ===== STAT ITEMS ===== */
+.patient-right-sidebar .stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px solid #f5f7fb;
+}
+
+.patient-right-sidebar .stat-item:last-child {
+  border-bottom: none;
+}
+
+.patient-right-sidebar .stat-item .label {
+  color: #64748b;
+}
+
+.patient-right-sidebar .stat-item .value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.patient-right-sidebar .stat-item .value .bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  background: #3b82f6;
+  vertical-align: middle;
+}
+
+/* ===== ANT STATISTIC OVERRIDE ===== */
+.patient-right-sidebar .ant-statistic .ant-statistic-title {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.patient-right-sidebar .ant-statistic .ant-statistic-content {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .patient-right-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .patient-right-sidebar {
+    display: flex;
+  }
+}

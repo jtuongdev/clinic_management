@@ -1,0 +1,129 @@
+.action-bar-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  pointer-events: none; /* cho phép click xuyên qua overlay */
+}
+
+.action-bar {
+  pointer-events: auto;
+  background: #ffffff;
+  border-top: 2px solid var(--primary, #12657d);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.action-bar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.action-bar-info {
+  font-size: 14px;
+  color: var(--text-2, #334155);
+}
+
+.action-bar-info strong {
+  color: var(--text, #0f172a);
+}
+
+.action-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  background: #f1f5f9;
+  color: var(--text-2, #334155);
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.primary {
+  background: var(--primary, #12657d);
+  color: #fff;
+}
+.action-btn.primary:hover:not(:disabled) {
+  background: var(--primary-dark, #0d5268);
+}
+
+.action-btn.success {
+  background: var(--green, #16834f);
+  color: #fff;
+}
+.action-btn.success:hover:not(:disabled) {
+  background: #0f6b3f;
+}
+
+.action-btn.danger {
+  background: var(--red, #bd3f3f);
+  color: #fff;
+}
+.action-btn.danger:hover:not(:disabled) {
+  background: #a03333;
+}
+
+.action-btn.warning {
+  background: var(--orange, #ae7209);
+  color: #fff;
+}
+.action-btn.warning:hover:not(:disabled) {
+  background: #8f5d07;
+}
+
+.action-close {
+  background: transparent;
+  color: var(--muted, #94a3b8);
+}
+.action-close:hover {
+  background: #f1f5f9;
+  color: var(--text, #0f172a);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .action-bar {
+    padding: 10px 16px;
+  }
+  .action-bar-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .action-bar-actions {
+    justify-content: center;
+  }
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

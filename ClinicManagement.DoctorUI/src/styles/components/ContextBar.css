@@ -1,0 +1,43 @@
+/* //src/styles/components/ContextBar.css */
+.context-bar {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    min-height: 50px;
+}
+.context-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f4f67;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+}
+.context-title i {
+    color: var(--primary);
+}
+.context-divider {
+    height: 25px;
+    width: 1px;
+    background: var(--line);
+}
+.context-meta {
+    display: flex;
+    gap: 18px;
+    color: #66778a;
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+.context-meta .meta-item strong {
+    color: #33485a;
+}
+.context-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}

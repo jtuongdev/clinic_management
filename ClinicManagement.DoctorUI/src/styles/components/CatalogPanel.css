@@ -1,0 +1,101 @@
+/* src/styles/components/CatalogPanel.css */
+
+.panel-catalog {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+.panel-catalog.active {
+    display: flex;
+}
+.catalog-content {
+    padding: 13px;
+    overflow: auto;
+    flex: 1;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 0 0 9px 9px;
+}
+.catalog-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+}
+.catalog-tabs button {
+    border: 0;
+    background: transparent;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+    color: #667684;
+    border-bottom: 2px solid transparent;
+}
+.catalog-tabs button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: var(--primary-soft);
+}
+.catalog-tabs button:hover {
+    background: #f0f4f6;
+}
+.catalog-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #f8fafb;
+    padding: 8px 14px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 12px;
+}
+.catalog-stats .stat-item {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.catalog-stats .stat-item i {
+    color: var(--muted);
+}
+.catalog-table-wrap {
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+}
+.catalog-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+.catalog-table-wrap th {
+    background: #f8fafb;
+    color: #657684;
+    font-weight: 700;
+    text-align: left;
+    padding: 9px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+.catalog-table-wrap td {
+    padding: 9px;
+    border-bottom: 1px solid #edf1f3;
+    color: #344a59;
+    vertical-align: middle;
+}
+.catalog-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.catalog-toolbar .search {
+    flex: 1;
+    min-width: 180px;
+    max-width: 300px;
+}

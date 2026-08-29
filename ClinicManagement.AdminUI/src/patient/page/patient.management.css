@@ -1,0 +1,261 @@
+/* ============================================
+   PATIENT MANAGEMENT PAGE
+   ============================================ */
+
+.patient-management {
+  padding: 0 4px;
+  min-height: 100%;
+  height: auto;
+  background: #f1f5f9;
+
+  /* Cho toàn bộ page cuộn dọc */
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Cho phép cuộn mượt */
+  scroll-behavior: smooth;
+
+  /* Không bị dính sát thanh cuộn */
+  padding-bottom: 24px;
+}
+
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+.patient-management::-webkit-scrollbar {
+  width: 7px;
+}
+
+.patient-management::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.patient-management::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.patient-management::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* ============================================
+   TABS
+   ============================================ */
+
+.patient-management .patient-tabs {
+  width: 100%;
+}
+
+
+/* Thanh Tabs */
+
+.patient-management .patient-tabs .ant-tabs-nav {
+  margin-bottom: 16px;
+  background: #fff;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.patient-management .patient-tabs .ant-tabs-nav::before {
+  border-bottom: none;
+}
+
+
+/* Tab */
+
+.patient-management .patient-tabs .ant-tabs-tab {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 10px 16px;
+  transition: all 0.2s;
+  border-radius: 8px 8px 0 0;
+}
+
+.patient-management .patient-tabs .ant-tabs-tab:hover {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.patient-management .patient-tabs .ant-tabs-tab-active {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.patient-management
+  .patient-tabs
+  .ant-tabs-tab
+  .ant-tabs-tab-btn
+  i {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+
+/* Active line */
+
+.patient-management .patient-tabs .ant-tabs-ink-bar {
+  background: #3b82f6;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+
+/* ============================================
+   KPI GRID WRAPPER
+   ============================================ */
+
+.patient-management .kpi-grid-wrapper {
+  margin-bottom: 16px;
+}
+
+
+/* ============================================
+   TOOLBAR
+   ============================================ */
+
+.patient-management .toolbar-wrapper {
+  margin-bottom: 12px;
+}
+
+
+/* ============================================
+   FILTERS
+   ============================================ */
+
+.patient-management .filters-wrapper {
+  margin-bottom: 12px;
+}
+
+
+/* ============================================
+   TABLE
+   ============================================ */
+
+.patient-management .table-wrapper {
+  width: 100%;
+}
+
+
+/* ============================================
+   TWO COLUMN
+   ============================================ */
+
+.patient-management .two-col {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+
+/* LEFT */
+
+.patient-management .two-col .left-col {
+  flex: 1;
+  min-width: 0;
+}
+
+
+/* RIGHT */
+
+.patient-management .two-col .right-col {
+  flex-shrink: 0;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+/* ============================================
+   ANT TABLE
+   ============================================ */
+
+.patient-management .ant-table-wrapper {
+  width: 100%;
+}
+
+.patient-management .ant-table {
+  background: #fff;
+}
+
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .patient-management .two-col .right-col {
+    width: 240px;
+  }
+}
+
+
+/* Tablet */
+
+@media (max-width: 1024px) {
+  .patient-management .two-col {
+    flex-direction: column;
+  }
+
+  .patient-management .two-col .right-col {
+    width: 100%;
+  }
+}
+
+
+/* Mobile */
+
+@media (max-width: 820px) {
+
+  .patient-management .patient-tabs .ant-tabs-tab {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .patient-management
+    .patient-tabs
+    .ant-tabs-tab
+    span:not(.ant-tabs-tab-btn) {
+    display: none;
+  }
+
+  .patient-management .patient-tabs .ant-tabs-tab i {
+    font-size: 16px;
+    margin-right: 0;
+  }
+}
+
+
+/* Mobile nhỏ */
+
+@media (max-width: 640px) {
+
+  .patient-management {
+    padding: 0;
+    padding-bottom: 20px;
+  }
+
+  .patient-management .patient-tabs .ant-tabs-nav {
+    padding: 0 8px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 12px;
+  }
+
+  .patient-management .patient-tabs .ant-tabs-tab {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .patient-management .two-col {
+    gap: 12px;
+  }
+}
