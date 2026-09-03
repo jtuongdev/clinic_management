@@ -24,13 +24,15 @@ namespace ClinicManagement.Infrastructure
             services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ClinicDbContext>());
             services.AddScoped<INhanVienRepository, NhanVienRepository>();
             services.AddScoped<IBenhNhanRepository, BenhNhanRepository>();
-            services.AddScoped<INhanVienRepository, NhanVienRepository>();
             
             services.AddScoped<ICoSoRepository, CoSoRepository>();
             services.AddScoped<IKhoaRepository, KhoaRepository>();
             services.AddScoped<IPhongKhamRepository, PhongKhamRepository>();
 
             services.AddScoped<ILuotKhamRepository, LuotKhamRepository>();
+            services.AddScoped<ILichLamViecRepository, LichLamViecRepository>();
+            services.AddScoped<IChamCongRepository, ChamCongRepository>();
+            services.AddScoped<INghiPhepRepository, NghiPhepRepository>();
             services.AddScoped<IDanhMucDichVuRepository, DanhMucDichVuRepository>();
 
             services.AddScoped<IJwtService, JwtService>();

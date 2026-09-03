@@ -6,12 +6,15 @@ import {
 } from 'react-router-dom';
 
 import AuthLayout from '../Auth/pages/AuthLayout';
+import Unauthorized from '../Auth/pages/Unauthorized';
 import ProtectedRoute from './ProtectedRoute';
 
 import { dashboardRoutes } from '../dashboard/routes';
 import { MainLayout } from '../shared/components/layouts/MainLayout';
 import { patientRoutes } from '../patient/routes';
 import { examinationRoutes } from '../examination/routes';
+import { employeeRoutes } from '../employee/routes';
+import { scheduleRoutes } from '../schedule/routes';
 
 const protectedRoutes = [
   {
@@ -22,16 +25,26 @@ const protectedRoutes = [
   ...dashboardRoutes,
   ...patientRoutes,
   ...examinationRoutes,
+  ...employeeRoutes,
+  ...scheduleRoutes,
 ];
 
 const router = createBrowserRouter([
   {
-    path: '/login',
-    element: <AuthLayout />,
+    path: '/',
+    element: <Navigate to="/login" replace />,
   },
 
   {
-    path: '/',
+    path: '/login',
+    element: <AuthLayout />,
+  },
+  {
+    path: '/unauthorized',
+    element: <Unauthorized />,
+  },
+
+  {
     element: (
       <ProtectedRoute roles={['Admin']}>
         <MainLayout />

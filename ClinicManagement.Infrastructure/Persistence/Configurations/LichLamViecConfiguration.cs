@@ -27,7 +27,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(llv => llv.MaCaTruc)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(llv => new { llv.MaNhanVien, llv.NgayLam })
+            builder.HasIndex(llv => new { llv.MaNhanVien, llv.MaCaTruc, llv.NgayLam })
                 .IsUnique();
 
             builder.HasQueryFilter(llv => !llv.IsDeleted);

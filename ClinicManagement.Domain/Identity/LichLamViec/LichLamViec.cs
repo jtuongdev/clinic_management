@@ -12,5 +12,13 @@ namespace ClinicManagement.Domain.Identity
 
         public virtual NhanVien NhanVien { get; set; } = null!;
         public virtual CaTruc CaTruc { get; set; } = null!;
+
+        public void Normalize()
+        {
+            if (MaNhanVien <= 0) throw new ArgumentException("Nhân viên không hợp lệ.");
+            if (MaCaTruc <= 0) throw new ArgumentException("Ca làm việc không hợp lệ.");
+            NgayLam = NgayLam.Date;
+            GhiChu = GhiChu?.Trim() ?? string.Empty;
+        }
     }
 }

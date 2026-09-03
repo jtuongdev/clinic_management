@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ClinicManagement.API.Common;
 using ClinicManagement.Application.DTOs.Auth;
 using ClinicManagement.Application.Features.Auth.Commands;
 
@@ -18,7 +19,7 @@ namespace ClinicManagement.API.Controllers
 
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
             {
@@ -31,14 +32,21 @@ namespace ClinicManagement.API.Controllers
                 Password = request.Password
             };
 
-            var result = await _mediator.Send(command);
-            
-            return Ok(new
+            try
             {
-                success = true,
-                data = result,
-                message = "Đăng nhập thành công"
-            });
+                var result = await _mediator.Send(command, cancellationToken);
+            
+                return Ok(new
+                {
+                    success = true,
+                    data = result,
+                    message = "Đăng nhập thành công"
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return Unauthorized(ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [HttpGet("me")]

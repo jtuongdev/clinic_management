@@ -116,6 +116,18 @@ export const menuGroups: MenuGroup[] = [
     label: 'Kho & Hệ thống',
     items: [
       {
+        key: 'employees',
+        icon: <UsersRound size={18} />,
+        label: 'Nhân viên',
+        path: '/employees',
+      },
+      {
+        key: 'schedules',
+        icon: <CalendarCheck size={18} />,
+        label: 'Lịch làm việc',
+        path: '/schedules',
+      },
+      {
         key: 'inventory',
         icon: <Package size={18} />,
         label: 'Kho / Dược',

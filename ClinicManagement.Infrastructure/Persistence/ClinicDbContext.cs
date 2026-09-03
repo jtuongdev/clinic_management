@@ -9,6 +9,7 @@ using ClinicManagement.Domain.Service;
 using ClinicManagement.Domain.Inventory;
 using ClinicManagement.Domain.Prescription;
 using ClinicManagement.Domain.Billing;
+using ClinicManagement.Domain.Payroll;
 using ClinicManagement.Domain.System;
 using System;
 using System.Threading;
@@ -79,6 +80,11 @@ namespace ClinicManagement.Infrastructure.Persistence
         public DbSet<ChiTietHoaDon> ChiTietHoaDons { get; set; }
         public DbSet<PhieuThu> PhieuThus { get; set; }
         public DbSet<CongNoBenhNhan> CongNoBenhNhans { get; set; }
+
+        // Phân hệ Bảng lương
+        public DbSet<KyLuong> KyLuongs { get; set; }
+        public DbSet<BangLuong> BangLuongs { get; set; }
+        public DbSet<ChiTietBangLuong> ChiTietBangLuongs { get; set; }
 
         // Phân hệ Hệ thống
         public DbSet<ThamSoHeThong> ThamSoHeThongs { get; set; }

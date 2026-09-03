@@ -11,9 +11,27 @@ namespace ClinicManagement.Domain.Repositories
         Task<NhanVien?> GetByEmailAsync(string email);
         
         Task<bool> IsUsernameExistAsync(string username);
+        Task<bool> IsEmailExistAsync(string email, int? excludeId = null);
+        Task<bool> IsSoHanhNgheExistAsync(string soHanhNghe, int? excludeId = null);
+        Task<NhanVien?> GetDetailByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<NhanVien>> GetPagedAsync(
+            string? keyword,
+            int? maChucVu,
+            bool? isActive,
+            int pageIndex,
+            int pageSize,
+            CancellationToken cancellationToken = default);
+        Task<int> CountPagedAsync(
+            string? keyword,
+            int? maChucVu,
+            bool? isActive,
+            CancellationToken cancellationToken = default);
         
         Task<IReadOnlyList<NhanVien>> GetActiveDoctorsAsync();
         Task<List<VaiTro>> GetRolesByUserIdAsync(int userId);
+        Task<List<VaiTro>> GetAllRolesAsync(CancellationToken cancellationToken = default);
+        Task<List<VaiTro>> GetRolesByIdsAsync(IEnumerable<int> roleIds, CancellationToken cancellationToken = default);
+        Task<NhanVien?> GetDetailForUpdateAsync(int id, CancellationToken cancellationToken = default);
 
         Task<List<Quyen>> GetPermissionsByUserIdAsync(int userId);
 

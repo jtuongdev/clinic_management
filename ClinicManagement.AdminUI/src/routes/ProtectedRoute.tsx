@@ -24,7 +24,7 @@ export default function ProtectedRoute({
 
   // Kiểm tra role
   const hasPermission = user?.roles?.some((userRole) =>
-    roles.includes(userRole)
+    roles.some((requiredRole) => requiredRole.toLowerCase() === userRole.toLowerCase())
   );
 
   // Đã đăng nhập nhưng không có quyền

@@ -29,11 +29,18 @@ namespace ClinicManagement.Application.Features.Auth.Commands
                 throw new UnauthorizedAccessException("Tên đăng nhập hoặc mật khẩu không đúng");
             }
             bool isPasswordValid = _passwordHasher.VerifyPassword(
-                request.Password, user.PasswordHash ?? string.Empty
-            ) || request.Password == user.PasswordHash;
+                request.Password, user.PasswordHash
+            );
+            bool isLegacyPlainTextPassword = !isPasswordValid &&
+                string.Equals(request.Password, user.PasswordHash, StringComparison.Ordinal);
             if (!isPasswordValid)
             {
-                throw new UnauthorizedAccessException("Tên đăng nhập hoặc mật khẩu không đúng");
+                if (!isLegacyPlainTextPassword)
+                {
+                    throw new UnauthorizedAccessException("Tên đăng nhập hoặc mật khẩu không đúng");
+                }
+
+                user.SetPassword(_passwordHasher.HashPassword(request.Password));
             }
             if (!user.IsActive)
             {
@@ -44,6 +51,8 @@ namespace ClinicManagement.Application.Features.Auth.Commands
 
             var accessToken = _jwtService.GenerateAccessToken(user, roles);
             var refreshToken = _jwtService.GenerateRefreshToken();
+            user.RecordLogin();
+            await _nhanVienRepo.UnitOfWork.SaveChangesAsync(cancellationToken);
             return new LoginResponse
             {
                 AccessToken = accessToken,

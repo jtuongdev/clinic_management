@@ -33,9 +33,14 @@ namespace ClinicManagement.Domain.Identity
             NhanVienKhoa = new List<NhanVienKhoa>();
         }
 
-        public NhanVien(string username, string passwordHash, string hoTen, DateTime? ngaySinh, 
-                       GioiTinh gioiTinh, string email, string dienThoai, int? maChucVu)
+        public NhanVien(string username, string passwordHash, string hoTen, DateTime? ngaySinh,
+                       GioiTinh gioiTinh, string email, string dienThoai, int? maChucVu,
+                       string chuyenKhoa = "", string soHanhNghe = "")
         {
+            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username không được để trống.", nameof(username));
+            if (string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentException("Password hash không được để trống.", nameof(passwordHash));
+            if (string.IsNullOrWhiteSpace(hoTen)) throw new ArgumentException("Họ tên không được để trống.", nameof(hoTen));
+
             Username = username;
             PasswordHash = passwordHash;
             HoTen = hoTen;
@@ -44,6 +49,8 @@ namespace ClinicManagement.Domain.Identity
             Email = email;
             DienThoai = dienThoai;
             MaChucVu = maChucVu;
+            ChuyenKhoa = chuyenKhoa ?? string.Empty;
+            SoHanhNghe = soHanhNghe ?? string.Empty;
             IsActive = true;
             
             NhanVienVaiTro = new List<NhanVienVaiTro>();
@@ -53,11 +60,20 @@ namespace ClinicManagement.Domain.Identity
 
         public void UpdateProfile(string hoTen, DateTime? ngaySinh, GioiTinh gioiTinh, string email, string dienThoai)
         {
+            if (string.IsNullOrWhiteSpace(hoTen)) throw new ArgumentException("Họ tên không được để trống.", nameof(hoTen));
+
             HoTen = hoTen;
             NgaySinh = ngaySinh?.Date; 
             GioiTinh = gioiTinh;
             Email = email;
             DienThoai = dienThoai;
+        }
+
+        public void UpdateEmployment(int? maChucVu, string chuyenKhoa, string soHanhNghe)
+        {
+            MaChucVu = maChucVu;
+            ChuyenKhoa = chuyenKhoa ?? string.Empty;
+            SoHanhNghe = soHanhNghe ?? string.Empty;
         }
 
         public void SetPassword(string hashedPassword)
@@ -72,6 +88,8 @@ namespace ClinicManagement.Domain.Identity
         public void AssignRole(VaiTro vaiTro, DateTime ngayBatDau, DateTime? ngayKetThuc = null)
         {
             if (vaiTro == null) throw new ArgumentNullException(nameof(vaiTro));
+            if (ngayKetThuc.HasValue && ngayKetThuc.Value.Date < ngayBatDau.Date)
+                throw new ArgumentException("Ngày kết thúc vai trò phải lớn hơn hoặc bằng ngày bắt đầu.", nameof(ngayKetThuc));
             
             NhanVienVaiTro ??= new List<NhanVienVaiTro>();
 
@@ -85,9 +103,24 @@ namespace ClinicManagement.Domain.Identity
             NhanVienVaiTro.Add(nhanVienVaiTro);
         }
 
+        public void ReplaceRoles(IEnumerable<VaiTro> vaiTros, DateTime ngayBatDau, DateTime? ngayKetThuc = null)
+        {
+            NhanVienVaiTro.Clear();
+            foreach (var vaiTro in vaiTros.DistinctBy(role => role.Id))
+            {
+                AssignRole(vaiTro, ngayBatDau, ngayKetThuc);
+            }
+        }
+
         public void AssignToKhoa(Khoa khoa, DateTime tuNgay, DateTime? denNgay = null, bool laKhoaChinh = false)
         {
             if (khoa == null) throw new ArgumentNullException(nameof(khoa));
+            if (denNgay.HasValue && denNgay.Value.Date < tuNgay.Date)
+                throw new ArgumentException("Ngày kết thúc khoa phải lớn hơn hoặc bằng ngày bắt đầu.", nameof(denNgay));
+            if (laKhoaChinh && NhanVienKhoa.Any(x => x.LaKhoaChinh &&
+                x.TuNgay <= (denNgay ?? DateTime.MaxValue) &&
+                (x.DenNgay == null || x.DenNgay >= tuNgay)))
+                throw new InvalidOperationException("Nhân viên đã có khoa chính trong khoảng thời gian này.");
 
             NhanVienKhoa ??= new List<NhanVienKhoa>();
 

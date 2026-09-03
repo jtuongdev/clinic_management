@@ -17,6 +17,12 @@ export function useLogin() {
         authLogin(result.data.accessToken, result.data.refreshToken, result.data.user);
       }
       return result;
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null,
+        message: error?.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng',
+      };
     } finally {
       setLoading(false);
     }
