@@ -1,18 +1,6 @@
-export interface QueuePatient {
-  id: number;
-  stt: string;
-  name: string;
-  code: string;
-  avatar: string;
-  gender: string;
-  age: number;
-  visit: string;
-  department: string;
-  priority: 'urgent' | 'normal';
-  time: string;
-  status: 'wait' | 'exam' | 'done' | 'cancel';
-  alert: boolean;
-}
+
+
+export type ExamWorkspace = 'patient' | 'examination' | 'treatment' | 'electronic-record';
 
 export interface ExamDetail {
   visit: string;
@@ -61,7 +49,9 @@ export interface ExamDetail {
       assessment: string;
     };
     diagnosisList: Array<{
+      id?: number;
       icd: string;
+      tenICD?: string;
       name: string;
       type: string;
       note: string;
@@ -91,23 +81,6 @@ export interface ExamDetail {
   };
 }
 
-export type ExamWorkspace = 'patient' | 'examination' | 'treatment' | 'electronic-record';
-
-export interface BenhNhanListDto {
-  id: number;
-  maBenhNhanNoiBo: string;
-  hoTen: string;
-  gioiTinh: string;
-  tuoi: number;
-  dienThoai: string;
-  maLuotKhamGanNhat: string;
-  khoa: string;
-  bacSi: string;
-  trangThaiLuotKham: string;
-  thoiGianBatDauKham: string | null;
-  soThuTu: number | null;
-}
-
 export interface ThongTinBenhNhanTrongLuotKhamDto {
   luotKhamId: number;
   maLuotKham: string;
@@ -124,6 +97,16 @@ export interface ThongTinBenhNhanTrongLuotKhamDto {
   dienThoai: string;
 }
 
+export type TreatmentSummaryDto = {
+  luotKhamId: number;
+  maLuotKham: string;
+  khoa: string;
+  phong: string;
+  trangThai: string;
+  ngayKham: string;
+  soThuTu?: number | null;
+};
+
 export type StartExamResponse = {
   id: number;
   maBenhNhan: number;
@@ -133,12 +116,65 @@ export type StartExamResponse = {
   message: string;
 };
 
+export type ServiceOrderDto = {
+  id: number;
+  tenDichVu: string;
+  loaiDichVu: string;
+  trangThai: string;
+  ngayChiDinh: string;
+  ngayThucHien?: string | null;
+  ngayCoKetQua?: string | null;
+  ketLuan?: string | null;
+  urlKetQua?: string | null;
+};
+
+export type ServiceCatalogOption = {
+  id: number;
+  ma: string;
+  ten: string;
+  loaiDichVu: string;
+  donViTinh?: string;
+  gia?: number;
+};
+
+export type ServiceOrderRequest = {
+  maDanhMuc: number;
+  maBacSiChiDinh: number;
+  maNguoiThucHien?: number | null;
+  trangThai?: string;
+  ketLuan?: string | null;
+  urlKetQua?: string | null;
+  ngayChiDinh?: string;
+  ngayThucHien?: string | null;
+  ngayCoKetQua?: string | null;
+};
+
 export type SaveExaminationRequest = {
   lyDoKham: string;
   ghiChuTienSu?: string;
   tienSuBenhs?: Array<{
     id?: number;
     loaiTienSu: string;
+    ten: string;
+    ghiChu?: string;
+  }>;
+  sinhHieu?: {
+    id?: number;
+    nhietDo?: number | null;
+    mach?: number | null;
+    huyetApTamThu?: number | null;
+    huyetApTamTruong?: number | null;
+    spO2?: number | null;
+    canNang?: number | null;
+    chieuCao?: number | null;
+  };
+};
+export type ExaminationDetailResponse = {
+  lyDoKham: string;
+  ghiChuTienSu?: string;
+  tienSuBenhs?: Array<{
+    id?: number;
+    loaiTienSu: number; // 1, 2, ...
     ten: string;
     ghiChu?: string;
   }>;
@@ -192,90 +228,10 @@ export type ExaminationResultResponse = {
     ghiChu: string;
   }>;
 };
-
-export type ActionToolbarClickContext<T = unknown> = {
-  action: ActionToolbarItem<T>;
-  payload?: T;
-};
-
-export type ActionToolbarItem<T = unknown> = {
-  key: string;
-  label: string;
-  icon: string;
-  color?: 'primary' | 'success' | 'warning' | 'danger' | 'secondary' | 'ghost';
-  variant?: 'solid' | 'outline';
-  disabled?: boolean;
-  payload?: T;
-  onClick?: (context: ActionToolbarClickContext<T>) => void;
-};
-
-export interface ActionToolbarProps<T = unknown> {
-  actions: ActionToolbarItem<T>[];
-  align?: 'left' | 'right';
-  className?: string;
-}
-
-export interface ExamSidebarProps {
-  patients: BenhNhanListDto[];
-  selectedPatient: BenhNhanListDto | null;
-  searchQueue: string;
-  onSearchChange: (value: string) => void;
-  onSelectPatient: (patient: BenhNhanListDto) => void;
-  loading?: boolean;
-}
-
-export interface ExaminationWorkspaceProps {
-  data: ExamDetail;
-  luotKhamId?: number;
-  onChange?: (field: string, value: unknown) => void;
-  onSaveSuccess?: (result: ExaminationResultResponse) => void;
-}
-
-export interface PatientWorkspaceProps {
-  data?: ExamDetail | null;
-  luotKhamId?: number | null;
-}
-
-export interface TreatmentWorkspaceProps {
-  data?: Partial<ExamDetail> | null;
-  onSave?: () => void;
-  onFinish?: () => void;
-}
-
-export interface ElectronicRecordWorkspaceProps {
-  data: ExamDetail;
-  onFinish: () => void;
-}
-
-export interface UseQueueResult {
-  patients: BenhNhanListDto[];
-  loading: boolean;
-  error: string | null;
-  fetchQueue: (pageIndex?: number, pageSize?: number) => Promise<void>;
-}
-
-export interface UsePatientWorkspaceOptions {
-  luotKhamId?: number | null;
-  fallbackData?: Partial<ThongTinBenhNhanTrongLuotKhamDto> | null;
-}
-
-export interface UseExaminationFormOptions {
-  data: ExamDetail;
-  luotKhamId?: number;
-  onSaveSuccess?: (result: ExaminationResultResponse) => void;
-}
-
-export interface ExaminationFormState {
-  sinhHieuId?: number;
-  tienSuBenhId?: number;
-  lyDoKham: string;
-  loaiTienSu: string;
-  tenTienSu: string;
-  nhietDo: string;
-  mach: string;
-  huyetApTamThu: string;
-  huyetApTamTruong: string;
-  spo2: string;
-  canNang: string;
-  chieuCao: string;
+// types/examination/index.ts
+export interface TienSuBenhDto {
+  id?: number;
+  loaiTienSu: number;
+  ten: string;
+  ghiChu?: string;
 }

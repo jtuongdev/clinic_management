@@ -30,6 +30,20 @@ namespace ClinicManagement.Application.DTOs.LuotKham
         public DateTime CreatedAt { get; set; }
         public bool IsDeleted { get; set; }
 
+        public TreatmentSummaryDto ToTreatmentSummary()
+        {
+            return new TreatmentSummaryDto
+            {
+                LuotKhamId = Id,
+                MaLuotKham = Id.ToString(),
+                Khoa = TenKhoa,
+                Phong = TenPhongKham,
+                TrangThai = TrangThai,
+                NgayKham = NgayKham,
+                SoThuTu = SoThuTu,
+            };
+        }
+
         // Danh sách chẩn đoán
         public List<ChanDoanDto> ChanDoans { get; set; } = new();
 
@@ -41,6 +55,17 @@ namespace ClinicManagement.Application.DTOs.LuotKham
 
         // Đơn thuốc
         public List<DonThuocDto> DonThuocs { get; set; } = new();
+    }
+
+    public class TreatmentSummaryDto
+    {
+        public int LuotKhamId { get; set; }
+        public string MaLuotKham { get; set; } = string.Empty;
+        public string Khoa { get; set; } = string.Empty;
+        public string Phong { get; set; } = string.Empty;
+        public string TrangThai { get; set; } = string.Empty;
+        public DateTime NgayKham { get; set; }
+        public int? SoThuTu { get; set; }
     }
 
     public class ChanDoanDto

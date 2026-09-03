@@ -335,7 +335,6 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         public async Task<LuotKham?> GetDetailByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _context.LuotKhams
-                .AsNoTracking()
                 .Include(l => l.BenhNhan)
                     .ThenInclude(b => b.BenhNhanCoSo)
                 .Include(l => l.BenhNhan)
@@ -356,6 +355,34 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                     .ThenInclude(d => d.ChiTietDonThuocs)
                         .ThenInclude(ct => ct.Item)
                 .FirstOrDefaultAsync(l => l.Id == id && !l.IsDeleted, cancellationToken);
+        }
+        
+        public async Task<LuotKham?> GetTienSinhHieuLuotKhamByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _context.LuotKhams
+                .AsNoTracking()
+                .Include(l => l.BenhNhan)
+                    .ThenInclude(b => b.TienSuBenhs)
+                .Include(l => l.SinhHieus)
+                .Where(l => l.Id == id && !l.IsDeleted)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+
+        public async Task<IReadOnlyList<ICD>> SearchICDAsync(string? keyword, CancellationToken cancellationToken = default)
+        {
+            var query = _context.ICDs.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x => x.MaICD.Contains(normalizedKeyword) || x.TenICD.Contains(normalizedKeyword));
+            }
+
+            return await query
+                .OrderBy(x => x.MaICD)
+                .Take(50)
+                .ToListAsync(cancellationToken);
         }
 
         public async Task<LuotKham?> GetChiTietHoSoDieuTriAsync(int luotKhamId, CancellationToken cancellationToken = default)

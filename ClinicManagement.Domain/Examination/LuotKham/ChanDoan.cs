@@ -13,5 +13,14 @@ namespace ClinicManagement.Domain.Examination
 
         public virtual LuotKham LuotKham { get; set; } = null!;
         public virtual ICD ICD { get; set; } = null!;
+
+        public void Update(string maICD, string tenChanDoan, bool laChanDoanChinh, string ghiChu, int updatedBy)
+        {
+            MaICD = maICD;
+            TenChanDoan = tenChanDoan;
+            LaChanDoanChinh = laChanDoanChinh;
+            GhiChu = ghiChu;
+            MarkAsUpdated(updatedBy);
+        }
     }
 }

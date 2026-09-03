@@ -8,7 +8,7 @@ using ClinicManagement.Domain.Billing;
 
 namespace ClinicManagement.Domain.Repositories
 {
-    public interface ILuotKhamRepository : IRepository<LuotKham>
+    public partial interface ILuotKhamRepository : IRepository<LuotKham>
     {
         Task<(IReadOnlyList<LuotKham> Items, int TotalCount)> GetPagedAsync(
             int pageIndex,
@@ -62,14 +62,17 @@ namespace ClinicManagement.Domain.Repositories
 
         Task<IEnumerable<LuotKham>> GetAllWithIncludesAsync(CancellationToken cancellationToken = default);
         Task<LuotKham?> GetDetailByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<LuotKham?> GetTienSinhHieuLuotKhamByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<ICD>> SearchICDAsync(string? keyword, CancellationToken cancellationToken = default);
         Task<LuotKham?> GetChiTietHoSoDieuTriAsync(int luotKhamId, CancellationToken cancellationToken = default);
         Task<LuotKham?> GetThongTinBenhNhanTrongLuotKhamAsync(int luotKhamId, CancellationToken cancellationToken = default);
         Task<int> GetMaxSoThuTuAsync(DateTime ngayKham, int maKhoa, CancellationToken cancellationToken = default);
+        //luotkham
         IQueryable<LuotKham> GetThongTrangThaiLuotKham(int? maCoSo = null, int? maKhoa = null);
 
         // chỉ định dịch vụ 
         IQueryable<LuotKham> GetThongKeChiDinhDvLuotKham(int? maCoSo = null, int? maKhoa = null);
-
+        //donthuot
         IQueryable<LuotKham> GetThongKeDonThuocLuotKham(int? maCoSo = null, int? maKhoa = null);
 
         // IQueryable<LuotKham> GetThongKeHoaDonLuotKham(int? maCoSo = null, int? maKhoa = null, DateTime? fromDate = null,DateTime? toDate = null,CancellationToken cancellationToken = default);
@@ -81,5 +84,9 @@ namespace ClinicManagement.Domain.Repositories
             int pageIndex = 1,
             int pageSize = 10,
             CancellationToken cancellationToken = default);
+    
+    
+        // Chuan doan luokham
+        Task<IEnumerable<LuotKham>> GetDiagnosePatientInExamination(int id, CancellationToken cancellationToken = default);
     }
 }

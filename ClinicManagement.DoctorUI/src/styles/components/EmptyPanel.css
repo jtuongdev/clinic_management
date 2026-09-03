@@ -25,3 +25,96 @@
     font-weight: 600;
     color: #5a6f7d;
 }
+/* =========================================================
+   SIDEBAR TOGGLE BUTTON
+   ========================================================= */
+.workspace-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f3f53;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: #4d6677;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-toggle:hover {
+  background: #eef2f6;
+  color: #1a73e8;
+}
+
+/* =========================================================
+   SIDEBAR COLLAPSED STATE
+   ========================================================= */
+.exam-sidebar {
+  width: 280px;
+  height: 100%;
+  min-height: 0;
+  flex: 0 0 280px;
+  background: #ffffff;
+  border: 1px solid #e9edf2;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  transition: flex-basis 0.25s ease, width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+}
+
+.exam-sidebar.collapsed {
+  flex-basis: 0;
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Khi sidebar collapsed, layout không còn gap */
+.exam-layout.sidebar-collapsed {
+  gap: 0;
+}
+
+.exam-layout.sidebar-collapsed .exam-main {
+  border-radius: 10px;
+}
+
+.exam-layout.sidebar-collapsed .workspace-bar {
+  border-radius: 10px 10px 0 0;
+}
+
+/* =========================================================
+   RESPONSIVE ADJUSTMENT
+   ========================================================= */
+@media (max-width: 900px) {
+  .exam-sidebar {
+    width: 240px;
+    flex-basis: 240px;
+  }
+}
+
+@media (max-width: 700px) {
+  .exam-sidebar.collapsed {
+    height: 0;
+    max-height: 0;
+    flex-basis: 0;
+  }
+}

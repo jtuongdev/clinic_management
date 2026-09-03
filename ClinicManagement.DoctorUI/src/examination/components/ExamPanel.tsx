@@ -11,8 +11,9 @@ import {
 import { useQueue } from '../hooks/useQueueExamination';
 import { useExam } from '../hooks/useExam';
 import { examinationApi } from '../api/examination.api';
-import type { BenhNhanListDto } from '../types/examination.types';
+import type { BenhNhanListDto } from '../types/examination/queue.types';
 import '../../styles/components/ExamPanel.css';
+import type { ActionToolbarClickContext } from '../types/examination/action-toolbar.types';
 
 const workflowItems = [
   { key: 'patient', label: 'Bệnh nhân', icon: 'fa-user' },
@@ -37,6 +38,7 @@ const ExamPage: React.FC = () => {
   const [selectedPatient, setSelectedPatient] = useState<BenhNhanListDto | null>(null);
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [isStartingExam, setIsStartingExam] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const isSelectedPatientAlreadyExamining =
     !!selectedPatient &&
@@ -108,6 +110,11 @@ const ExamPage: React.FC = () => {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => !prev);
+  };
+
+  // Định nghĩa kiểu cho context của action
   const examActions: ActionToolbarItem<string>[] = [
     {
       key: 'refresh',
@@ -116,7 +123,10 @@ const ExamPage: React.FC = () => {
       color: 'secondary',
       variant: 'outline',
       payload: 'refresh',
-      onClick: ({ payload }) => handleExamAction(payload ?? 'refresh'),
+      onClick: (context: ActionToolbarClickContext<string>) => {
+        const actionKey = context.payload ?? context.action.payload ?? 'refresh';
+        handleExamAction(actionKey);
+      },
     },
     {
       key: 'start-exam',
@@ -125,7 +135,10 @@ const ExamPage: React.FC = () => {
       color: 'success',
       payload: 'start-exam',
       disabled: !selectedPatient || isStartingExam || isSelectedPatientAlreadyExamining,
-      onClick: ({ payload }) => handleExamAction(payload ?? 'start-exam'),
+      onClick: (context: ActionToolbarClickContext<string>) => {
+        const actionKey = context.payload ?? context.action.payload ?? 'start-exam';
+        handleExamAction(actionKey);
+      },
     },
     {
       key: 'pause-exam',
@@ -134,7 +147,10 @@ const ExamPage: React.FC = () => {
       color: 'warning',
       payload: 'pause-exam',
       disabled: !selectedPatient || (!isExamStarted && !isSelectedPatientAlreadyExamining),
-      onClick: ({ payload }) => handleExamAction(payload ?? 'pause-exam'),
+      onClick: (context: ActionToolbarClickContext<string>) => {
+        const actionKey = context.payload ?? context.action.payload ?? 'pause-exam';
+        handleExamAction(actionKey);
+      },
     },
     {
       key: 'cancel-exam',
@@ -143,7 +159,10 @@ const ExamPage: React.FC = () => {
       color: 'danger',
       payload: 'cancel-exam',
       disabled: !selectedPatient,
-      onClick: ({ payload }) => handleExamAction(payload ?? 'cancel-exam'),
+      onClick: (context: ActionToolbarClickContext<string>) => {
+        const actionKey = context.payload ?? context.action.payload ?? 'cancel-exam';
+        handleExamAction(actionKey);
+      },
     },
   ];
 
@@ -164,7 +183,7 @@ const ExamPage: React.FC = () => {
       case 'examination':
         return <ExaminationWorkspace data={examData} luotKhamId={selectedPatient?.id} />;
       case 'treatment':
-        return <TreatmentWorkspace data={examData} onSave={handleSave} onFinish={handleFinish} />;
+        return <TreatmentWorkspace data={examData} luotKhamId={selectedPatient?.id} onSave={handleSave} onFinish={handleFinish} />;
       case 'electronic-record':
         return <ElectronicRecordWorkspace data={examData} onFinish={handleFinish} />;
       default:
@@ -180,7 +199,7 @@ const ExamPage: React.FC = () => {
         </div>
       )}
 
-      <div className="exam-layout">
+      <div className={`exam-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <ExamSidebar
           patients={patients}
           loading={loading}
@@ -188,12 +207,21 @@ const ExamPage: React.FC = () => {
           searchQueue={searchQueue}
           onSearchChange={setSearchQueue}
           onSelectPatient={handleSelectPatient}
+          collapsed={isSidebarCollapsed}
         />
 
         <div className="exam-main">
           <div className="workspace-bar">
             <div className="workspace-title">
-              <i className="fa-solid fa-file-medical"></i> Hồ sơ điều trị
+              <button
+                className="sidebar-toggle"
+                onClick={toggleSidebar}
+                title={isSidebarCollapsed ? 'Mở sidebar' : 'Thu gọn sidebar'}
+              >
+                <i className={`fa-solid ${isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+              </button>
+              <i className="fa-solid fa-file-medical"></i>
+              <span>Hồ sơ điều trị</span>
             </div>
             <div className="workflow">
               {workflowActions.map((item) => (

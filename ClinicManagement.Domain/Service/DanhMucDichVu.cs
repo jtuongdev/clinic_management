@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ClinicManagement.Domain.Service
 {
-    public class DanhMucDichVu : BaseEntity
+    public class DanhMucDichVu : BaseEntity, IAggregateRoot
     {
         public LoaiDichVu LoaiDichVu { get; set; }
         public string Ma { get; set; } = string.Empty;

@@ -1,7 +1,7 @@
 // src/hooks/useQueue.ts
 import { useState, useEffect, useCallback } from 'react';
 import { examinationApi } from '../api/examination.api';
-import type { BenhNhanListDto, UseQueueResult } from '../types/examination.types';
+import type { BenhNhanListDto, UseQueueResult } from '../types/examination';
 import { useAuth } from '../../Auth/context/AuthProvider';
 
 export function useQueue(initialPageIndex: number = 1, initialPageSize: number = 1000): UseQueueResult {

@@ -31,7 +31,7 @@ namespace ClinicManagement.Infrastructure
             services.AddScoped<IPhongKhamRepository, PhongKhamRepository>();
 
             services.AddScoped<ILuotKhamRepository, LuotKhamRepository>();
-            
+            services.AddScoped<IDanhMucDichVuRepository, DanhMucDichVuRepository>();
 
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();

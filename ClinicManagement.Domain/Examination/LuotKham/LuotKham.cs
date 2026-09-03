@@ -141,6 +141,53 @@ namespace ClinicManagement.Domain.Examination
             };
             SinhHieus.Add(sinhHieu);
         }
+
+        public void AddChiDinhDichVu(
+            int maDanhMuc,
+            int maBacSiChiDinh,
+            string? trangThai,
+            int? maNguoiThucHien,
+            string? ketLuan,
+            string? urlKetQua,
+            DateTime? ngayChiDinh = null,
+            DateTime? ngayThucHien = null,
+            DateTime? ngayCoKetQua = null,
+            int createdBy = 0)
+        {
+            if (TrangThai != TrangThaiLuotKham.DANG_KHAM)
+                throw new InvalidOperationException("Chỉ được chỉ định dịch vụ khi lượt khám đang ở trạng thái đang khám.");
+
+            if (maDanhMuc <= 0)
+                throw new ArgumentException("Mã dịch vụ không hợp lệ.");
+
+            ChiDinhDichVus ??= new List<ChiDinhDichVu>();
+
+            var parsedStatus = Enum.TryParse<TrangThaiChiDinhDichVu>(trangThai, true, out var status)
+                ? status
+                : TrangThaiChiDinhDichVu.DaChiDinh;
+
+            var item = new ChiDinhDichVu
+            {
+                MaLuotKham = Id,
+                MaDanhMuc = maDanhMuc,
+                MaBacSiChiDinh = maBacSiChiDinh,
+                MaNguoiThucHien = maNguoiThucHien,
+                CreatedBy = createdBy > 0 ? createdBy : null,
+                TrangThai = parsedStatus,
+                KetLuan = ketLuan ?? string.Empty,
+                UrlKetQua = urlKetQua ?? string.Empty,
+                NgayChiDinh = ngayChiDinh ?? DateTime.UtcNow,
+                NgayThucHien = ngayThucHien,
+                NgayCoKetQua = ngayCoKetQua,
+                LuotKham = this
+            };
+
+            if (parsedStatus == TrangThaiChiDinhDichVu.DaCoKetQua && string.IsNullOrWhiteSpace(item.KetLuan))
+                throw new InvalidOperationException("Kết luận dịch vụ không được để trống khi đã có kết quả.");
+
+            ChiDinhDichVus.Add(item);
+        }
+
         public void AssignDoctor(int maBacSi)
         {
             if (TrangThai != TrangThaiLuotKham.CHO_KHAM)

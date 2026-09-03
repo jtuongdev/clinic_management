@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ElectronicRecordWorkspaceProps } from '../../types/examination.types';
+import type { ElectronicRecordWorkspaceProps } from '../../types/examination/electronic-record.types';
 
 const ElectronicRecordWorkspace: React.FC<ElectronicRecordWorkspaceProps> = ({ data, onFinish }) => {
   const { patient, visit, department, examination, treatment } = data;

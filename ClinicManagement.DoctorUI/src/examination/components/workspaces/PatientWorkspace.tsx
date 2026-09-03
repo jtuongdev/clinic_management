@@ -1,6 +1,6 @@
 import React from 'react';
 import { usePatientWorkspace } from '../../hooks/usePatientWorkspace';
-import type { PatientWorkspaceProps } from '../../types/examination.types';
+import type { PatientWorkspaceProps } from '../../types/examination/treatment.types';
 
 const formatVisitCode = (value?: string | number | null) => {
   if (value === null || value === undefined || value === '') {

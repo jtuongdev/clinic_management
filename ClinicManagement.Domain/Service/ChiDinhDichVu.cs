@@ -12,6 +12,7 @@ namespace ClinicManagement.Domain.Service
         public int MaLuotKham { get; set; }
         public int MaBacSiChiDinh { get; set; }
         public int MaDanhMuc { get; set; }
+        public new int? CreatedBy { get; set; }
         public TrangThaiChiDinhDichVu TrangThai { get; set; }
         public DateTime NgayChiDinh { get; set; }
         public DateTime? NgayTiepNhan { get; set; }
@@ -34,12 +35,50 @@ namespace ClinicManagement.Domain.Service
             ChiTietKetQuaXetNghiems = new List<ChiTietKetQuaXetNghiem>();
         }
 
+        public void Update(
+            int maDanhMuc,
+            int maBacSiChiDinh,
+            int? maNguoiThucHien,
+            string? trangThai,
+            string? ketLuan,
+            string? urlKetQua,
+            DateTime? ngayThucHien,
+            DateTime? ngayCoKetQua,
+            int updatedBy)
+        {
+            if (maDanhMuc <= 0)
+                throw new ArgumentException("Mã dịch vụ không hợp lệ.");
+
+            MaDanhMuc = maDanhMuc;
+            MaBacSiChiDinh = maBacSiChiDinh;
+            MaNguoiThucHien = maNguoiThucHien;
+
+            if (!string.IsNullOrWhiteSpace(trangThai) && Enum.TryParse<TrangThaiChiDinhDichVu>(trangThai, true, out var status))
+                TrangThai = status;
+
+            if (!string.IsNullOrWhiteSpace(ketLuan))
+                KetLuan = ketLuan;
+
+            if (!string.IsNullOrWhiteSpace(urlKetQua))
+                UrlKetQua = urlKetQua;
+
+            if (ngayThucHien.HasValue)
+                NgayThucHien = ngayThucHien.Value;
+
+            if (ngayCoKetQua.HasValue)
+                NgayCoKetQua = ngayCoKetQua.Value;
+
+            if (TrangThai == TrangThaiChiDinhDichVu.DaCoKetQua && string.IsNullOrWhiteSpace(KetLuan))
+                throw new InvalidOperationException("Kết luận dịch vụ không được để trống khi đã có kết quả.");
+
+            MarkAsUpdated(updatedBy);
+        }
+
         public void TiepNhan()
         {
             if (TrangThai != TrangThaiChiDinhDichVu.DaChiDinh)
                 throw new InvalidOperationException("Chỉ có thể tiếp nhận dịch vụ khi đang ở trạng thái vừa chỉ định (DaChiDinh).");
 
-            // SỬA: DA_TIEP_NHAN -> DaTiepNhan
             TrangThai = TrangThaiChiDinhDichVu.DaTiepNhan;
             NgayTiepNhan = DateTime.UtcNow;
         }

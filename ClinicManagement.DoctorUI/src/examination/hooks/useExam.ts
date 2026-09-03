@@ -1,104 +1,148 @@
-import { useState } from 'react';
-import type { ExamWorkspace, QueuePatient, ExamDetail } from '../types';
+import { useState, useEffect } from 'react';
+import type { ExamWorkspace, QueuePatient, ExamDetail } from '../types/examination';
+import { examinationApi } from '../api/examination.api';
 
-// Mock data
-export const mockQueue: QueuePatient[] = [
-  { id: 1, stt: '01', name: 'Nguyễn Thị An', code: 'BN-10234', avatar: 'NA', gender: 'Nữ', age: 39, visit: '1001', department: 'Nội tổng quát', priority: 'urgent', time: '08:12', status: 'exam', alert: true },
-  { id: 2, stt: '02', name: 'Trần Văn Bình', code: 'BN-10789', avatar: 'TB', gender: 'Nam', age: 46, visit: '1002', department: 'Nội tổng quát', priority: 'normal', time: '08:20', status: 'wait', alert: false },
-  { id: 3, stt: '03', name: 'Lê Thị Hoa', code: 'BN-11234', avatar: 'LH', gender: 'Nữ', age: 32, visit: '1003', department: 'Nội tổng quát', priority: 'urgent', time: '08:25', status: 'wait', alert: true },
-  { id: 4, stt: '04', name: 'Phạm Văn Hùng', code: 'BN-09876', avatar: 'PH', gender: 'Nam', age: 59, visit: '1004', department: 'Nội tổng quát', priority: 'normal', time: '08:31', status: 'wait', alert: false },
-  { id: 5, stt: '05', name: 'Đỗ Minh Tâm', code: 'BN-12121', avatar: 'DT', gender: 'Nữ', age: 22, visit: '1005', department: 'Nội tổng quát', priority: 'normal', time: '08:36', status: 'wait', alert: false },
-];
-
-export const mockExamDetail: ExamDetail = {
-  visit: '1023',
-  department: 'Nội tổng quát',
-  room: 'Phòng 03',
-  status: 'Đang xử trí',
-  patient: {
-    name: 'Nguyễn Thị An',
-    code: 'BN-10234',
-    dob: '15/08/1985',
-    gender: 'Nữ',
-    cccd: '079185001234',
-    bhyt: 'HS-1234567890',
-    phone: '0909 123 456',
-    address: 'Ninh Kiều, Cần Thơ'
-  },
-  examination: {
-    reason: 'Ho khan, khó thở nhẹ, sốt 2 ngày.',
-    history: 'Bệnh nhân có tiền sử viêm phổi năm 2024.',
-    vitals: {
-      temperature: '38.5',
-      pulse: '95',
-      bloodPressure: '130/85',
-      respiration: '20',
-      spo2: '96',
-      canNang: '58',
-      chieuCao: '165'
-    },
-    symptoms: 'Ho khan, sốt, khó thở nhẹ.',
-    initialAssessment: 'Nhiễm trùng đường hô hấp cấp, nghi ngờ viêm phổi cộng đồng.'
-  },
-  treatment: {
-    diagnosis: {
-      icd: 'J06.9',
-      name: 'Nhiễm trùng đường hô hấp cấp không đặc hiệu',
-      diagnosis: 'Viêm phổi cộng đồng',
-      type: 'Chính',
-      note: 'Khó thở, ho khan, sốt 38.5°C.',
-      assessment: 'Hình ảnh và triệu chứng phù hợp nhiễm trùng đường hô hấp.'
-    },
-    diagnosisList: [
-      { icd: 'J06.9', name: 'Nhiễm trùng đường hô hấp cấp', type: 'CHÍNH', note: 'Khó thở, ho khan' },
-      { icd: 'R06.0', name: 'Khó thở', type: 'PHỤ', note: 'Triệu chứng kèm theo' },
-    ],
-    services: [
-      { name: 'Chụp X-quang phổi', qty: 1, status: 'ĐÃ CHỈ ĐỊNH', time: '08:24' },
-      { name: 'Xét nghiệm máu tổng quát', qty: 1, status: 'ĐÃ TIẾP NHẬN', time: '08:10' },
-    ],
-    drugs: [
-      { name: 'Ceftriaxon', qty: 1, unit: 'Ống', dose: '1g', freq: 'Mỗi 12h', days: 5, route: 'TM' },
-      { name: 'Azithromycin', qty: 1, unit: 'Viên', dose: '500mg', freq: 'Mỗi 24h', days: 3, route: 'Uống' },
-    ],
-    results: [
-      { indicator: 'WBC', result: '12.5', unit: '10³/µL', ref: '4.0 - 10.0', evaluation: 'Cao' },
-      { indicator: 'CRP', result: '45', unit: 'mg/L', ref: '< 5', evaluation: 'Cao' },
-      { indicator: 'Hemoglobin', result: '13.2', unit: 'g/dL', ref: '12.0 - 16.0', evaluation: 'Bình thường' },
-    ]
+// 1. Chuẩn hóa kiểu trả về của hàm mapStatus để khớp chính xác với kiểu dữ liệu của QueuePatient.status
+const mapStatus = (status: string): 'wait' | 'exam' | 'done' | 'cancel' => {
+  switch (status) {
+    case 'DANG_KHAM': return 'exam';
+    case 'CHO_KHAM': return 'wait';
+    case 'HOAN_THANH': return 'done';
+    case 'DA_HUY': return 'cancel';
+    default: return 'wait';
   }
 };
 
 export const useExam = () => {
   const [activeWorkspace, setActiveWorkspace] = useState<ExamWorkspace>('patient');
-  const [selectedPatient, setSelectedPatient] = useState<QueuePatient | null>(mockQueue[0]);
+  const [selectedPatient, setSelectedPatient] = useState<QueuePatient | null>(null);
   const [searchQueue, setSearchQueue] = useState('');
-  const [examData, setExamData] = useState<ExamDetail>(mockExamDetail);
+  const [examData, setExamData] = useState<ExamDetail>({
+    visit: '',
+    department: '',
+    room: '',
+    status: '',
+    patient: {
+      name: '',
+      code: '',
+      dob: '',
+      gender: '',
+      cccd: '',
+      bhyt: '',
+      phone: '',
+      address: ''
+    },
+    examination: {
+      reason: '',
+      history: '',
+      vitals: {
+        temperature: '',
+        pulse: '',
+        bloodPressure: '',
+        respiration: '',
+        spo2: '',
+        canNang: '',
+        chieuCao: ''
+      },
+      symptoms: '',
+      initialAssessment: ''
+    },
+    treatment: {
+      diagnosis: {
+        icd: '',
+        name: '',
+        diagnosis: '',
+        type: '',
+        note: '',
+        assessment: ''
+      },
+      diagnosisList: [],
+      services: [],
+      drugs: [],
+      results: []
+    }
+  });
+  const [queue, setQueue] = useState<QueuePatient[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // TODO: Gọi API lấy danh sách hàng đợi
-  // TODO: Gọi API lấy chi tiết bệnh nhân khi chọn
+  // Hàm lấy danh sách hàng đợi từ API
+  const fetchQueue = async (maBacSi: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await examinationApi.getHangDoi({ maBacSi });
+      
+      if (response.data?.success && response.data?.data?.items) {
+        // 2. Định nghĩa rõ ràng kiểu dữ liệu QueuePatient[] cho mảng sau khi map
+        const mapped: QueuePatient[] = response.data.data.items.map((item: any) => ({
+          // Đảm bảo ép kiểu id về dạng number theo đúng interface QueuePatient
+          id: Number(item.id), 
+          stt: item.soThuTu?.toString() || '',
+          name: item.hoTen || '',
+          code: item.maBenhNhanNoiBo || '',
+          avatar: '',
+          gender: item.gioiTinh || '',
+          age: item.tuoi || 0,
+          visit: item.maLuotKhamGanNhat || '',
+          department: item.khoa || '',
+          // Khóa chặt kiểu chuỗi 'normal' thành Literal Type bằng "as const"
+          priority: 'normal' as const, 
+          time: item.thoiGianBatDauKham || '',
+          status: mapStatus(item.trangThaiLuotKham),
+          alert: false,
+        }));
+        setQueue(mapped);
+      } else {
+        setError(response.data?.message || 'Không thể tải hàng đợi');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi kết nối');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredQueue = mockQueue.filter(p =>
+  // Hàm lấy chi tiết bệnh nhân
+  const fetchPatientDetail = async (luotKhamId: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // TODO: Gọi API lấy chi tiết lượt khám
+      console.log(`Fetch detail for lượt khám ${luotKhamId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi tải chi tiết');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lọc hàng đợi theo từ khóa
+  const filteredQueue = queue.filter(p =>
     p.name.toLowerCase().includes(searchQueue.toLowerCase()) ||
     p.code.toLowerCase().includes(searchQueue.toLowerCase())
   );
 
+  const handleSelectPatient = (patient: QueuePatient) => {
+    setSelectedPatient(patient);
+    if (patient.id) {
+      fetchPatientDetail(patient.id);
+    }
+  };
+
   const handleSave = () => {
-    // TODO: Gọi API lưu xử trí
     alert('Đã lưu xử trí cho lượt khám ' + examData.visit);
   };
 
   const handleFinish = () => {
     if (confirm('Bạn chắc chắn muốn hoàn tất lượt khám này?')) {
-      // TODO: Gọi API hoàn tất lượt khám
       alert('Lượt khám đã được hoàn tất.');
     }
   };
 
-  const handleSelectPatient = (patient: QueuePatient) => {
-    setSelectedPatient(patient);
-    // TODO: Gọi API lấy chi tiết bệnh nhân
-  };
+  useEffect(() => {
+    fetchQueue(1);
+  }, []);
 
   return {
     activeWorkspace,
@@ -112,5 +156,7 @@ export const useExam = () => {
     filteredQueue,
     handleSave,
     handleFinish,
+    loading,
+    error,
   };
 };

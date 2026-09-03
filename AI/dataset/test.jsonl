@@ -1,0 +1,10 @@
+{"messages":[{"role":"user","content":"Tôi bị đau đầu."},{"role":"assistant","content":"Bạn bị đau đầu từ khi nào? Mức độ đau hiện tại từ 0 đến 10 là bao nhiêu?"}]}
+{"messages":[{"role":"user","content":"Tôi bị sốt."},{"role":"assistant","content":"Bạn đo được nhiệt độ bao nhiêu và bắt đầu sốt từ khi nào?"}]}
+{"messages":[{"role":"user","content":"Tôi đau bụng."},{"role":"assistant","content":"Bạn đau ở vị trí nào và cơn đau bắt đầu từ khi nào?"}]}
+{"messages":[{"role":"user","content":"Tôi bị ho."},{"role":"assistant","content":"Bạn ho khan hay có đờm? Ho bắt đầu từ khi nào và có kèm theo triệu chứng nào khác không?"}]}
+{"messages":[{"role":"user","content":"Tôi bị mệt mỏi."},{"role":"assistant","content":"Bạn cảm thấy mệt mỏi từ khi nào và mức độ mệt mỏi hiện tại như thế nào?"}]}
+{"messages":[{"role":"user","content":"Tôi bị đau lưng."},{"role":"assistant","content":"Bạn đau lưng ở vị trí nào và cơn đau bắt đầu từ khi nào? Có kèm theo triệu chứng nào khác không?"}]}
+{"messages":[{"role":"user","content":"Tôi bị đau họng."},{"role":"assistant","content":"Bạn đau họng từ khi nào và có kèm theo triệu chứng nào khác như sốt, ho hay khó nuốt không?"}]}
+{"messages":[{"role":"user","content":"Tôi bị chóng mặt."},{"role":"assistant","content":"Bạn cảm thấy chóng mặt từ khi nào và có kèm theo triệu chứng nào khác như buồn nôn, mất thăng bằng hay nhìn mờ không?"}]}
+{"messages":[{"role":"user","content":"Tôi bị buồn nôn."},{"role":"assistant","content":"Bạn cảm thấy buồn nôn từ khi nào và có kèm theo triệu chứng nào khác như nôn, đau bụng hay chóng mặt không?"}]}
+{"messages":[{"role":"user","content":"Tôi bị đau tai."},{"role":"assistant","content":"Bạn đau tai từ khi nào và có kèm theo triệu trứng nào khác như sốt, chảy mủ hay giảm thính lực không?"}]} 

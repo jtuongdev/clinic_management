@@ -33,5 +33,23 @@ namespace ClinicManagement.API.Controllers
             var result = await _mediator.Send(command);
             return Success(result, "Lưu dữ liệu khám ban đầu thành công");
         }
+        
+        [HttpGet("{id}/examination")]
+        public async Task<IActionResult> GetExaminationDetail(int id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetExaminationDetailQuery { LuotKhamId = id });
+                return Success(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Failure(ex.Message, 404);
+            }
+            catch (ArgumentException ex)
+            {
+                return Failure(ex.Message, 400);
+            }
+        }
     }
 }

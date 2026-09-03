@@ -1,11 +1,10 @@
 import './ActionToolbar.css';
-import type { ActionToolbarProps } from '../types/examination.types';
+import type { ActionToolbarProps } from '../types/examination/action-toolbar.types';
 
 export type {
   ActionToolbarClickContext,
   ActionToolbarItem,
-} from '../types/examination.types';
-
+} from '../types/examination/action-toolbar.types';
 const ActionToolbar = <T,>({
   actions,
   align = 'right',

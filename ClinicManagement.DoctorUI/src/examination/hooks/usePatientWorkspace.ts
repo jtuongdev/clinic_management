@@ -3,7 +3,7 @@ import { patientWorkspaceApi } from '../api/patientWorkspace.api';
 import type {
   ThongTinBenhNhanTrongLuotKhamDto,
   UsePatientWorkspaceOptions,
-} from '../types/examination.types';
+} from '../types/examination/index.ts';
 
 export const usePatientWorkspace = ({ luotKhamId, fallbackData }: UsePatientWorkspaceOptions) => {
   const [data, setData] = useState<ThongTinBenhNhanTrongLuotKhamDto | null>(

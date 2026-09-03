@@ -1,14 +1,16 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using ClinicManagement.Application.Features.LuotKham.Queries;
+using System;
 using System.Threading.Tasks;
+using ClinicManagement.Application.DTOs.LuotKham;
+using ClinicManagement.Application.Features.LuotKham.Commands.ChiDinhDichVu;
+using ClinicManagement.Application.Features.LuotKham.Queries.ChiDinhDichVu;
+using ClinicManagement.Application.Features.LuotKham.Queries;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers
 {
-    public partial class LuotKhamController : BaseController{
-
-        
+    public partial class LuotKhamController : BaseController
+    {
         [HttpGet("thong-ke-chi-dinh")]
         public async Task<IActionResult> GetThongKeChiDinh(
             [FromQuery] int? maCoSo,
@@ -23,6 +25,7 @@ namespace ClinicManagement.API.Controllers
             var result = await _mediator.Send(query);
             return Success(result);
         }
+
         [HttpGet("danh-sach-chi-dinh")]
         public async Task<IActionResult> GetChiDinhDichVuList(
             [FromQuery] int pageIndex = 1,
@@ -49,6 +52,57 @@ namespace ClinicManagement.API.Controllers
             };
 
             var result = await _mediator.Send(query);
+            return Success(result);
+        }
+
+        [HttpGet("{luotKhamId}/chi-dinh-dich-vu")]
+        public async Task<IActionResult> GetChiDinhDichVuByLuotKham(int luotKhamId)
+        {
+            var query = new GetChiDinhDichVuByLuotKhamQuery { LuotKhamId = luotKhamId };
+            var result = await _mediator.Send(query);
+            return Success(result);
+        }
+
+        [HttpPost("{luotKhamId}/chi-dinh-dich-vu")]
+        public async Task<IActionResult> CreateChiDinhDichVu(int luotKhamId, [FromBody] ChiDinhDichVuRequest request)
+        {
+            var command = new CreateChiDinhDichVuCommand
+            {
+                LuotKhamId = luotKhamId,
+                CreatedBy = CurrentUserId,
+                Data = request
+            };
+
+            var result = await _mediator.Send(command);
+            return Success(result);
+        }
+
+        [HttpPut("{luotKhamId}/chi-dinh-dich-vu/{chiDinhDichVuId}")]
+        public async Task<IActionResult> UpdateChiDinhDichVu(int luotKhamId, int chiDinhDichVuId, [FromBody] ChiDinhDichVuRequest request)
+        {
+            var command = new UpdateChiDinhDichVuCommand
+            {
+                LuotKhamId = luotKhamId,
+                ChiDinhDichVuId = chiDinhDichVuId,
+                UpdatedBy = CurrentUserId,
+                Data = request
+            };
+
+            var result = await _mediator.Send(command);
+            return Success(result);
+        }
+
+        [HttpDelete("{luotKhamId}/chi-dinh-dich-vu/{chiDinhDichVuId}")]
+        public async Task<IActionResult> DeleteChiDinhDichVu(int luotKhamId, int chiDinhDichVuId)
+        {
+            var command = new DeleteChiDinhDichVuCommand
+            {
+                LuotKhamId = luotKhamId,
+                ChiDinhDichVuId = chiDinhDichVuId,
+                DeletedBy = CurrentUserId
+            };
+
+            var result = await _mediator.Send(command);
             return Success(result);
         }
     }

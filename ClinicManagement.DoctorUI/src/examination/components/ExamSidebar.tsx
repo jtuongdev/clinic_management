@@ -1,21 +1,24 @@
 import React from 'react';
-import type { ExamSidebarProps } from '../types/examination.types';
+import type { ExamSidebarProps } from '../types/examination/queue.types';
 import '../../styles/components/ExamPanel.css';
 
-const ExamSidebar: React.FC<ExamSidebarProps> = ({
+interface ExamSidebarExtendedProps extends ExamSidebarProps {
+  collapsed?: boolean;
+}
+
+const ExamSidebar: React.FC<ExamSidebarExtendedProps> = ({
   patients = [],
   selectedPatient,
   searchQueue,
   onSearchChange,
   onSelectPatient,
   loading = false,
+  collapsed = false,
 }) => {
-  // Lọc danh sách an toàn tuyệt đối chống lỗi null/undefined từ API
   const filteredPatients = (patients || []).filter((p) => {
     const hoTenStr = p?.hoTen || '';
     const maBNStr = p?.maBenhNhanNoiBo || '';
     const searchStr = searchQueue || '';
-
     return (
       hoTenStr.toLowerCase().includes(searchStr.toLowerCase()) ||
       maBNStr.toLowerCase().includes(searchStr.toLowerCase())
@@ -23,7 +26,7 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
   });
 
   return (
-    <div className="exam-sidebar">
+    <div className={`exam-sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="exam-sidebar-header">
         <h4><i className="fa-solid fa-list-ol"></i> Hàng đợi khám</h4>
         <span className="badge-count">{filteredPatients.length} bệnh nhân</span>

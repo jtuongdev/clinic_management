@@ -55,6 +55,14 @@ namespace ClinicManagement.API.Controllers
             var result = await _mediator.Send(query);
             return Success(result);
         }
+
+        [HttpGet("{id}/summary")]
+        public async Task<IActionResult> GetTreatmentSummary(int id)
+        {
+            var query = new GetLuotKhamByIdQuery { Id = id };
+            var result = await _mediator.Send(query);
+            return Success(result.ToTreatmentSummary());
+        }
         // GET: api/luotkham/thong-ke
         [HttpGet("thong-ke")]
         public async Task<IActionResult> ThongKe(
