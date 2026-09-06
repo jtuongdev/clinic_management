@@ -112,8 +112,8 @@ export const menuGroups: MenuGroup[] = [
       },
     ],
   },
-  {
-    label: 'Kho & Hệ thống',
+    {
+    label: 'Nhân sự & Lịch làm việc',
     items: [
       {
         key: 'employees',
@@ -124,9 +124,14 @@ export const menuGroups: MenuGroup[] = [
       {
         key: 'schedules',
         icon: <CalendarCheck size={18} />,
-        label: 'Lịch làm việc',
+        label: 'Lịch trực & Chấm công',
         path: '/schedules',
       },
+    ],
+  },
+  {
+    label: 'Kho & Hệ thống',
+    items: [
       {
         key: 'inventory',
         icon: <Package size={18} />,
@@ -219,6 +224,10 @@ export const getSubMenuItems = (key: string): SubMenuItem[] => {
       { key: 'report-medical', label: 'Báo cáo khám', path: '/reports/medical' },
       { key: 'report-finance', label: 'Báo cáo tài chính', path: '/reports/finance' },
       { key: 'report-inventory', label: 'Báo cáo tồn kho', path: '/reports/inventory' },
+    ],
+    employees: [
+      { key: 'employee-list', label: 'Danh sách nhân viên', path: '/employees' },
+      { key: 'employee-payroll', label: 'Quản lý tính lương', path: '/employees?tab=payroll' },
     ],
   };
   return subMenus[key] || [];

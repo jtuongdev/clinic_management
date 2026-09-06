@@ -10,7 +10,9 @@ namespace ClinicManagement.Domain.Repositories
             DateTime fromDate,
             DateTime toDate,
             int? maNhanVien = null,
+            int? maKhoa = null,
             CancellationToken cancellationToken = default);
+        Task<bool> IsEmployeeAssignedToDepartmentAsync(int maNhanVien, int maKhoa, DateTime ngayLam, CancellationToken cancellationToken = default);
         Task<bool> HasConflictAsync(
             int maNhanVien,
             int maCaTruc,
@@ -20,6 +22,22 @@ namespace ClinicManagement.Domain.Repositories
         Task AddAsync(LichLamViec entity, CancellationToken cancellationToken = default);
         void Update(LichLamViec entity);
         void SoftDelete(LichLamViec entity, int deletedBy);
+        Task<IReadOnlyList<LichLamViecCoDinh>> GetFixedSchedulesAsync(int? maNhanVien, int? maKhoa, CancellationToken cancellationToken = default);
+        Task<LichLamViecCoDinh?> GetFixedScheduleByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task AddFixedScheduleAsync(LichLamViecCoDinh entity, CancellationToken cancellationToken = default);
+        Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation, CancellationToken cancellationToken = default);
+        void UpdateFixedSchedule(LichLamViecCoDinh entity);
+        void SoftDeleteFixedSchedule(LichLamViecCoDinh entity, int deletedBy);
+        Task<bool> DailyScheduleExistsAsync(int maNhanVien, int maCaTruc, DateTime ngayLam, CancellationToken cancellationToken = default);
+        Task<bool> HasAttendanceAsync(int scheduleId, CancellationToken cancellationToken = default);
+        Task<bool> IsPeriodLockedAsync(DateTime date, CancellationToken cancellationToken = default);
+        Task<bool> HasFixedScheduleConflictAsync(int maNhanVien, DayOfWeek thuTrongTuan, int maCaTruc,
+            DateTime tuNgay, DateTime? denNgay, int? excludeId = null,
+            CancellationToken cancellationToken = default);
+        Task<int> MarkApprovedLeaveAsync(int maNhanVien, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
+        Task<int> RestoreCancelledLeaveAsync(int maNhanVien, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
+        Task AddAdjustmentAsync(LichLamViecDieuChinh adjustment, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<LichLamViecDieuChinh>> GetAdjustmentsAsync(int scheduleId, CancellationToken cancellationToken = default);
         IUnitOfWork UnitOfWork { get; }
     }
 }

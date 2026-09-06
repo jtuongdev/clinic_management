@@ -19,6 +19,9 @@ namespace ClinicManagement.Domain.Identity
         public string ChuyenKhoa { get; private set; } = string.Empty;
         public string SoHanhNghe { get; private set; } = string.Empty;
         public bool IsActive { get; private set; }
+        public decimal LuongCoBan { get; private set; }
+        public decimal PhuCapCoDinh { get; private set; }
+        public decimal TyLeBaoHiem { get; private set; } = 10.5m;
         public DateTime? LastLogin { get; private set; }
 
         public virtual ChucVu? ChucVu { get; private set; }
@@ -35,7 +38,7 @@ namespace ClinicManagement.Domain.Identity
 
         public NhanVien(string username, string passwordHash, string hoTen, DateTime? ngaySinh,
                        GioiTinh gioiTinh, string email, string dienThoai, int? maChucVu,
-                       string chuyenKhoa = "", string soHanhNghe = "")
+                       string chuyenKhoa = "", string soHanhNghe = "", decimal luongCoBan = 0)
         {
             if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username không được để trống.", nameof(username));
             if (string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentException("Password hash không được để trống.", nameof(passwordHash));
@@ -51,6 +54,8 @@ namespace ClinicManagement.Domain.Identity
             MaChucVu = maChucVu;
             ChuyenKhoa = chuyenKhoa ?? string.Empty;
             SoHanhNghe = soHanhNghe ?? string.Empty;
+            if (luongCoBan < 0) throw new ArgumentOutOfRangeException(nameof(luongCoBan));
+            LuongCoBan = luongCoBan;
             IsActive = true;
             
             NhanVienVaiTro = new List<NhanVienVaiTro>();
@@ -74,6 +79,20 @@ namespace ClinicManagement.Domain.Identity
             MaChucVu = maChucVu;
             ChuyenKhoa = chuyenKhoa ?? string.Empty;
             SoHanhNghe = soHanhNghe ?? string.Empty;
+        }
+
+        public void SetSalary(decimal luongCoBan)
+        {
+            if (luongCoBan < 0) throw new ArgumentOutOfRangeException(nameof(luongCoBan));
+            LuongCoBan = luongCoBan;
+        }
+
+        public void SetPayrollSettings(decimal phuCapCoDinh, decimal tyLeBaoHiem = 10.5m)
+        {
+            if (phuCapCoDinh < 0) throw new ArgumentOutOfRangeException(nameof(phuCapCoDinh));
+            if (tyLeBaoHiem is < 0 or > 100) throw new ArgumentOutOfRangeException(nameof(tyLeBaoHiem));
+            PhuCapCoDinh = phuCapCoDinh;
+            TyLeBaoHiem = tyLeBaoHiem;
         }
 
         public void SetPassword(string hashedPassword)

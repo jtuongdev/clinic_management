@@ -14,7 +14,6 @@ import { MainLayout } from '../shared/components/layouts/MainLayout';
 import { patientRoutes } from '../patient/routes';
 import { examinationRoutes } from '../examination/routes';
 import { employeeRoutes } from '../employee/routes';
-import { scheduleRoutes } from '../schedule/routes';
 
 const protectedRoutes = [
   {
@@ -26,7 +25,6 @@ const protectedRoutes = [
   ...patientRoutes,
   ...examinationRoutes,
   ...employeeRoutes,
-  ...scheduleRoutes,
 ];
 
 const router = createBrowserRouter([

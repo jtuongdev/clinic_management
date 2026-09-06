@@ -8,7 +8,11 @@ export const Sidebar = () => {
   const location = useLocation();
   const { collapsed, openKeys, mobileOpen, toggleOpenKey, toggleCollapsed, setMobileOpen } = useUIStore();
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) => {
+    const [pathname, search] = path.split('?');
+    const pathMatches = location.pathname === pathname || location.pathname.startsWith(pathname + '/');
+    return pathMatches && (!search || location.search === `?${search}`);
+  };
   const isSubActive = (items: { path: string }[]) => items.some((item) => isActive(item.path));
 
   const handleMenuClick = (path: string, key: string) => {

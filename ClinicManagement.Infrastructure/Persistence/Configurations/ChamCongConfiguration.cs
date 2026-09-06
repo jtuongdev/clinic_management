@@ -15,6 +15,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(cc => cc.TrangThai)
+                .HasConversion<string>()
                 .IsRequired()
                 .HasMaxLength(30);
 
@@ -26,9 +27,14 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(cc => cc.MaNhanVien)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(cc => new { cc.MaNhanVien, cc.NgayChamCong })
-                .IsUnique();
+            builder.HasOne(cc => cc.LichLamViec)
+                .WithOne()
+                .HasForeignKey<ChamCong>(cc => cc.MaLichLamViec)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasIndex(cc => cc.MaLichLamViec)
+                .IsUnique()
+                .HasFilter("[MaLichLamViec] IS NOT NULL");
             builder.HasQueryFilter(cc => !cc.IsDeleted);
         }
     }

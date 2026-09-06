@@ -18,6 +18,8 @@ namespace ClinicManagement.Domain.Repositories
             string? keyword,
             int? maChucVu,
             bool? isActive,
+            int? maKhoa,
+            DateTime? ngay,
             int pageIndex,
             int pageSize,
             CancellationToken cancellationToken = default);
@@ -25,6 +27,8 @@ namespace ClinicManagement.Domain.Repositories
             string? keyword,
             int? maChucVu,
             bool? isActive,
+            int? maKhoa,
+            DateTime? ngay,
             CancellationToken cancellationToken = default);
         
         Task<IReadOnlyList<NhanVien>> GetActiveDoctorsAsync();

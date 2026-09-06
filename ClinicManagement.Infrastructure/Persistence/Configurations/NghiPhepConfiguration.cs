@@ -18,6 +18,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(np => np.LoaiNghi)
+                .HasConversion<string>()
                 .IsRequired()
                 .HasMaxLength(30);
 
@@ -26,6 +27,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasMaxLength(500);
 
             builder.Property(np => np.TrangThai)
+                .HasConversion<string>()
                 .IsRequired()
                 .HasMaxLength(30);
 

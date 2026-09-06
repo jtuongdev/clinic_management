@@ -936,14 +936,29 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<double>("GioLamThucTe")
+                        .HasColumnType("float");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<int?>("LoaiNghi")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaLichLamViec")
+                        .HasColumnType("int");
 
                     b.Property<int>("MaNhanVien")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("NgayChamCong")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("PhutDiMuon")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PhutVeSom")
+                        .HasColumnType("int");
 
                     b.Property<string>("TrangThai")
                         .IsRequired()
@@ -958,8 +973,11 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaNhanVien", "NgayChamCong")
-                        .IsUnique();
+                    b.HasIndex("MaLichLamViec")
+                        .IsUnique()
+                        .HasFilter("[MaLichLamViec] IS NOT NULL");
+
+                    b.HasIndex("MaNhanVien");
 
                     b.ToTable("ChamCong", (string)null);
                 });
@@ -1011,6 +1029,140 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("ChucVu", (string)null);
                 });
 
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.DieuChinhChamCong", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CheckInCu")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckInMoi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckOutCu")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckOutMoi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GhiChuDuyet")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LyDo")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MaChamCong")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaNhanVien")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NguoiDuyet")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ThoiGianDuyet")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaNhanVien");
+
+                    b.HasIndex("MaChamCong", "TrangThai");
+
+                    b.ToTable("DieuChinhChamCong", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.KyChamCong", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DaKhoa")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DenNgay")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("NguoiKhoa")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ThoiGianKhoa")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("TuNgay")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TuNgay", "DenNgay")
+                        .IsUnique();
+
+                    b.ToTable("KyChamCong", (string)null);
+                });
+
             modelBuilder.Entity("ClinicManagement.Domain.Identity.LichLamViec", b =>
                 {
                     b.Property<int>("Id")
@@ -1042,11 +1194,30 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int>("MaCaTruc")
                         .HasColumnType("int");
 
+                    b.Property<int>("MaKhoa")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaLichLamViecCoDinh")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaNhanVien")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaPhongKham")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("NgayLam")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("NguonLich")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1058,13 +1229,19 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasIndex("MaCaTruc");
 
+                    b.HasIndex("MaLichLamViecCoDinh");
+
+                    b.HasIndex("MaPhongKham");
+
+                    b.HasIndex("MaKhoa", "NgayLam");
+
                     b.HasIndex("MaNhanVien", "MaCaTruc", "NgayLam")
                         .IsUnique();
 
                     b.ToTable("LichLamViec", (string)null);
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichTruc", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichLamViecCoDinh", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1084,6 +1261,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("DenNgay")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("GhiChu")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -1095,10 +1275,19 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int>("MaCaTruc")
                         .HasColumnType("int");
 
+                    b.Property<int>("MaKhoa")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaNhanVien")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("NgayTruc")
+                    b.Property<int?>("MaPhongKham")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ThuTrongTuan")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TuNgay")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1111,10 +1300,85 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasIndex("MaCaTruc");
 
-                    b.HasIndex("MaNhanVien", "MaCaTruc", "NgayTruc")
-                        .IsUnique();
+                    b.HasIndex("MaKhoa");
 
-                    b.ToTable("LichTruc", (string)null);
+                    b.HasIndex("MaPhongKham");
+
+                    b.HasIndex("MaNhanVien", "MaKhoa", "MaCaTruc", "ThuTrongTuan", "TuNgay");
+
+                    b.ToTable("LichLamViecCoDinh", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichLamViecDieuChinh", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CaCu")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CaMoi")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LyDo")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MaLichLamViec")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NguoiThucHien")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PhongCu")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PhongMoi")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ThoiDiem")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TrangThaiCu")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TrangThaiMoi")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaLichLamViec", "ThoiDiem");
+
+                    b.ToTable("LichLamViecDieuChinh", (string)null);
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.LoaiCa", b =>
@@ -1298,6 +1562,10 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("LuongCoBan")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int?>("MaChucVu")
                         .HasColumnType("int");
 
@@ -1312,10 +1580,16 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int?>("PhongKhamId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("PhuCapCoDinh")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("SoHanhNghe")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("TyLeBaoHiem")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1449,64 +1723,6 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.HasIndex("MaVaiTro");
 
                     b.ToTable("NhanVienVaiTro", (string)null);
-                });
-
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.PhanCong", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("GhiChu")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LoaiCongViec")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("MaDoiTuong")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaNhanVien")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ThoiGianBatDau")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ThoiGianKetThuc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedBy")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MaNhanVien", "ThoiGianBatDau", "ThoiGianKetThuc");
-
-                    b.ToTable("PhanCong", (string)null);
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.PhanQuyenCoSo", b =>
@@ -2622,9 +2838,21 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<decimal>("KhauTruDiMuonVeSom")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("KhauTruNghiKhongLuong")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("LuongCoBan")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("LuongTheoNgayCong")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("MaKyChamCong")
+                        .HasColumnType("int");
 
                     b.Property<int>("MaKyLuong")
                         .HasColumnType("int");
@@ -2642,6 +2870,12 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<decimal>("ThucLinh")
                         .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TienBaoHiem")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TienTangCa")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TongKhauTru")
@@ -2752,6 +2986,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MaKyChamCong")
+                        .HasColumnType("int");
+
                     b.Property<int>("Nam")
                         .HasColumnType("int");
 
@@ -2773,6 +3010,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MaKyChamCong");
 
                     b.HasIndex("Thang", "Nam")
                         .IsUnique();
@@ -3568,11 +3807,37 @@ namespace ClinicManagement.Infrastructure.Migrations
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.ChamCong", b =>
                 {
+                    b.HasOne("ClinicManagement.Domain.Identity.LichLamViec", "LichLamViec")
+                        .WithOne()
+                        .HasForeignKey("ClinicManagement.Domain.Identity.ChamCong", "MaLichLamViec")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NhanVien")
                         .WithMany()
                         .HasForeignKey("MaNhanVien")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("LichLamViec");
+
+                    b.Navigation("NhanVien");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.DieuChinhChamCong", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Identity.ChamCong", "ChamCong")
+                        .WithMany()
+                        .HasForeignKey("MaChamCong")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NhanVien")
+                        .WithMany()
+                        .HasForeignKey("MaNhanVien")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChamCong");
 
                     b.Navigation("NhanVien");
                 });
@@ -3585,34 +3850,82 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Facility.Khoa", "Khoa")
+                        .WithMany()
+                        .HasForeignKey("MaKhoa")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Identity.LichLamViecCoDinh", "LichLamViecCoDinh")
+                        .WithMany("LichLamViecs")
+                        .HasForeignKey("MaLichLamViecCoDinh")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NhanVien")
                         .WithMany()
                         .HasForeignKey("MaNhanVien")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Facility.PhongKham", "PhongKham")
+                        .WithMany()
+                        .HasForeignKey("MaPhongKham")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("CaTruc");
 
+                    b.Navigation("Khoa");
+
+                    b.Navigation("LichLamViecCoDinh");
+
                     b.Navigation("NhanVien");
+
+                    b.Navigation("PhongKham");
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichTruc", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichLamViecCoDinh", b =>
                 {
                     b.HasOne("ClinicManagement.Domain.Identity.CaTruc", "CaTruc")
-                        .WithMany("LichTrucs")
+                        .WithMany()
                         .HasForeignKey("MaCaTruc")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Facility.Khoa", "Khoa")
+                        .WithMany()
+                        .HasForeignKey("MaKhoa")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NhanVien")
                         .WithMany()
                         .HasForeignKey("MaNhanVien")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Facility.PhongKham", "PhongKham")
+                        .WithMany()
+                        .HasForeignKey("MaPhongKham")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("CaTruc");
 
+                    b.Navigation("Khoa");
+
                     b.Navigation("NhanVien");
+
+                    b.Navigation("PhongKham");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichLamViecDieuChinh", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Identity.LichLamViec", "LichLamViec")
+                        .WithMany()
+                        .HasForeignKey("MaLichLamViec")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("LichLamViec");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.NghiPhep", b =>
@@ -3683,17 +3996,6 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("NhanVien");
 
                     b.Navigation("VaiTro");
-                });
-
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.PhanCong", b =>
-                {
-                    b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NhanVien")
-                        .WithMany()
-                        .HasForeignKey("MaNhanVien")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("NhanVien");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.PhanQuyenCoSo", b =>
@@ -3989,6 +4291,14 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("BangLuong");
                 });
 
+            modelBuilder.Entity("ClinicManagement.Domain.Payroll.KyLuong", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Identity.KyChamCong", null)
+                        .WithMany()
+                        .HasForeignKey("MaKyChamCong")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("ClinicManagement.Domain.Prescription.ChiTietDonThuoc", b =>
                 {
                     b.HasOne("ClinicManagement.Domain.Prescription.DonThuoc", "DonThuoc")
@@ -4180,13 +4490,16 @@ namespace ClinicManagement.Infrastructure.Migrations
             modelBuilder.Entity("ClinicManagement.Domain.Identity.CaTruc", b =>
                 {
                     b.Navigation("LichLamViecs");
-
-                    b.Navigation("LichTrucs");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.ChucVu", b =>
                 {
                     b.Navigation("NhanViens");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Identity.LichLamViecCoDinh", b =>
+                {
+                    b.Navigation("LichLamViecs");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Identity.LoaiCa", b =>

@@ -22,13 +22,35 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(llv => llv.MaNhanVien)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(llv => llv.Khoa)
+                .WithMany()
+                .HasForeignKey(llv => llv.MaKhoa)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(llv => llv.CaTruc)
                 .WithMany(ct => ct.LichLamViecs)
                 .HasForeignKey(llv => llv.MaCaTruc)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(llv => llv.PhongKham)
+                .WithMany()
+                .HasForeignKey(llv => llv.MaPhongKham)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(llv => llv.LichLamViecCoDinh)
+                .WithMany(fixedSchedule => fixedSchedule.LichLamViecs)
+                .HasForeignKey(llv => llv.MaLichLamViecCoDinh)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(llv => llv.NguonLich).HasMaxLength(20).IsRequired();
+            builder.Property(llv => llv.TrangThai)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
             builder.HasIndex(llv => new { llv.MaNhanVien, llv.MaCaTruc, llv.NgayLam })
                 .IsUnique();
+            builder.HasIndex(llv => new { llv.MaKhoa, llv.NgayLam });
 
             builder.HasQueryFilter(llv => !llv.IsDeleted);
         }

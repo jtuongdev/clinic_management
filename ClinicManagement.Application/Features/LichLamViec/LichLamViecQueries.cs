@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ClinicManagement.Application.Features.LichLamViec
 {
-    public record GetLichLamViecQuery(DateTime FromDate, DateTime ToDate, int? MaNhanVien = null)
+    public record GetLichLamViecQuery(DateTime FromDate, DateTime ToDate, int? MaNhanVien = null, int? MaKhoa = null)
         : IRequest<IReadOnlyList<LichLamViecDto>>;
 
     public class GetLichLamViecHandler : IRequestHandler<GetLichLamViecQuery, IReadOnlyList<LichLamViecDto>>
@@ -16,7 +16,7 @@ namespace ClinicManagement.Application.Features.LichLamViec
         {
             if (query.ToDate.Date < query.FromDate.Date)
                 throw new ArgumentException("Khoảng ngày không hợp lệ.");
-            var result = await repository.GetByDateRangeAsync(query.FromDate, query.ToDate, query.MaNhanVien, cancellationToken);
+            var result = await repository.GetByDateRangeAsync(query.FromDate, query.ToDate, query.MaNhanVien, query.MaKhoa, cancellationToken);
             return result.Select(CreateLichLamViecHandler.Map).ToList();
         }
     }

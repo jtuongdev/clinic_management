@@ -14,6 +14,9 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             builder.Property(k => k.TrangThai)
                 .IsRequired()
                 .HasMaxLength(30);
+            builder.Property(k => k.MaKyChamCong);
+            builder.HasOne<ClinicManagement.Domain.Identity.KyChamCong>()
+                .WithMany().HasForeignKey(k => k.MaKyChamCong).OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(k => new { k.Thang, k.Nam })
                 .IsUnique();

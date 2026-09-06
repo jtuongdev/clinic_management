@@ -1,4 +1,5 @@
 using ClinicManagement.Domain.Common;
+using ClinicManagement.Domain.Common.Enums;
 using System;
 
 namespace ClinicManagement.Domain.Identity
@@ -8,9 +9,9 @@ namespace ClinicManagement.Domain.Identity
         public int MaNhanVien { get; set; }
         public DateTime TuNgay { get; set; }
         public DateTime DenNgay { get; set; }
-        public string LoaiNghi { get; set; } = string.Empty; // PHEP_NAM, PHEP_BENH, PHEP_RIENG, KHONG_LUONG
+        public LoaiNghiPhep LoaiNghi { get; set; }
         public string LyDo { get; set; } = string.Empty;
-        public string TrangThai { get; set; } = "CHO_DUYET"; // CHO_DUYET, DA_DUYET, TU_CHOI, HUY
+        public TrangThaiNghiPhep TrangThai { get; set; } = TrangThaiNghiPhep.CHO_DUYET;
         public int? NguoiDuyet { get; set; }
         public DateTime? NgayDuyet { get; set; }
         public string GhiChu { get; set; } = string.Empty;
@@ -23,22 +24,22 @@ namespace ClinicManagement.Domain.Identity
             TuNgay = TuNgay.Date;
             DenNgay = DenNgay.Date;
             if (DenNgay < TuNgay) throw new ArgumentException("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.");
-            if (string.IsNullOrWhiteSpace(LoaiNghi)) throw new ArgumentException("Loại nghỉ không được để trống.");
+            if (!Enum.IsDefined(LoaiNghi)) throw new ArgumentException("Loại nghỉ không hợp lệ.");
             if (string.IsNullOrWhiteSpace(LyDo)) throw new ArgumentException("Lý do nghỉ không được để trống.");
         }
 
         public void Approve(int nguoiDuyet)
         {
-            if (TrangThai != "CHO_DUYET") throw new InvalidOperationException("Đơn nghỉ không còn chờ duyệt.");
-            TrangThai = "DA_DUYET";
+            if (TrangThai != TrangThaiNghiPhep.CHO_DUYET) throw new InvalidOperationException("Đơn nghỉ không còn chờ duyệt.");
+            TrangThai = TrangThaiNghiPhep.DA_DUYET;
             NguoiDuyet = nguoiDuyet;
             NgayDuyet = DateTime.UtcNow;
         }
 
         public void Reject(int nguoiDuyet, string ghiChu)
         {
-            if (TrangThai != "CHO_DUYET") throw new InvalidOperationException("Đơn nghỉ không còn chờ duyệt.");
-            TrangThai = "TU_CHOI";
+            if (TrangThai != TrangThaiNghiPhep.CHO_DUYET) throw new InvalidOperationException("Đơn nghỉ không còn chờ duyệt.");
+            TrangThai = TrangThaiNghiPhep.TU_CHOI;
             NguoiDuyet = nguoiDuyet;
             NgayDuyet = DateTime.UtcNow;
             GhiChu = ghiChu?.Trim() ?? string.Empty;
@@ -46,9 +47,9 @@ namespace ClinicManagement.Domain.Identity
 
         public void Cancel()
         {
-            if (TrangThai is "DA_DUYET" or "TU_CHOI" or "HUY")
+            if (TrangThai is TrangThaiNghiPhep.TU_CHOI or TrangThaiNghiPhep.HUY)
                 throw new InvalidOperationException("Không thể hủy đơn nghỉ ở trạng thái hiện tại.");
-            TrangThai = "HUY";
+            TrangThai = TrangThaiNghiPhep.HUY;
         }
     }
 }

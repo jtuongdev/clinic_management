@@ -40,10 +40,10 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(n => n.Id == id && !n.IsDeleted, cancellationToken);
 
         public async Task<IReadOnlyList<NhanVien>> GetPagedAsync(
-            string? keyword, int? maChucVu, bool? isActive, int pageIndex, int pageSize,
+            string? keyword, int? maChucVu, bool? isActive, int? maKhoa, DateTime? ngay, int pageIndex, int pageSize,
             CancellationToken cancellationToken = default)
         {
-            var query = BuildEmployeeQuery(keyword, maChucVu, isActive);
+            var query = BuildEmployeeQuery(keyword, maChucVu, isActive, maKhoa, ngay);
             return await query.OrderBy(n => n.HoTen)
                 .ThenBy(n => n.Id)
                 .Skip((pageIndex - 1) * pageSize)
@@ -52,11 +52,11 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         }
 
         public async Task<int> CountPagedAsync(
-            string? keyword, int? maChucVu, bool? isActive,
+            string? keyword, int? maChucVu, bool? isActive, int? maKhoa, DateTime? ngay,
             CancellationToken cancellationToken = default)
-            => await BuildEmployeeQuery(keyword, maChucVu, isActive).CountAsync(cancellationToken);
+            => await BuildEmployeeQuery(keyword, maChucVu, isActive, maKhoa, ngay).CountAsync(cancellationToken);
 
-        private IQueryable<NhanVien> BuildEmployeeQuery(string? keyword, int? maChucVu, bool? isActive)
+        private IQueryable<NhanVien> BuildEmployeeQuery(string? keyword, int? maChucVu, bool? isActive, int? maKhoa = null, DateTime? ngay = null)
         {
             var query = _dbSet.AsNoTracking().Include(n => n.ChucVu).Where(n => !n.IsDeleted);
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -66,6 +66,14 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             }
             if (maChucVu.HasValue) query = query.Where(n => n.MaChucVu == maChucVu.Value);
             if (isActive.HasValue) query = query.Where(n => n.IsActive == isActive.Value);
+            if (maKhoa.HasValue)
+            {
+                var targetDate = (ngay ?? DateTime.UtcNow).Date;
+                query = query.Where(n => n.NhanVienKhoa.Any(assignment =>
+                    assignment.MaKhoa == maKhoa.Value &&
+                    assignment.TuNgay.Date <= targetDate &&
+                    (assignment.DenNgay == null || assignment.DenNgay.Value.Date >= targetDate)));
+            }
             return query;
         }
 

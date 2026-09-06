@@ -27,6 +27,8 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] string? keyword = null,
             [FromQuery] int? maChucVu = null,
             [FromQuery] bool? isActive = null,
+            [FromQuery] int? maKhoa = null,
+            [FromQuery] DateTime? ngay = null,
             [FromQuery] int pageIndex = 1,
             [FromQuery] int pageSize = 20,
             CancellationToken cancellationToken = default)
@@ -36,6 +38,8 @@ namespace ClinicManagement.API.Controllers
                 Keyword = keyword,
                 MaChucVu = maChucVu,
                 IsActive = isActive,
+                MaKhoa = maKhoa,
+                Ngay = ngay,
                 PageIndex = pageIndex,
                 PageSize = pageSize
             }, cancellationToken);

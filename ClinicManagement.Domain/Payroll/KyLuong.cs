@@ -10,6 +10,7 @@ namespace ClinicManagement.Domain.Payroll
         public int Nam { get; private set; }
         public DateTime TuNgay { get; private set; }
         public DateTime DenNgay { get; private set; }
+        public int? MaKyChamCong { get; private set; }
         public string TrangThai { get; private set; } = "NHAP";
 
         public virtual ICollection<BangLuong> BangLuongs { get; private set; }
@@ -35,10 +36,23 @@ namespace ClinicManagement.Domain.Payroll
             BangLuongs = new List<BangLuong>();
         }
 
+        public void LinkAttendancePeriod(int maKyChamCong)
+        {
+            if (maKyChamCong <= 0) throw new ArgumentOutOfRangeException(nameof(maKyChamCong));
+            if (TrangThai != "NHAP") throw new InvalidOperationException("Kỳ lương đã đóng không thể thay đổi.");
+            MaKyChamCong = maKyChamCong;
+        }
+
+        public void Approve()
+        {
+            if (TrangThai != "NHAP") throw new InvalidOperationException("Chỉ kỳ lương nháp mới được duyệt.");
+            TrangThai = "DA_DUYET";
+        }
+
         public void Chot()
         {
-            if (TrangThai != "NHAP")
-                throw new InvalidOperationException("Chỉ kỳ lương ở trạng thái nháp mới được chốt.");
+            if (TrangThai != "DA_DUYET")
+                throw new InvalidOperationException("Kỳ lương phải được duyệt trước khi chốt.");
 
             TrangThai = "DA_CHOT";
         }

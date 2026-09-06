@@ -33,10 +33,12 @@ namespace ClinicManagement.Infrastructure.Persistence
         public DbSet<LoaiCa> LoaiCas { get; set; }
         public DbSet<CaTruc> CaTrucs { get; set; }
         public DbSet<LichLamViec> LichLamViecs { get; set; }
-        public DbSet<LichTruc> LichTrucs { get; set; }
+        public DbSet<LichLamViecCoDinh> LichLamViecCoDinhs { get; set; }
         public DbSet<ChamCong> ChamCongs { get; set; }
+        public DbSet<DieuChinhChamCong> DieuChinhChamCongs { get; set; }
+        public DbSet<KyChamCong> KyChamCongs { get; set; }
         public DbSet<NghiPhep> NghiPheps { get; set; }
-        public DbSet<PhanCong> PhanCongs { get; set; }
+        public DbSet<LichLamViecDieuChinh> LichLamViecDieuChinhs { get; set; }
 
         // Phân hệ Cơ sở & Khoa phòng
         public DbSet<CoSo> CoSos { get; set; }

@@ -25,7 +25,6 @@ namespace ClinicManagement.Domain.Identity
 
         public virtual LoaiCa LoaiCa { get; set; } = null!;
         public virtual ICollection<LichLamViec> LichLamViecs { get; set; } = new List<LichLamViec>();
-        public virtual ICollection<LichTruc> LichTrucs { get; set; } = new List<LichTruc>();
 
         public void Validate()
         {
