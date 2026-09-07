@@ -1,13 +1,32 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Table,
+  Tag,
+  Input,
+  Select,
+  Button,
+  Space,
+  Typography,
+  Tooltip,
+  Modal,
+} from 'antd';
+import {
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  SearchOutlined,
+  ExperimentOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  AlertOutlined,
+  EyeOutlined,
+  ApartmentOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { useExamination } from '../hook/useExamination';
-import './style/examinationCLS.css'; // Import CSS riêng
+import { ChiDinhDichVuListDto } from '../type/examination.types';
 
-// Interface cho KPI
-interface KpiItem {
-  label: string;
-  value: string;
-  color: 'primary' | 'blue' | 'green' | 'orange' | 'red';
-}
+const { Text } = Typography;
 
 const ExaminationCLS: React.FC = () => {
   const {
@@ -26,7 +45,7 @@ const ExaminationCLS: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [khoaFilter, setKhoaFilter] = useState<number | undefined>(undefined);
   const [pageIndex, setPageIndex] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Tải danh sách khi bộ lọc hoặc phân trang thay đổi
@@ -46,208 +65,322 @@ const ExaminationCLS: React.FC = () => {
 
   // Xây dựng KPI
   const kpis = useMemo(() => {
-    if (!thongKeChiDinhDichVu) {
-      return [
-        { label: 'Chỉ định', value: '0', color: 'primary' },
-        { label: 'Đang xử lý', value: '0', color: 'blue' },
-        { label: 'Hoàn thành', value: '0', color: 'green' },
-        { label: 'TB trả kq', value: '0', color: 'orange' },
-        { label: 'Bất thường', value: '0', color: 'red' },
-        { label: 'Khoa yêu cầu', value: '0', color: 'primary' },
-      ];
-    }
     return [
-      { label: 'Chỉ định', value: String(thongKeChiDinhDichVu.tongChiDinh), color: 'primary' },
-      { label: 'Đang xử lý', value: String(thongKeChiDinhDichVu.dangXuLy), color: 'blue' },
-      { label: 'Hoàn thành', value: String(thongKeChiDinhDichVu.hoanThanh), color: 'green' },
-      { label: 'TB trả kq', value: String(thongKeChiDinhDichVu.tbTraKetQua), color: 'orange' },
-      { label: 'Bất thường', value: String(thongKeChiDinhDichVu.batThuong), color: 'red' },
-      { label: 'Khoa yêu cầu', value: String(thongKeChiDinhDichVu.khoaYeuCau), color: 'primary' },
+      {
+        label: 'Tổng chỉ định',
+        value: thongKeChiDinhDichVu?.tongChiDinh ?? 0,
+        color: '#0b4f6c',
+        bgColor: '#e8f4f7',
+        icon: <ExperimentOutlined style={{ fontSize: 20, color: '#0b4f6c' }} />,
+      },
+      {
+        label: 'Đang xử lý',
+        value: thongKeChiDinhDichVu?.dangXuLy ?? 0,
+        color: '#0284c7',
+        bgColor: '#e0f2fe',
+        icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#0284c7' }} />,
+      },
+      {
+        label: 'Đã hoàn thành',
+        value: thongKeChiDinhDichVu?.hoanThanh ?? 0,
+        color: '#10b981',
+        bgColor: '#ecfdf5',
+        icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} />,
+      },
+      {
+        label: 'TB trả kết quả',
+        value: `${thongKeChiDinhDichVu?.tbTraKetQua ?? 0} phút`,
+        color: '#f59e0b',
+        bgColor: '#fffbeb',
+        icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} />,
+        isText: true,
+      },
+      {
+        label: 'KQ bất thường',
+        value: thongKeChiDinhDichVu?.batThuong ?? 0,
+        color: '#ef4444',
+        bgColor: '#fef2f2',
+        icon: <AlertOutlined style={{ fontSize: 20, color: '#ef4444' }} />,
+      },
+      {
+        label: 'Khoa yêu cầu',
+        value: thongKeChiDinhDichVu?.khoaYeuCau ?? 0,
+        color: '#8b5cf6',
+        bgColor: '#f3e8ff',
+        icon: <ApartmentOutlined style={{ fontSize: 20, color: '#8b5cf6' }} />,
+      },
     ];
   }, [thongKeChiDinhDichVu]);
 
-  // Mapping trạng thái
-  const getStatusClass = (status: string) => {
-    const map: Record<string, string> = {
-      DaChiDinh: 'status-wait',
-      DaTiepNhan: 'status-doing',
-      ChoKetQua: 'status-alert',
-      DaCoKetQua: 'status-done',
-      DaHuy: 'status-idle',
-    };
-    return map[status] || 'status-idle';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const map: Record<string, string> = {
-      DaChiDinh: 'Chờ xử lý',
-      DaTiepNhan: 'Đang xử lý',
-      ChoKetQua: 'Chờ kết quả',
-      DaCoKetQua: 'Hoàn thành',
-      DaHuy: 'Đã hủy',
-    };
-    return map[status] || status;
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '--';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  };
-
-  const handleSearch = (keyword: string) => {
-    setSearchKeyword(keyword);
-    setPageIndex(1);
-  };
-
-  const handlePrevPage = () => setPageIndex(p => Math.max(1, p - 1));
-  const handleNextPage = () => setPageIndex(p => p + 1);
-  const toggleFullscreen = () => setIsFullscreen(prev => !prev);
-
-  return (
-    <div className={`cls-container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
-      {!isFullscreen && (
-        <>
-          <div className="page-header">
-            <div>
-              <div className="page-kicker">CLS</div>
-              <h1 className="page-title">Cận lâm sàng</h1>
-              <div className="page-desc">Chỉ định, trạng thái và kết quả xét nghiệm</div>
-            </div>
-          </div>
-
-          <div className="kpi-grid">
-            {loadingThongKeChiDinhDichVu ? (
-              <div>Đang tải thống kê...</div>
-            ) : (
-              kpis.map((kpi, idx) => (
-                <div key={idx} className={`kpi kpi-${kpi.color}`}>
-                  <div className="kpi-label">{kpi.label}</div>
-                  <div className="kpi-value">{kpi.value}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      )}
-
-      <div className="panel">
-        <div className="panel-header">
-          <div className="panel-title">
-            <i className="fa-solid fa-flask" /> Danh sách chỉ định
-          </div>
-          <div className="panel-header-actions">
-            <span className="panel-badge">{chiDinhDichVuTotal}</span>
-            <button className="btn btn-sm btn-icon" onClick={toggleFullscreen}>
-              <i className={`fa-solid fa-${isFullscreen ? 'compress' : 'expand'}`} />
-            </button>
-          </div>
+  const handleViewDetail = (item: ChiDinhDichVuListDto) => {
+    Modal.info({
+      title: `Chi tiết chỉ định: ${item.tenDichVu}`,
+      width: 500,
+      content: (
+        <div style={{ marginTop: 12 }}>
+          <p><strong>Bệnh nhân:</strong> {item.tenBenhNhan}</p>
+          <p><strong>Loại dịch vụ:</strong> {item.loaiDichVu || 'Xét nghiệm'}</p>
+          <p><strong>Bác sĩ chỉ định:</strong> {item.tenBacSiChiDinh}</p>
+          <p><strong>Khoa:</strong> {item.tenKhoa}</p>
+          <p><strong>Ngày chỉ định:</strong> {item.ngayChiDinh ? new Date(item.ngayChiDinh).toLocaleString('vi-VN') : '--'}</p>
+          <p><strong>Trạng thái:</strong> {item.trangThai}</p>
         </div>
+      ),
+    });
+  };
 
-        <div className="table-tools">
-          <div className="search-box">
-            <i className="fa-solid fa-search" />
-            <input
-              placeholder="Tìm bệnh nhân, loại xét nghiệm..."
-              value={searchKeyword}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-          </div>
-          <select
-            className="filter-select"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPageIndex(1); }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="DaChiDinh">Chờ xử lý</option>
-            <option value="DaTiepNhan">Đang xử lý</option>
-            <option value="ChoKetQua">Chờ kết quả</option>
-            <option value="DaCoKetQua">Hoàn thành</option>
-          </select>
-          <select
-            className="filter-select"
-            value={khoaFilter || ''}
-            onChange={(e) => { setKhoaFilter(e.target.value ? Number(e.target.value) : undefined); setPageIndex(1); }}
-          >
-            <option value="">Tất cả khoa</option>
-            {khoas.map(khoa => (
-              <option key={khoa.id} value={khoa.id}>{khoa.ten}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="cls-tableWrapScroll">
-          {loadingChiDinhDichVu ? (
-            <div>Đang tải...</div>
-          ) : chiDinhDichVuList.length === 0 ? (
-            <table>
-              <tbody>
-                <tr><td colSpan={8} className="text-center">Không có dữ liệu</td></tr>
-              </tbody>
-            </table>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Bệnh nhân</th>
-                  <th>Loại</th>
-                  <th>BS chỉ định</th>
-                  <th>Khoa</th>
-                  <th>Ngày</th>
-                  <th>Trạng thái</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {chiDinhDichVuList.map((item, idx) => (
-                  <tr key={item.id}>
-                    <td>{String((pageIndex - 1) * pageSize + idx + 1).padStart(2, '0')}</td>
-                    <td className="cell-main">{item.tenBenhNhan}</td>
-                    <td>{item.tenDichVu}</td>
-                    <td>{item.tenBacSiChiDinh}</td>
-                    <td>{item.tenKhoa}</td>
-                    <td>{formatDate(item.ngayChiDinh)}</td>
-                    <td>
-                      <span className={`status ${getStatusClass(item.trangThai)}`}>
-                        <span className="dot" /> {getStatusLabel(item.trangThai)}
-                      </span>
-                    </td>
-                    <td>
-                      <button className="row-action">
-                        <i className="fa-solid fa-eye" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  const columns: ColumnsType<ChiDinhDichVuListDto> = [
+    {
+      title: '#',
+      key: 'idx',
+      width: 60,
+      align: 'center',
+      render: (_, __, index) => (pageIndex - 1) * pageSize + index + 1,
+    },
+    {
+      title: 'Bệnh nhân',
+      dataIndex: 'tenBenhNhan',
+      key: 'tenBenhNhan',
+      render: (text) => <Text strong style={{ color: '#0b4f6c' }}>{text}</Text>,
+    },
+    {
+      title: 'Dịch vụ / Xét nghiệm',
+      dataIndex: 'tenDichVu',
+      key: 'tenDichVu',
+      render: (text, record) => (
+        <div>
+          <Text strong>{text || 'Dịch vụ CLS'}</Text>
+          {record.loaiDichVu && (
+            <div style={{ fontSize: 12, color: '#6a7f96' }}>{record.loaiDichVu}</div>
           )}
         </div>
+      ),
+    },
+    {
+      title: 'BS chỉ định',
+      dataIndex: 'tenBacSiChiDinh',
+      key: 'tenBacSiChiDinh',
+      width: 160,
+    },
+    {
+      title: 'Khoa',
+      dataIndex: 'tenKhoa',
+      key: 'tenKhoa',
+      width: 140,
+    },
+    {
+      title: 'Thời gian chỉ định',
+      dataIndex: 'ngayChiDinh',
+      key: 'ngayChiDinh',
+      width: 140,
+      render: (dateStr: string) =>
+        dateStr ? new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--',
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'trangThai',
+      key: 'trangThai',
+      width: 130,
+      render: (status: string) => {
+        switch (status) {
+          case 'DaChiDinh':
+            return <Tag color="warning">Chờ xử lý</Tag>;
+          case 'DaTiepNhan':
+            return <Tag color="processing">Đang xử lý</Tag>;
+          case 'ChoKetQua':
+            return <Tag color="purple">Chờ kết quả</Tag>;
+          case 'DaCoKetQua':
+            return <Tag color="success">Hoàn thành</Tag>;
+          case 'DaHuy':
+            return <Tag color="default">Đã hủy</Tag>;
+          default:
+            return <Tag color="default">{status || 'Chờ'}</Tag>;
+        }
+      },
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 90,
+      align: 'center',
+      render: (_, record) => (
+        <Tooltip title="Xem chi tiết">
+          <Button
+            type="text"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetail(record)}
+          />
+        </Tooltip>
+      ),
+    },
+  ];
 
-        {/* Phân trang */}
-        {chiDinhDichVuTotal > 0 && (
-          <div className="cls-paginationBar">
-            <button
-              className="btn btn-sm"
-              onClick={handlePrevPage}
-              disabled={pageIndex <= 1 || loadingChiDinhDichVu}
-            >
-              <i className="fa-solid fa-chevron-left" /> Trước
-            </button>
-            <span>
-              Trang {pageIndex} / {Math.ceil(chiDinhDichVuTotal / pageSize)}
-            </span>
-            <button
-              className="btn btn-sm"
-              onClick={handleNextPage}
-              disabled={pageIndex >= Math.ceil(chiDinhDichVuTotal / pageSize) || loadingChiDinhDichVu}
-            >
-              Sau <i className="fa-solid fa-chevron-right" />
-            </button>
-            <span className="total-records">Tổng: {chiDinhDichVuTotal} chỉ định</span>
-          </div>
-        )}
+  const filteredList = useMemo(() => {
+    if (!searchKeyword) return chiDinhDichVuList;
+    const kw = searchKeyword.toLowerCase();
+    return chiDinhDichVuList.filter(
+      (item) =>
+        item.tenBenhNhan?.toLowerCase().includes(kw) ||
+        item.tenDichVu?.toLowerCase().includes(kw) ||
+        item.tenBacSiChiDinh?.toLowerCase().includes(kw)
+    );
+  }, [chiDinhDichVuList, searchKeyword]);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        background: '#ffffff',
+      }}
+    >
+      {/* Metric Ribbon / Stat Bar */}
+      {!isFullscreen && (
+        <div
+          style={{
+            height: 42,
+            minHeight: 42,
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '0 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 18,
+            overflowX: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          {kpis.map((kpi, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center' }}>{kpi.icon}</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.label}:</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: kpi.color }}>
+                  {kpi.value}
+                </span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+
+      {/* Integrated Control Toolbar */}
+      <div
+        style={{
+          minHeight: 46,
+          padding: '6px 16px',
+          borderBottom: '1px solid #e2e8f0',
+          background: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 10,
+          flexShrink: 0,
+        }}
+      >
+        <Space size="middle">
+          <Space size="small">
+            <ExperimentOutlined style={{ color: '#0b4f6c', fontSize: 16 }} />
+            <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
+              Danh sách chỉ định cận lâm sàng
+            </Text>
+          </Space>
+          <Tag color="blue" style={{ borderRadius: 4, margin: 0 }}>
+            {chiDinhDichVuTotal} chỉ định
+          </Tag>
+        </Space>
+
+        <Space wrap size="small">
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Tìm bệnh nhân, xét nghiệm..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            allowClear
+            style={{ width: 220 }}
+            size="middle"
+          />
+          <Select
+            placeholder="Tất cả trạng thái"
+            value={statusFilter || undefined}
+            onChange={(val) => {
+              setStatusFilter(val || '');
+              setPageIndex(1);
+            }}
+            allowClear
+            style={{ width: 145 }}
+            size="middle"
+            options={[
+              { value: 'DaChiDinh', label: 'Chờ xử lý' },
+              { value: 'DaTiepNhan', label: 'Đang xử lý' },
+              { value: 'ChoKetQua', label: 'Chờ kết quả' },
+              { value: 'DaCoKetQua', label: 'Hoàn thành' },
+            ]}
+          />
+          <Select
+            placeholder="Tất cả khoa"
+            value={khoaFilter}
+            onChange={(val) => {
+              setKhoaFilter(val);
+              setPageIndex(1);
+            }}
+            allowClear
+            style={{ width: 160 }}
+            size="middle"
+            options={khoas.map((k) => ({ value: k.id, label: k.ten }))}
+          />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() =>
+              fetchChiDinhDichVuList({
+                pageIndex,
+                pageSize,
+                maKhoa: khoaFilter,
+                trangThai: statusFilter || undefined,
+              })
+            }
+            size="middle"
+          >
+            Tải lại
+          </Button>
+          <Button
+            icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            size="middle"
+          >
+            {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+          </Button>
+        </Space>
+      </div>
+
+      {/* Edge-to-Edge Data Grid */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <Table<ChiDinhDichVuListDto>
+          rowKey="id"
+          columns={columns}
+          dataSource={filteredList}
+          loading={loadingChiDinhDichVu}
+          size="middle"
+          pagination={{
+            current: pageIndex,
+            pageSize: pageSize,
+            total: chiDinhDichVuTotal,
+            onChange: (page, size) => {
+              setPageIndex(page);
+              setPageSize(size);
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showTotal: (total, range) => `Hiển thị ${range[0]} - ${range[1]} / ${total} chỉ định`,
+            style: { padding: '8px 16px', margin: 0 },
+          }}
+          scroll={{ y: 'calc(100vh - 235px)' }}
+        />
       </div>
     </div>
   );

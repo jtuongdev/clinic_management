@@ -30,7 +30,7 @@ export const MainLayout = () => {
         style={{
           marginLeft: collapsed ? 64 : 250,
           transition: 'margin-left 0.25s ease',
-          background: '#f5f7fb',
+          background: '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           height: '100vh',
@@ -40,30 +40,17 @@ export const MainLayout = () => {
         <Header />
         <Content
           style={{
-            padding: '0 0 0 16px',
-            background: '#f5f7fb',
+            background: '#ffffff',
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             minHeight: 0,
+            padding: 0,
+            margin: 0,
           }}
         >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 12,
-              flex: 1,
-              border: '1px solid #e9edf4',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-            }}
-          >
-            <Outlet />
-          </div>
+          <Outlet />
         </Content>
         {/* Status bar */}
         <div

@@ -5,11 +5,11 @@
    1. ROOT VARIABLES & RESET
    ============================================================ */
 :root {
-  --primary: #12657d;
-  --primary-dark: #0d5268;
+  --primary: #0b4f6c;
+  --primary-dark: #083c53;
   --primary-soft: #e8f4f7;
-  --primary-soft-2: #f2f9fb;
-  --primary-glow: rgba(18, 101, 125, 0.12);
+  --primary-soft-2: #f0f7fa;
+  --primary-glow: rgba(11, 79, 108, 0.12);
 
   --bg: #f1f5f9;
   --surface: #ffffff;
@@ -1046,6 +1046,6 @@ tbody tr:hover {
   }
 }
 .row-selected {
-  background: var(--primary-soft-2, #f2f9fb) !important;
-  border-left: 4px solid var(--primary, #12657d);
+  background: var(--primary-soft-2, #f0f7fa) !important;
+  border-left: 4px solid var(--primary, #0b4f6c);
 }

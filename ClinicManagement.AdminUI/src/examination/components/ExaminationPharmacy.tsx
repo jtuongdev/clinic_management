@@ -1,15 +1,39 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Table,
+  Tag,
+  Select,
+  Button,
+  Space,
+  Typography,
+  Tooltip,
+  Modal,
+  Alert,
+  App,
+} from 'antd';
+import {
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  MedicineBoxOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  AlertOutlined,
+  EyeOutlined,
+  CheckOutlined,
+  DeleteOutlined,
+  ShopOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { useExamination } from '../hook/useExamination';
 import ActionBar, { ActionItem } from '../../shared/components/layouts/components/ActionBar';
 import { DonThuocListDto } from '../type/prescription.examination.type';
 
-interface KpiItem {
-  label: string;
-  value: string;
-  color: 'primary' | 'blue' | 'green' | 'orange' | 'red';
-}
+const { Text } = Typography;
 
 const ExaminationPharmacy: React.FC = () => {
+  const { message } = App.useApp();
   const {
     donThuocList,
     donThuocTotal,
@@ -26,7 +50,7 @@ const ExaminationPharmacy: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [khoaFilter, setKhoaFilter] = useState<number | undefined>(undefined);
   const [pageIndex, setPageIndex] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // State cho ActionBar
@@ -45,48 +69,60 @@ const ExaminationPharmacy: React.FC = () => {
     setSelectedDonThuoc(null);
   };
 
+  const handleApprovePrescription = (id: number | string) => {
+    Modal.confirm({
+      title: 'Xác nhận duyệt đơn thuốc?',
+      content: `Duyệt cấp phát cho đơn thuốc #${id}?`,
+      okText: 'Duyệt đơn',
+      onOk: () => {
+        message.success(`Đã duyệt đơn thuốc #${id}`);
+      },
+    });
+  };
+
+  const handleDispenseMedicine = (id: number | string) => {
+    message.success(`Đã xuất kho thuốc cho đơn #${id}`);
+  };
+
+  const handleCancelPrescription = (id: number | string) => {
+    Modal.confirm({
+      title: 'Xác nhận hủy đơn thuốc?',
+      content: `Bạn có chắc muốn hủy đơn thuốc #${id}?`,
+      okText: 'Hủy đơn',
+      okType: 'danger',
+      onOk: () => {
+        message.info(`Đã hủy đơn thuốc #${id}`);
+      },
+    });
+  };
+
   // Các hành động cho đơn thuốc
   const donThuocActions: ActionItem[] = [
     {
       label: 'Xem chi tiết',
       icon: 'eye',
       color: 'primary',
-      onClick: (id: number | string) => {
-        alert(`Xem chi tiết đơn thuốc ID: ${id}`);
-        // Điều hướng đến trang chi tiết đơn thuốc
-        // navigate(`/don-thuoc/${id}`);
+      onClick: (id) => {
+        message.info(`Xem chi tiết đơn thuốc #${id}`);
       },
     },
     {
-      label: 'Duyệt',
+      label: 'Duyệt đơn',
       icon: 'check',
       color: 'success',
-      onClick: (id: number | string) => {
-        if (window.confirm(`Duyệt đơn thuốc ID: ${id}?`)) {
-          // Gọi API duyệt đơn thuốc
-          alert(`Đã duyệt đơn thuốc ${id}`);
-        }
-      },
+      onClick: handleApprovePrescription,
     },
     {
       label: 'Xuất thuốc',
       icon: 'truck',
       color: 'info',
-      onClick: (id: number | string) => {
-        alert(`Xuất thuốc cho đơn: ${id}`);
-        // Mở modal xuất thuốc
-      },
+      onClick: handleDispenseMedicine,
     },
     {
       label: 'Hủy',
       icon: 'trash',
       color: 'danger',
-      onClick: (id: number | string) => {
-        if (window.confirm(`Hủy đơn thuốc ID: ${id}?`)) {
-          // Gọi API hủy đơn thuốc
-          alert(`Đã hủy đơn thuốc ${id}`);
-        }
-      },
+      onClick: handleCancelPrescription,
     },
   ];
 
@@ -107,223 +143,390 @@ const ExaminationPharmacy: React.FC = () => {
 
   // Xây dựng KPI
   const kpis = useMemo(() => {
-    if (!thongKeDonThuoc) {
-      return [
-        { label: 'Đơn thuốc', value: '0', color: 'primary' },
-        { label: 'Tạm', value: '0', color: 'blue' },
-        { label: 'Đã duyệt', value: '0', color: 'green' },
-        { label: 'Đã xuất', value: '0', color: 'green' },
-        { label: 'Đã hủy', value: '0', color: 'red' },
-        { label: 'Tồn kho', value: '0', color: 'primary' },
-      ];
-    }
     return [
-      { label: 'Đơn thuốc', value: String(thongKeDonThuoc.tongDonThuoc), color: 'primary' },
-      { label: 'Tạm', value: String(thongKeDonThuoc.tam), color: 'blue' },
-      { label: 'Đã duyệt', value: String(thongKeDonThuoc.daDuyet), color: 'green' },
-      { label: 'Đã xuất', value: String(thongKeDonThuoc.daXuatHet), color: 'green' },
-      { label: 'Đã hủy', value: String(thongKeDonThuoc.daHuy), color: 'red' },
-      { label: 'Tồn kho', value: '0', color: 'primary' }, // TODO: gọi API tồn kho
+      {
+        label: 'Tổng đơn thuốc',
+        value: thongKeDonThuoc?.tongDonThuoc ?? 0,
+        color: '#0b4f6c',
+        bgColor: '#e8f4f7',
+        icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#0b4f6c' }} />,
+      },
+      {
+        label: 'Đơn tạm',
+        value: thongKeDonThuoc?.tam ?? 0,
+        color: '#f59e0b',
+        bgColor: '#fffbeb',
+        icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} />,
+      },
+      {
+        label: 'Đã duyệt',
+        value: thongKeDonThuoc?.daDuyet ?? 0,
+        color: '#0284c7',
+        bgColor: '#e0f2fe',
+        icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#0284c7' }} />,
+      },
+      {
+        label: 'Đã xuất hết',
+        value: thongKeDonThuoc?.daXuatHet ?? 0,
+        color: '#10b981',
+        bgColor: '#ecfdf5',
+        icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} />,
+      },
+      {
+        label: 'Đã hủy',
+        value: thongKeDonThuoc?.daHuy ?? 0,
+        color: '#ef4444',
+        bgColor: '#fef2f2',
+        icon: <CloseCircleOutlined style={{ fontSize: 20, color: '#ef4444' }} />,
+      },
+      {
+        label: 'Tồn kho cảnh báo',
+        value: '2 mặt hàng',
+        color: '#8b5cf6',
+        bgColor: '#f3e8ff',
+        icon: <ShopOutlined style={{ fontSize: 20, color: '#8b5cf6' }} />,
+        isText: true,
+      },
     ];
   }, [thongKeDonThuoc]);
 
-  // Mapping trạng thái
-  const getStatusClass = (status: string) => {
-    const map: Record<string, string> = {
-      TAM: 'status-wait',
-      DA_DUYET: 'status-doing',
-      DA_XUAT_HET: 'status-done',
-      HUY: 'status-idle',
-    };
-    return map[status] || 'status-idle';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const map: Record<string, string> = {
-      TAM: 'Tạm',
-      DA_DUYET: 'Đã duyệt',
-      DA_XUAT_HET: 'Đã xuất',
-      HUY: 'Đã hủy',
-    };
-    return map[status] || status;
-  };
-
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('vi-VN') + 'đ';
+    return (amount || 0).toLocaleString('vi-VN') + ' đ';
   };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '--';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const handlePrevPage = () => setPageIndex(p => Math.max(1, p - 1));
-  const handleNextPage = () => setPageIndex(p => p + 1);
-  const toggleFullscreen = () => setIsFullscreen(prev => !prev);
+  const columns: ColumnsType<DonThuocListDto> = [
+    {
+      title: 'Bệnh nhân',
+      dataIndex: 'tenBenhNhan',
+      key: 'tenBenhNhan',
+      render: (text) => <Text strong style={{ color: '#0b4f6c' }}>{text}</Text>,
+    },
+    {
+      title: 'Khoa',
+      dataIndex: 'tenKhoa',
+      key: 'tenKhoa',
+      width: 140,
+    },
+    {
+      title: 'Bác sĩ kê',
+      dataIndex: 'tenBacSi',
+      key: 'tenBacSi',
+      width: 160,
+    },
+    {
+      title: 'Số loại',
+      dataIndex: 'soLuongThuoc',
+      key: 'soLuongThuoc',
+      width: 90,
+      align: 'center',
+      render: (count) => <Tag color="blue">{count} loại</Tag>,
+    },
+    {
+      title: 'Tổng tiền',
+      dataIndex: 'tongTien',
+      key: 'tongTien',
+      width: 130,
+      align: 'right',
+      render: (val: number) => <Text strong>{formatCurrency(val)}</Text>,
+    },
+    {
+      title: 'Ngày kê',
+      dataIndex: 'ngayKe',
+      key: 'ngayKe',
+      width: 110,
+      render: formatDate,
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'trangThai',
+      key: 'trangThai',
+      width: 130,
+      render: (status: string) => {
+        switch (status) {
+          case 'TAM':
+            return <Tag color="warning">Tạm</Tag>;
+          case 'DA_DUYET':
+            return <Tag color="processing">Đã duyệt</Tag>;
+          case 'DA_XUAT_HET':
+            return <Tag color="success">Đã xuất</Tag>;
+          case 'HUY':
+            return <Tag color="default">Đã hủy</Tag>;
+          default:
+            return <Tag color="default">{status || 'Tạm'}</Tag>;
+        }
+      },
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 120,
+      align: 'center',
+      render: (_, record) => (
+        <Space size={4} onClick={(e) => e.stopPropagation()}>
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleRowClick(record)}
+            />
+          </Tooltip>
+          {record.trangThai === 'TAM' && (
+            <Tooltip title="Duyệt đơn thuốc">
+              <Button
+                type="text"
+                size="small"
+                icon={<CheckOutlined style={{ color: '#10b981' }} />}
+                onClick={() => handleApprovePrescription(record.id)}
+              />
+            </Tooltip>
+          )}
+          {record.trangThai === 'DA_DUYET' && (
+            <Tooltip title="Xuất thuốc">
+              <Button
+                type="text"
+                size="small"
+                icon={<ShopOutlined style={{ color: '#0284c7' }} />}
+                onClick={() => handleDispenseMedicine(record.id)}
+              />
+            </Tooltip>
+          )}
+          <Tooltip title="Hủy đơn">
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleCancelPrescription(record.id)}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div className={`examination-pharmacy-wrapper ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        background: '#ffffff',
+      }}
+    >
+      {/* Metric Ribbon / Stat Bar */}
       {!isFullscreen && (
-        <>
-          <div className="page-header">
-            <div>
-              <div className="page-kicker">Dược</div>
-              <h1 className="page-title">Tồn kho & đơn thuốc</h1>
-              <div className="page-desc">Cảnh báo tồn, đơn thuốc đã xuất</div>
-            </div>
-          </div>
-
-          <div className="kpi-grid">
-            {loadingThongKeDonThuoc ? (
-              <div>Đang tải thống kê...</div>
-            ) : (
-              kpis.map((kpi, idx) => (
-                <div key={idx} className={`kpi kpi-${kpi.color}`}>
-                  <div className="kpi-label">{kpi.label}</div>
-                  <div className="kpi-value">{kpi.value}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
+        <div
+          style={{
+            height: 42,
+            minHeight: 42,
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '0 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 18,
+            overflowX: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          {kpis.map((kpi, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center' }}>{kpi.icon}</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.label}:</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: kpi.color }}>
+                  {kpi.value}
+                </span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
       )}
 
-      <div className="grid-2">
-        {/* Cột trái: Danh sách đơn thuốc */}
-        <div className="panel">
-          <div className="panel-header">
-            <div className="panel-title">
-              <i className="fa-regular fa-list" /> Đơn thuốc
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="panel-badge">{donThuocTotal}</span>
-              <button className="btn btn-sm btn-icon" onClick={toggleFullscreen}>
-                {isFullscreen ? '⤢' : '⤡'}
-              </button>
-            </div>
+      {/* Main Split Body */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        {/* Left Pane: Prescription Grid */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          {/* Integrated Control Toolbar */}
+          <div
+            style={{
+              minHeight: 46,
+              padding: '6px 16px',
+              borderBottom: '1px solid #e2e8f0',
+              background: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 10,
+              flexShrink: 0,
+            }}
+          >
+            <Space size="middle">
+              <Space size="small">
+                <MedicineBoxOutlined style={{ color: '#0b4f6c', fontSize: 16 }} />
+                <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
+                  Danh sách đơn thuốc & cấp phát
+                </Text>
+              </Space>
+              <Tag color="blue" style={{ borderRadius: 4, margin: 0 }}>
+                {donThuocTotal} đơn
+              </Tag>
+            </Space>
+
+            <Space wrap size="small">
+              <Select
+                placeholder="Tất cả trạng thái"
+                value={statusFilter || undefined}
+                onChange={(val) => {
+                  setStatusFilter(val || '');
+                  setPageIndex(1);
+                }}
+                allowClear
+                style={{ width: 145 }}
+                size="middle"
+                options={[
+                  { value: 'TAM', label: 'Tạm' },
+                  { value: 'DA_DUYET', label: 'Đã duyệt' },
+                  { value: 'DA_XUAT_HET', label: 'Đã xuất' },
+                  { value: 'HUY', label: 'Đã hủy' },
+                ]}
+              />
+              <Select
+                placeholder="Tất cả khoa"
+                value={khoaFilter}
+                onChange={(val) => {
+                  setKhoaFilter(val);
+                  setPageIndex(1);
+                }}
+                allowClear
+                style={{ width: 160 }}
+                size="middle"
+                options={khoas.map((k) => ({ value: k.id, label: k.ten }))}
+              />
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() =>
+                  fetchDonThuocList({
+                    pageIndex,
+                    pageSize,
+                    maKhoa: khoaFilter || filters.maKhoa,
+                    trangThai: statusFilter || undefined,
+                  })
+                }
+                size="middle"
+              >
+                Tải lại
+              </Button>
+              <Button
+                icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                size="middle"
+              >
+                {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+              </Button>
+            </Space>
           </div>
-          <div className="table-tools">
-            <select
-              className="filter-select"
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPageIndex(1); }}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="TAM">Tạm</option>
-              <option value="DA_DUYET">Đã duyệt</option>
-              <option value="DA_XUAT_HET">Đã xuất</option>
-              <option value="HUY">Đã hủy</option>
-            </select>
-            <select
-              className="filter-select"
-              value={khoaFilter || ''}
-              onChange={(e) => { setKhoaFilter(e.target.value ? Number(e.target.value) : undefined); setPageIndex(1); }}
-            >
-              <option value="">Tất cả khoa</option>
-              {khoas.map(khoa => (
-                <option key={khoa.id} value={khoa.id}>{khoa.ten}</option>
-              ))}
-            </select>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Bệnh nhân</th>
-                  <th>Khoa</th>
-                  <th>BS</th>
-                  <th>Số loại</th>
-                  <th>Tổng tiền</th>
-                  <th>Ngày kê</th>
-                  <th>Trạng thái</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingDonThuoc ? (
-                  <tr><td colSpan={8}>Đang tải...</td></tr>
-                ) : donThuocList.length === 0 ? (
-                  <tr><td colSpan={8}>Không có dữ liệu</td></tr>
-                ) : (
-                  donThuocList.map((item) => (
-                    <tr
-                      key={item.id}
-                      onClick={() => handleRowClick(item)}
-                      style={{ cursor: 'pointer' }}
-                      className={selectedDonThuoc?.id === item.id ? 'row-selected' : ''}
-                    >
-                      <td className="cell-main">{item.tenBenhNhan}</td>
-                      <td>{item.tenKhoa}</td>
-                      <td>{item.tenBacSi}</td>
-                      <td>{item.soLuongThuoc}</td>
-                      <td>{formatCurrency(item.tongTien)}</td>
-                      <td>{formatDate(item.ngayKe)}</td>
-                      <td>
-                        <span className={`status ${getStatusClass(item.trangThai)}`}>
-                          <span className="dot" /> {getStatusLabel(item.trangThai)}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="row-action"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Ngăn không trigger hàng
-                            handleRowClick(item);
-                          }}
-                        >
-                          <i className="fa-solid fa-eye" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '12px 16px' }}>
-            <button onClick={handlePrevPage} disabled={pageIndex === 1} className="btn btn-sm">
-              Trước
-            </button>
-            <span style={{ padding: '6px 12px' }}>Trang {pageIndex}</span>
-            <button onClick={handleNextPage} disabled={donThuocList.length < pageSize} className="btn btn-sm">
-              Sau
-            </button>
+
+          {/* Edge-to-Edge Data Grid */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <Table<DonThuocListDto>
+              rowKey="id"
+              columns={columns}
+              dataSource={donThuocList}
+              loading={loadingDonThuoc}
+              size="middle"
+              onRow={(record) => ({
+                onClick: () => handleRowClick(record),
+                style: {
+                  cursor: 'pointer',
+                  background: selectedDonThuoc?.id === record.id ? '#e8f4f7' : undefined,
+                },
+              })}
+              pagination={{
+                current: pageIndex,
+                pageSize: pageSize,
+                total: donThuocTotal,
+                onChange: (page, size) => {
+                  setPageIndex(page);
+                  setPageSize(size);
+                },
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showTotal: (total, range) => `Hiển thị ${range[0]} - ${range[1]} / ${total} đơn`,
+                style: { padding: '8px 16px', margin: 0 },
+              }}
+              scroll={{ y: 'calc(100vh - 235px)' }}
+            />
           </div>
         </div>
 
-        {/* Cột phải: Cảnh báo tồn kho (tạm thời mock) */}
-        <div className="panel">
-          <div className="panel-header">
-            <div className="panel-title">
-              <i className="fa-regular fa-triangle-exclamation" /> Cảnh báo tồn kho
+        {/* Right Pane: Docked Stock Warning Panel */}
+        {!isFullscreen && (
+          <div
+            style={{
+              width: 320,
+              minWidth: 320,
+              borderLeft: '1px solid #e2e8f0',
+              background: '#fafbfc',
+              display: 'flex',
+              flexDirection: 'column',
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                height: 46,
+                minHeight: 46,
+                padding: '0 16px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#ffffff',
+              }}
+            >
+              <Space size="small">
+                <AlertOutlined style={{ color: '#ef4444' }} />
+                <Text strong style={{ fontSize: 13, color: '#0f172a' }}>
+                  Cảnh báo tồn kho dược
+                </Text>
+              </Space>
+              <Tag color="red" style={{ margin: 0 }}>
+                2 loại
+              </Tag>
             </div>
-            <span className="panel-badge">2</span>
-          </div>
-          <div className="summary-list">
-            <div className="summary-row" style={{ borderLeft: '3px solid var(--red)', paddingLeft: 8 }}>
-              <div className="summary-left">
-                <div>
-                  <div className="summary-name" style={{ color: 'var(--red)' }}>Paracetamol 500mg</div>
-                  <div className="summary-sub">Còn 20 viên, dưới ngưỡng 50</div>
-                </div>
+
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+              <Alert
+                type="error"
+                showIcon
+                message="Paracetamol 500mg"
+                description="Còn 20 viên trong kho, dưới ngưỡng an toàn (50 viên)."
+              />
+              <Alert
+                type="warning"
+                showIcon
+                message="Amoxicillin 250mg"
+                description="Lô hàng HSD-2026 sắp hết hạn trong 3 ngày tới."
+              />
+              <div style={{ marginTop: 8, textAlign: 'right' }}>
+                <Button type="link" style={{ padding: 0, color: '#0b4f6c' }}>
+                  Quản lý kho dược →
+                </Button>
               </div>
-              <div className="summary-value" style={{ color: 'var(--red)' }}>⚠️</div>
-            </div>
-            <div className="summary-row" style={{ borderLeft: '3px solid var(--orange)', paddingLeft: 8 }}>
-              <div className="summary-left">
-                <div>
-                  <div className="summary-name" style={{ color: 'var(--orange)' }}>Amoxicillin 250mg</div>
-                  <div className="summary-sub">Hết hạn trong 3 ngày</div>
-                </div>
-              </div>
-              <div className="summary-value" style={{ color: 'var(--orange)' }}>⚠️</div>
             </div>
           </div>
-          <div style={{ padding: '8px 16px', textAlign: 'right' }}>
-            <button className="btn btn-sm">Xem kho →</button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ActionBar */}

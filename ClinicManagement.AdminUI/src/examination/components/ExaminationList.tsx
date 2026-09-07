@@ -1,9 +1,38 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Table,
+  Tag,
+  Input,
+  Select,
+  Button,
+  Space,
+  Typography,
+  Tooltip,
+  Modal,
+  App,
+} from 'antd';
+import {
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  SearchOutlined,
+  ClockCircleOutlined,
+  MedicineBoxOutlined,
+  ExperimentOutlined,
+  CheckCircleOutlined,
+  EyeOutlined,
+  PlayCircleOutlined,
+  StopOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { useExamination } from '../hook/useExamination';
 import ActionBar from '../../shared/components/layouts/components/ActionBar';
 import { LuotKhamItemDto } from '../type/examination.types';
 
+const { Text } = Typography;
+
 const ExaminationList: React.FC = () => {
+  const { message } = App.useApp();
   const {
     luotKhamList,
     luotKhamTotal,
@@ -21,14 +50,14 @@ const ExaminationList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [khoaFilter, setKhoaFilter] = useState<number | undefined>(undefined);
   const [pageIndex, setPageIndex] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // State ActionBar
   const [selectedItem, setSelectedItem] = useState<LuotKhamItemDto | null>(null);
 
   // Tải danh sách lượt khám
-  useEffect(() => {
+  const loadList = useCallback(() => {
     fetchLuotKhamList({
       pageIndex,
       pageSize,
@@ -36,6 +65,10 @@ const ExaminationList: React.FC = () => {
       trangThai: statusFilter || undefined,
     });
   }, [pageIndex, pageSize, khoaFilter, statusFilter, filters.maKhoa, fetchLuotKhamList]);
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
 
   // Tải thống kê
   useEffect(() => {
@@ -46,45 +79,50 @@ const ExaminationList: React.FC = () => {
 
   // Xây dựng KPI
   const kpis = useMemo(() => {
-    if (!thongKeKhamBenh) {
-      return [
-        { label: 'Tổng', value: '0', color: 'primary' },
-        { label: 'Chờ', value: '0', color: 'blue' },
-        { label: 'Đang khám', value: '0', color: 'green' },
-        { label: 'Chờ CLS', value: '0', color: 'orange' },
-        { label: 'Hoàn tất', value: '0', color: 'green' },
-      ];
-    }
-    const { cho, dangKham, choCLS, hoanThanh } = thongKeKhamBenh;
+    const cho = thongKeKhamBenh?.cho ?? 0;
+    const dangKham = thongKeKhamBenh?.dangKham ?? 0;
+    const choCLS = thongKeKhamBenh?.choCLS ?? 0;
+    const hoanThanh = thongKeKhamBenh?.hoanThanh ?? 0;
     const total = cho + dangKham + choCLS + hoanThanh;
+
     return [
-      { label: 'Tổng', value: String(total), color: 'primary' },
-      { label: 'Chờ', value: String(cho), color: 'blue' },
-      { label: 'Đang khám', value: String(dangKham), color: 'green' },
-      { label: 'Chờ CLS', value: String(choCLS), color: 'orange' },
-      { label: 'Hoàn tất', value: String(hoanThanh), color: 'green' },
+      {
+        title: 'Tổng lượt',
+        value: total,
+        color: '#0b4f6c',
+        bgColor: '#e8f4f7',
+        icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#0b4f6c' }} />,
+      },
+      {
+        title: 'Chờ khám',
+        value: cho,
+        color: '#f59e0b',
+        bgColor: '#fffbeb',
+        icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} />,
+      },
+      {
+        title: 'Đang khám',
+        value: dangKham,
+        color: '#0284c7',
+        bgColor: '#e0f2fe',
+        icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#0284c7' }} />,
+      },
+      {
+        title: 'Chờ kết quả CLS',
+        value: choCLS,
+        color: '#8b5cf6',
+        bgColor: '#f3e8ff',
+        icon: <ExperimentOutlined style={{ fontSize: 20, color: '#8b5cf6' }} />,
+      },
+      {
+        title: 'Đã hoàn tất',
+        value: hoanThanh,
+        color: '#10b981',
+        bgColor: '#ecfdf5',
+        icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} />,
+      },
     ];
   }, [thongKeKhamBenh]);
-
-  const getStatusClass = (status: string) => {
-    const map: Record<string, string> = {
-      Cho: 'status-wait',
-      DangKham: 'status-doing',
-      ChoCLS: 'status-alert',
-      HoanThanh: 'status-done',
-    };
-    return map[status] || 'status-idle';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const map: Record<string, string> = {
-      Cho: 'Chờ khám',
-      DangKham: 'Đang khám',
-      ChoCLS: 'Chờ CLS',
-      HoanThanh: 'Hoàn tất',
-    };
-    return map[status] || status;
-  };
 
   const handleRowClick = (item: LuotKhamItemDto) => {
     setSelectedItem(item);
@@ -94,183 +132,352 @@ const ExaminationList: React.FC = () => {
     setSelectedItem(null);
   };
 
-  // Định nghĩa actions cho lượt khám
+  // Action handlers
+  const handleViewDetail = (item: LuotKhamItemDto) => {
+    Modal.info({
+      title: `Chi tiết lượt khám: ${item.maBenhNhanNoiBo}`,
+      width: 500,
+      content: (
+        <div style={{ marginTop: 12 }}>
+          <p><strong>Bệnh nhân:</strong> {item.tenBenhNhan} ({item.tuoi} tuổi, {item.gioiTinh === 'M' ? 'Nam' : 'Nữ'})</p>
+          <p><strong>Bác sĩ phụ trách:</strong> {item.tenBacSi}</p>
+          <p><strong>Khoa điều trị:</strong> {item.tenKhoa}</p>
+          <p><strong>Phòng khám:</strong> {item.tenPhongKham}</p>
+          <p><strong>Hình thức điều trị:</strong> {item.hinhThucDieuTri || 'Khám ngoại trú'}</p>
+          <p><strong>BHYT:</strong> {item.coBHYT ? 'Có áp dụng BHYT' : 'Viện phí tự nguyện'}</p>
+          <p><strong>Trạng thái:</strong> {item.trangThai}</p>
+        </div>
+      ),
+    });
+  };
+
+  const handleStartExam = (item: LuotKhamItemDto) => {
+    message.success(`Bắt đầu khám cho bệnh nhân ${item.tenBenhNhan}`);
+  };
+
+  const handleCancelExam = (item: LuotKhamItemDto) => {
+    Modal.confirm({
+      title: 'Xác nhận hủy lượt khám?',
+      content: `Bạn có chắc muốn hủy lượt khám của bệnh nhân ${item.tenBenhNhan}?`,
+      okText: 'Hủy lượt',
+      okType: 'danger',
+      cancelText: 'Quay lại',
+      onOk: () => {
+        message.info(`Đã hủy lượt khám ${item.maBenhNhanNoiBo}`);
+      },
+    });
+  };
+
+  // Định nghĩa actions cho ActionBar
   const examActions = [
     {
       label: 'Xem chi tiết',
       icon: 'eye',
       color: 'primary' as const,
-      onClick: (id: number | string) => {
-        alert(`Xem chi tiết lượt khám: ${id}`);
+      onClick: () => {
+        if (selectedItem) handleViewDetail(selectedItem);
       },
     },
     {
       label: 'Bắt đầu khám',
       icon: 'play',
       color: 'success' as const,
-      onClick: (id: number | string) => {
-        alert(`Bắt đầu khám cho lượt: ${id}`);
+      onClick: () => {
+        if (selectedItem) handleStartExam(selectedItem);
       },
     },
     {
-      label: 'Hủy',
+      label: 'Hủy lượt',
       icon: 'ban',
       color: 'danger' as const,
-      onClick: (id: number | string) => {
-        if (window.confirm(`Hủy lượt khám ${id}?`)) {
-          alert(`Hủy lượt khám: ${id}`);
-        }
+      onClick: () => {
+        if (selectedItem) handleCancelExam(selectedItem);
       },
     },
   ];
 
-  const handleSearch = useCallback((keyword: string) => {
-    setSearchKeyword(keyword);
-    setPageIndex(1);
-  }, []);
+  // Table columns definition
+  const columns: ColumnsType<LuotKhamItemDto> = [
+    {
+      title: 'Mã BN',
+      dataIndex: 'maBenhNhanNoiBo',
+      key: 'maBenhNhanNoiBo',
+      width: 120,
+      render: (text) => <Text code strong>{text}</Text>,
+    },
+    {
+      title: 'Bệnh nhân',
+      dataIndex: 'tenBenhNhan',
+      key: 'tenBenhNhan',
+      render: (text, record) => (
+        <div>
+          <Text strong style={{ color: '#0b4f6c' }}>{text}</Text>
+          <div style={{ fontSize: 12, color: '#6a7f96' }}>
+            {record.tuoi} tuổi · {record.gioiTinh === 'M' ? 'Nam' : 'Nữ'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Khoa',
+      dataIndex: 'tenKhoa',
+      key: 'tenKhoa',
+      width: 140,
+    },
+    {
+      title: 'Bác sĩ phụ trách',
+      dataIndex: 'tenBacSi',
+      key: 'tenBacSi',
+      width: 160,
+    },
+    {
+      title: 'Phòng khám',
+      dataIndex: 'tenPhongKham',
+      key: 'tenPhongKham',
+      width: 120,
+      render: (text) => <Tag color="blue">{text}</Tag>,
+    },
+    {
+      title: 'Bắt đầu',
+      dataIndex: 'thoiGianBatDauKham',
+      key: 'thoiGianBatDauKham',
+      width: 110,
+      render: (time) =>
+        time ? new Date(time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '--',
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'trangThai',
+      key: 'trangThai',
+      width: 130,
+      render: (status: string) => {
+        switch (status) {
+          case 'Cho':
+          case 'CHO_KHAM':
+            return <Tag color="warning">Chờ khám</Tag>;
+          case 'DangKham':
+          case 'DANG_KHAM':
+            return <Tag color="processing">Đang khám</Tag>;
+          case 'ChoCLS':
+          case 'CHO_CLS':
+            return <Tag color="purple">Chờ CLS</Tag>;
+          case 'HoanThanh':
+          case 'HOAN_THANH':
+            return <Tag color="success">Hoàn tất</Tag>;
+          default:
+            return <Tag color="default">{status || 'Chờ'}</Tag>;
+        }
+      },
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 130,
+      align: 'center',
+      render: (_, record) => (
+        <Space size={4} onClick={(e) => e.stopPropagation()}>
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Bắt đầu khám">
+            <Button
+              type="text"
+              size="small"
+              icon={<PlayCircleOutlined style={{ color: '#10b981' }} />}
+              onClick={() => handleStartExam(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Hủy lượt khám">
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<StopOutlined />}
+              onClick={() => handleCancelExam(record)}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
 
-  const handlePrevPage = () => setPageIndex(p => Math.max(1, p - 1));
-  const handleNextPage = () => setPageIndex(p => p + 1);
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(prev => !prev);
-  };
+  // Filtered list client-side if search keyword entered
+  const filteredList = useMemo(() => {
+    if (!searchKeyword) return luotKhamList;
+    const kw = searchKeyword.toLowerCase();
+    return luotKhamList.filter(
+      (item) =>
+        item.tenBenhNhan?.toLowerCase().includes(kw) ||
+        item.maBenhNhanNoiBo?.toLowerCase().includes(kw) ||
+        item.tenBacSi?.toLowerCase().includes(kw)
+    );
+  }, [luotKhamList, searchKeyword]);
 
   return (
-    <div className={`examination-list-wrapper ${isFullscreen ? 'fullscreen-mode' : ''}`}>
-      {/* Header và KPI - ẩn khi fullscreen */}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        background: '#ffffff',
+      }}
+    >
+      {/* Metric Ribbon / Stat Bar */}
       {!isFullscreen && (
-        <>
-          <div className="page-header">
-            <div>
-              <div className="page-kicker">Khám bệnh</div>
-              <h1 className="page-title">Theo dõi lượt khám</h1>
-              <div className="page-desc">Trạng thái, tiến độ và bác sĩ phụ trách</div>
-            </div>
-          </div>
-
-          <div className="kpi-grid">
-            {loadingThongKeKhamBenh ? (
-              <div>Đang tải thống kê...</div>
-            ) : (
-              kpis.map((kpi, idx) => (
-                <div key={idx} className={`kpi kpi-${kpi.color}`}>
-                  <div className="kpi-label">{kpi.label}</div>
-                  <div className="kpi-value">{kpi.value}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
+        <div
+          style={{
+            height: 42,
+            minHeight: 42,
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '0 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 18,
+            overflowX: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          {kpis.map((kpi, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center' }}>{kpi.icon}</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.title}:</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: kpi.color }}>
+                  {kpi.value}
+                </span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
       )}
 
-      <div className="panel">
-        <div className="panel-header">
-          <div className="panel-title">
-            <i className="fa-solid fa-list" /> Danh sách lượt khám
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="panel-badge">{luotKhamTotal}</span>
-            <button className="btn btn-sm btn-icon" onClick={toggleFullscreen}>
-              {isFullscreen ? '⤢' : '⤡'}
-            </button>
-          </div>
-        </div>
-        <div className="table-tools">
-          <div className="search-box">
-            <i className="fa-solid fa-search" />
-            <input
-              placeholder="Tìm mã, bệnh nhân, bác sĩ..."
-              value={searchKeyword}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-          </div>
-          <select
-            className="filter-select"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPageIndex(1); }}
+      {/* Integrated Control Toolbar */}
+      <div
+        style={{
+          minHeight: 46,
+          padding: '6px 16px',
+          borderBottom: '1px solid #e2e8f0',
+          background: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 10,
+          flexShrink: 0,
+        }}
+      >
+        <Space size="middle">
+          <Space size="small">
+            <MedicineBoxOutlined style={{ color: '#0b4f6c', fontSize: 16 }} />
+            <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
+              Danh sách lượt khám bệnh
+            </Text>
+          </Space>
+          <Tag color="blue" style={{ borderRadius: 4, margin: 0 }}>
+            {luotKhamTotal} lượt
+          </Tag>
+        </Space>
+
+        <Space wrap size="small">
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Tìm mã BN, tên, bác sĩ..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            allowClear
+            style={{ width: 230 }}
+            size="middle"
+          />
+          <Select
+            placeholder="Tất cả trạng thái"
+            value={statusFilter || undefined}
+            onChange={(val) => {
+              setStatusFilter(val || '');
+              setPageIndex(1);
+            }}
+            allowClear
+            style={{ width: 145 }}
+            size="middle"
+            options={[
+              { value: 'Cho', label: 'Chờ khám' },
+              { value: 'DangKham', label: 'Đang khám' },
+              { value: 'ChoCLS', label: 'Chờ CLS' },
+              { value: 'HoanThanh', label: 'Hoàn tất' },
+            ]}
+          />
+          <Select
+            placeholder="Tất cả khoa"
+            value={khoaFilter}
+            onChange={(val) => {
+              setKhoaFilter(val);
+              setPageIndex(1);
+            }}
+            allowClear
+            style={{ width: 160 }}
+            size="middle"
+            options={khoas.map((k) => ({ value: k.id, label: k.ten }))}
+          />
+          <Button icon={<ReloadOutlined />} onClick={loadList} size="middle">
+            Tải lại
+          </Button>
+          <Button
+            icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            size="middle"
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="Cho">Chờ khám</option>
-            <option value="DangKham">Đang khám</option>
-            <option value="ChoCLS">Chờ CLS</option>
-            <option value="HoanThanh">Hoàn tất</option>
-          </select>
-          <select
-            className="filter-select"
-            value={khoaFilter || ''}
-            onChange={(e) => { setKhoaFilter(e.target.value ? Number(e.target.value) : undefined); setPageIndex(1); }}
-          >
-            <option value="">Tất cả khoa</option>
-            {khoas.map(khoa => (
-              <option key={khoa.id} value={khoa.id}>{khoa.ten}</option>
-            ))}
-          </select>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Mã BN</th>
-                <th>Bệnh nhân</th>
-                <th>Khoa</th>
-                <th>BS</th>
-                <th>Phòng</th>
-                <th>Thời gian</th>
-                <th>Trạng thái</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingLuotKham ? (
-                <tr><td colSpan={8}>Đang tải...</td></tr>
-              ) : luotKhamList.length === 0 ? (
-                <tr><td colSpan={8}>Không có dữ liệu</td></tr>
-              ) : (
-                luotKhamList.map((exam) => (
-                  <tr
-                    key={exam.id}
-                    onClick={() => handleRowClick(exam)}
-                    style={{ cursor: 'pointer' }}
-                    className={selectedItem?.id === exam.id ? 'row-selected' : ''}
-                  >
-                    <td className="cell-code">{exam.maBenhNhanNoiBo}</td>
-                    <td className="cell-main">{exam.tenBenhNhan}</td>
-                    <td>{exam.tenKhoa}</td>
-                    <td>{exam.tenBacSi}</td>
-                    <td>{exam.tenPhongKham}</td>
-                    <td>{exam.thoiGianBatDauKham ? new Date(exam.thoiGianBatDauKham).toLocaleTimeString('vi-VN') : '--'}</td>
-                    <td>
-                      <span className={`status ${getStatusClass(exam.trangThai)}`}>
-                        <span className="dot" /> {getStatusLabel(exam.trangThai)}
-                      </span>
-                    </td>
-                    <td><button className="row-action"><i className="fa-solid fa-eye" /></button></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="pagination" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '12px 16px' }}>
-          <button onClick={handlePrevPage} disabled={pageIndex === 1} className="btn btn-secondary">
-            Trước
-          </button>
-          <span style={{ padding: '6px 12px' }}>Trang {pageIndex}</span>
-          <button onClick={handleNextPage} disabled={luotKhamList.length < pageSize} className="btn btn-secondary">
-            Sau
-          </button>
-        </div>
+            {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+          </Button>
+        </Space>
       </div>
 
-      {/* ActionBar */}
+      {/* Edge-to-Edge Data Grid */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <Table<LuotKhamItemDto>
+          rowKey="id"
+          columns={columns}
+          dataSource={filteredList}
+          loading={loadingLuotKham}
+          size="middle"
+          onRow={(record) => ({
+            onClick: () => handleRowClick(record),
+            style: {
+              cursor: 'pointer',
+              background: selectedItem?.id === record.id ? '#e8f4f7' : undefined,
+            },
+          })}
+          pagination={{
+            current: pageIndex,
+            pageSize: pageSize,
+            total: luotKhamTotal,
+            onChange: (page, size) => {
+              setPageIndex(page);
+              setPageSize(size);
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showTotal: (total, range) => `Hiển thị ${range[0]} - ${range[1]} / ${total} lượt khám`,
+            style: { padding: '8px 16px', margin: 0 },
+          }}
+          scroll={{ y: 'calc(100vh - 235px)' }}
+        />
+      </div>
+
+      {/* Modernized ActionBar */}
       <ActionBar
         isVisible={!!selectedItem}
         onClose={closeActionBar}
-        selectedId={selectedItem?.id}
+        selectedId={selectedItem?.maBenhNhanNoiBo}
         actions={examActions}
-        title="Đã chọn lượt khám"
-        entityName={selectedItem?.tenBenhNhan || 'LK'}
+        title="Lượt khám đã chọn"
+        entityName={selectedItem?.tenBenhNhan || 'Bệnh nhân'}
       />
     </div>
   );

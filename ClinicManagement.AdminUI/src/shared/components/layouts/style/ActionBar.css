@@ -4,14 +4,14 @@
   left: 0;
   right: 0;
   z-index: 9999;
-  pointer-events: none; /* cho phép click xuyên qua overlay */
+  pointer-events: none;
 }
 
 .action-bar {
   pointer-events: auto;
   background: #ffffff;
-  border-top: 2px solid var(--primary, #12657d);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  border-top: 2px solid #0b4f6c;
+  box-shadow: 0 -4px 20px rgba(11, 79, 108, 0.12);
   padding: 12px 24px;
   display: flex;
   align-items: center;
@@ -31,11 +31,11 @@
 
 .action-bar-info {
   font-size: 14px;
-  color: var(--text-2, #334155);
+  color: #334155;
 }
 
 .action-bar-info strong {
-  color: var(--text, #0f172a);
+  color: #0b4f6c;
 }
 
 .action-bar-actions {

@@ -1,10 +1,22 @@
-//src › shared › components › layouts › components >ActionBartsx > []
 import React, { useEffect, useRef } from 'react';
+import { Button, Space, Typography } from 'antd';
+import {
+  EyeOutlined,
+  PlayCircleOutlined,
+  StopOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  MedicineBoxOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import '../style/ActionBar.css';
+
+const { Text } = Typography;
 
 export interface ActionItem {
   label: string;
-  icon: string; // tên icon Font Awesome, không bao gồm prefix "fa-solid fa-"
+  icon?: string | React.ReactNode;
   onClick: (id: number | string) => void;
   color?: 'primary' | 'success' | 'danger' | 'warning' | 'info' | 'secondary';
   disabled?: boolean;
@@ -16,8 +28,58 @@ interface ActionBarProps {
   selectedId?: number | string | null;
   actions?: ActionItem[];
   title?: string;
-  entityName?: string; // ví dụ: "Bệnh nhân", "Lượt khám"
+  entityName?: string;
 }
+
+const renderIcon = (icon?: string | React.ReactNode) => {
+  if (!icon) return null;
+  if (React.isValidElement(icon)) return icon;
+  switch (icon) {
+    case 'eye':
+      return <EyeOutlined />;
+    case 'play':
+      return <PlayCircleOutlined />;
+    case 'ban':
+      return <StopOutlined />;
+    case 'pen-to-square':
+    case 'edit':
+      return <EditOutlined />;
+    case 'trash':
+      return <DeleteOutlined />;
+    case 'check':
+      return <CheckOutlined />;
+    case 'truck':
+      return <MedicineBoxOutlined />;
+    default:
+      return null;
+  }
+};
+
+const getButtonProps = (color?: string) => {
+  switch (color) {
+    case 'primary':
+      return { type: 'primary' as const };
+    case 'danger':
+      return { danger: true, type: 'primary' as const };
+    case 'success':
+      return {
+        type: 'primary' as const,
+        style: { background: '#10b981', borderColor: '#10b981', color: '#fff' },
+      };
+    case 'warning':
+      return {
+        type: 'primary' as const,
+        style: { background: '#f59e0b', borderColor: '#f59e0b', color: '#fff' },
+      };
+    case 'info':
+      return {
+        type: 'primary' as const,
+        style: { background: '#0284c7', borderColor: '#0284c7', color: '#fff' },
+      };
+    default:
+      return { type: 'default' as const };
+  }
+};
 
 const ActionBar: React.FC<ActionBarProps> = ({
   isVisible,
@@ -55,25 +117,27 @@ const ActionBar: React.FC<ActionBarProps> = ({
         <div className="action-bar-content">
           <div className="action-bar-info">
             <span className="action-bar-selected">
-              {title}: <strong>{selectedId}</strong> ({entityName})
+              {title}: <Text strong style={{ color: '#0b4f6c' }}>{selectedId}</Text>{' '}
+              <Text type="secondary">({entityName})</Text>
             </span>
           </div>
-          <div className="action-bar-actions">
+          <Space className="action-bar-actions" wrap>
             {actions.map((action, idx) => (
-              <button
+              <Button
                 key={idx}
-                className={`action-btn ${action.color || ''}`}
+                {...getButtonProps(action.color)}
+                icon={renderIcon(action.icon)}
                 onClick={() => action.onClick(selectedId)}
                 disabled={action.disabled}
+                size="middle"
               >
-                <i className={`fa-solid fa-${action.icon}`}></i>
                 {action.label}
-              </button>
+              </Button>
             ))}
-            <button className="action-btn action-close" onClick={onClose}>
-              <i className="fa-solid fa-times"></i> Đóng
-            </button>
-          </div>
+            <Button icon={<CloseOutlined />} onClick={onClose} size="middle">
+              Đóng
+            </Button>
+          </Space>
         </div>
       </div>
     </div>
