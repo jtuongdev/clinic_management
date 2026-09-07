@@ -182,7 +182,7 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   }), [treatmentSummary, data]);
 
   const renderEmptyState = (message: string) => (
-    <div className="empty" style={{ padding: '28px 20px', textAlign: 'center', color: '#7b8794', background: '#fafcfd', border: '1px dashed #d9e2ea', borderRadius: '8px' }}>
+    <div className="empty" style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '4px' }}>
       <i className="fa-solid fa-file-medical" style={{ display: 'block', fontSize: '24px', marginBottom: '8px', color: '#b3bec9' }}></i>
       {message}
     </div>
@@ -219,7 +219,7 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
 
           {/* Form nhập liệu - hiển thị khi đang chỉnh sửa */}
           {isDiagnosisEditing && (
-            <div className="diagnosis-form-card" style={{ background: '#fafcfd', border: '1px solid #d9e2ea', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+            <div className="diagnosis-form-card" style={{ background: '#f8fafc', border: '1px solid var(--line)', borderRadius: '4px', padding: '12px', marginBottom: '10px' }}>
               <div className="section-head" style={{ marginBottom: '8px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '600' }}>
                   {diagnosisForm.id ? 'Sửa chẩn đoán' : 'Thêm chẩn đoán mới'}

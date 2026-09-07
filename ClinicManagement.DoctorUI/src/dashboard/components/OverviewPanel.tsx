@@ -61,7 +61,7 @@ const OverviewPanel: React.FC = () => {
           <span className="badge-status"><i className="fa-solid fa-circle" style={{fontSize: '8px', marginRight: '5px', color: '#1f9d61'}}></i>Đang làm việc</span>
           <span className="doc-time"><i className="fa-regular fa-clock"></i> Ca sáng: 07:30 – 11:30</span>
           <span className="doc-time"><i className="fa-regular fa-calendar"></i> Phòng PK01</span>
-          <span className="doc-time" style={{background: '#f0f4f6', padding: '4px 10px', borderRadius: '6px'}}><i className="fa-regular fa-circle-check"></i> <strong>{mockData.totalPatients}</strong> bệnh nhân</span>
+          <span className="doc-time" style={{background: '#f1f5f9', padding: '2px 8px', borderRadius: '3px'}}><i className="fa-regular fa-circle-check"></i> <strong>{mockData.totalPatients}</strong> bệnh nhân</span>
         </div>
       </div>
 

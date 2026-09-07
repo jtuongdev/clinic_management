@@ -55,7 +55,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({ data, luotKhamId })
   return (
     <div className="tab-panel active">
       {error && (
-        <div className="api-error-banner" style={{ background: '#fff7ed', color: '#c2410c', padding: '8px 12px', marginBottom: '12px', borderRadius: '6px' }}>
+        <div className="api-error-banner" style={{ background: '#fff7ed', color: '#c2410c', padding: '8px 12px', marginBottom: '8px', borderRadius: '4px' }}>
           {error}
         </div>
       )}
