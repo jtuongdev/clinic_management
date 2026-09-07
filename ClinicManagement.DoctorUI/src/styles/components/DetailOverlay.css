@@ -43,7 +43,7 @@
 .detail-head strong {
     font-size: 13px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -64,8 +64,8 @@
     width: 44px;
     height: 44px;
     border-radius: 4px;
-    background: #e0f2fe;
-    color: #0369a1;
+    background: var(--primary-soft);
+    color: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -76,11 +76,11 @@
 .profile-name {
     font-size: 14px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
 }
 .profile-code {
     font-size: 11px;
-    color: #64748b;
+    color: var(--muted);
     margin-top: 2px;
     font-family: monospace;
 }

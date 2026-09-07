@@ -39,7 +39,7 @@
 .records-sidebar-head h3 {
     font-size: 12px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -106,7 +106,7 @@
 .records-patient-item .pname {
     font-weight: 600;
     font-size: 12px;
-    color: #0f172a;
+    color: var(--text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -151,7 +151,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #0f172a;
+    color: var(--text);
 }
 .records-content-head .title i {
     font-size: 14px;
@@ -196,7 +196,7 @@
     transition: all 0.15s ease;
 }
 .records-tabs .tab:hover {
-    color: #0f172a;
+    color: var(--text);
     background: rgba(0, 0, 0, 0.02);
 }
 .records-tabs .tab.active {
@@ -248,7 +248,7 @@
 .record-card-head h3 {
     font-size: 12px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -281,7 +281,7 @@
     border-radius: 4px;
     padding: 0 10px;
     height: 32px;
-    color: #0f172a;
+    color: var(--text);
     background: #fff;
     outline: none;
     font-size: 12px;
@@ -322,5 +322,5 @@
 .info-item strong {
     font-size: 12px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
 }

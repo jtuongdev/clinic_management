@@ -59,7 +59,7 @@
 .kpi-value {
     font-size: 16px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     line-height: 1;
 }
 
@@ -100,7 +100,7 @@
 .queue-title {
     font-weight: 700;
     font-size: 13px;
-    color: #0f172a;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 7px;
@@ -231,7 +231,7 @@
 
 .patient-name {
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     font-size: 12px;
     display: flex;
     align-items: center;
@@ -257,7 +257,7 @@
 }
 
 .visit strong {
-    color: #0f172a;
+    color: var(--text);
 }
 
 .priority {
@@ -344,7 +344,7 @@
 .action:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .action.call {
@@ -407,7 +407,7 @@
 .page:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .page.active {

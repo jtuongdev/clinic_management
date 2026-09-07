@@ -50,7 +50,7 @@
 .doctor-strip .doc-name {
     font-weight: 700;
     font-size: 13px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .doctor-strip .doc-title {
@@ -90,7 +90,7 @@
 }
 
 .doctor-strip .doc-time strong {
-    color: #0f172a;
+    color: var(--text);
 }
 
 /* 2. Metric Ribbon - 42px Full Bleed */
@@ -135,7 +135,7 @@
 .kpi-card .kpi-value {
     font-size: 16px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     line-height: 1;
 }
 
@@ -197,7 +197,7 @@
 .dash-card-head h3 {
     font-size: 12px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 7px;
@@ -239,7 +239,7 @@
 .current-patient .cp-name {
     font-weight: 700;
     font-size: 13px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .current-patient .cp-code {
@@ -300,7 +300,7 @@
 .queue-list-compact .ql-item .ql-name {
     font-weight: 600;
     font-size: 12px;
-    color: #0f172a;
+    color: var(--text);
     flex: 1;
 }
 
@@ -348,14 +348,14 @@
 .appt-item .appt-time {
     font-weight: 700;
     font-size: 11px;
-    color: #0f172a;
+    color: var(--text);
     min-width: 40px;
 }
 
 .appt-item .appt-name {
     font-weight: 600;
     font-size: 12px;
-    color: #0f172a;
+    color: var(--text);
     flex: 1;
 }
 
@@ -414,7 +414,7 @@
 .alert-item .alert-title {
     font-weight: 600;
     font-size: 12px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .alert-item .alert-msg {
@@ -475,7 +475,7 @@
 .task-item .task-title {
     font-weight: 600;
     font-size: 12px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .task-item .task-count {
@@ -539,7 +539,7 @@
 .recent-item .recent-name {
     font-weight: 600;
     font-size: 12px;
-    color: #0f172a;
+    color: var(--text);
     flex: 1;
 }
 
@@ -577,7 +577,7 @@
 .stat-box .stat-value {
     font-size: 16px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     margin-top: 2px;
 }
 

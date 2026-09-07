@@ -1,39 +1,41 @@
-/* src/styles/components/Header.css - Enterprise Desktop Header */
+/* src/styles/components/Header.css - Enterprise Desktop Header (Hospital White Theme) */
 .header {
-    background: #0f172a;
-    border-bottom: 1px solid #1e293b;
+    background: #ffffff;
+    border-bottom: 1px solid var(--line);
     position: sticky;
     top: 0;
     z-index: 50;
     height: var(--header-height, 44px);
     flex: 0 0 var(--header-height, 44px);
+    box-sizing: border-box;
 }
 .header-main {
     height: var(--header-height, 44px);
-    padding: 0 14px;
-    background: #0f172a;
+    padding: 0 16px;
+    background: #ffffff;
     display: flex;
     align-items: center;
     gap: 8px;
+    box-sizing: border-box;
 }
 .brand {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: #ffffff;
+    gap: 10px;
+    color: var(--text);
     font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-    padding-right: 14px;
-    margin-right: 4px;
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    padding-right: 16px;
+    margin-right: 6px;
+    border-right: 1px solid var(--line);
     white-space: nowrap;
 }
 .brand-mark {
-    width: 26px;
-    height: 26px;
-    border-radius: 4px;
-    background: #0284c7;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--primary);
     display: grid;
     place-items: center;
     font-size: 13px;
@@ -49,12 +51,12 @@
 .nav a {
     border: 0;
     background: transparent;
-    color: #94a3b8;
+    color: var(--text-secondary);
     height: var(--header-height, 44px);
-    padding: 0 12px;
+    padding: 0 14px;
     border-radius: 0;
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: 500;
+    font-size: 12.5px;
     transition: all 0.15s ease;
     white-space: nowrap;
     text-decoration: none;
@@ -64,32 +66,37 @@
     border-bottom: 2px solid transparent;
 }
 .nav a:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e2e8f0;
+    background: var(--bg-hover);
+    color: var(--primary);
 }
 .nav a.active {
-    background: rgba(255, 255, 255, 0.08);
-    color: #38bdf8;
-    border-bottom: 2px solid #38bdf8;
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    font-weight: 600;
     box-shadow: none;
 }
 .user-menu {
-    color: #f1f5f9;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 12px;
-    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    padding-left: 14px;
+    border-left: 1px solid var(--line);
     font-weight: 600;
-    font-size: 12px;
+    font-size: 12.5px;
     cursor: default;
 }
 .user-menu .avatar {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 4px;
-    background: #0284c7;
+    background: var(--primary);
     color: #ffffff;
     font-size: 11px;
     font-weight: 700;
+}
+.user-menu i {
+    color: var(--muted);
+    font-size: 11px;
 }
