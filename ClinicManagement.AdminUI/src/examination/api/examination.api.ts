@@ -12,6 +12,9 @@ import { CoSoDto, KhoaDto, ThongKeLuotKhamDto, LuotKhamDangXuLyDto,
  
 import { DonThuocListDto, ThongKeDonThuocDto, } from '../type/prescription.examination.type';
 export const examinationApi = {
+  completeExam: (visitId: number) =>
+    api.post(`/LuotKham/${visitId}/complete`),
+
   getLuotKhamList: (params: {
     pageIndex?: number;
     pageSize?: number;
@@ -72,7 +75,7 @@ export const examinationApi = {
   },
 
   getThongKeChiDinhDichVu: (params?: { maKhoa?: number; maBacSi?: number }) => {
-    return api.get<ApiResponse<ThongKeChiDinhDichVuDto>>('/ChiDinhDichVu/thong-ke', { params });
+    return api.get<ApiResponse<ThongKeChiDinhDichVuDto>>('/LuotKham/thong-ke-chi-dinh', { params });
   },
   // ĐƠN THUỐC
   getDonThuocList: (params: {
@@ -91,5 +94,17 @@ export const examinationApi = {
 getThongKeDonThuoc: (params?: { maCoSo?: number; maKhoa?: number }) => {
   return api.get<ApiResponse<ThongKeDonThuocDto>>('/LuotKham/thong-ke-donthuoc', { params });
 },
+
+approvePrescription: (visitId: number, prescriptionId: number) =>
+  api.post(`/luot-kham/${visitId}/don-thuoc/${prescriptionId}/approve`),
+
+cancelPrescription: (visitId: number, prescriptionId: number) =>
+  api.post(`/luot-kham/${visitId}/don-thuoc/${prescriptionId}/cancel`),
+
+dispensePrescription: (prescriptionId: number, idempotencyKey: string) =>
+  api.post('/inventory/prescriptions/' + prescriptionId + '/dispense', {
+    idempotencyKey,
+    note: 'Cấp thuốc tại quầy',
+  }),
   
 };

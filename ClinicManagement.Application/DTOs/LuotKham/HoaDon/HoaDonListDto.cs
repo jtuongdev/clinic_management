@@ -11,7 +11,7 @@ namespace ClinicManagement.Application.DTOs.LuotKham
         public string TenBenhNhan { get; set; } = string.Empty;
         public decimal TongTien { get; set; }
         public decimal DaThanhToan { get; set; }
-        public decimal SoTienConLai => TongTien - DaThanhToan;
+        public decimal SoTienConLai => Math.Max(0, TongTien - SoTienBaoHiemChiTra - DaThanhToan);
         public string TrangThai { get; set; } = string.Empty; // CHUA_THANH_TOAN, THANH_TOAN_MOT_PHAN, DA_THANH_TOAN, DA_HUY
         public DateTime NgayLap { get; set; }
         public int MaLuotKham { get; set; }

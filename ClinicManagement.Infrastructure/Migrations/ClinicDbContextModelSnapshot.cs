@@ -2088,6 +2088,144 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("DonViTinhQuyDoi", (string)null);
                 });
 
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.IdempotencyRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ResponseJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key", "Operation")
+                        .IsUnique();
+
+                    b.ToTable("IdempotencyRecord", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.InventoryTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LoaiGiaoDich")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("MaChungTu")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("MaItem")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaNguoiThucHien")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaTonKho")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SoLo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("SoLuongSau")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<decimal>("SoLuongThayDoi")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<decimal>("SoLuongTruoc")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .HasFilter("[IdempotencyKey] <> ''");
+
+                    b.HasIndex("MaTonKho");
+
+                    b.HasIndex("MaItem", "CreatedAt");
+
+                    b.ToTable("InventoryTransaction", (string)null);
+                });
+
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.Item", b =>
                 {
                     b.Property<int>("Id")
@@ -2154,6 +2292,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<decimal>("TonToiThieu")
+                        .HasColumnType("decimal(12,3)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -2477,6 +2618,129 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("PhieuXuatKho", (string)null);
                 });
 
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.Stocktake", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ApprovedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ReferenceCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("SubmittedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferenceCode")
+                        .IsUnique();
+
+                    b.ToTable("Stocktake", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.StocktakeCount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ActualQuantity")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaTonKho")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("StocktakeId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SystemQuantity")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaTonKho");
+
+                    b.HasIndex("StocktakeId", "MaTonKho")
+                        .IsUnique();
+
+                    b.ToTable("StocktakeCount", (string)null);
+                });
+
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.TonKho", b =>
                 {
                     b.Property<int>("Id")
@@ -2519,6 +2783,10 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -4100,6 +4368,24 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("Item");
                 });
 
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.InventoryTransaction", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Inventory.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("MaItem")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Inventory.TonKho", "TonKho")
+                        .WithMany()
+                        .HasForeignKey("MaTonKho")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Item");
+
+                    b.Navigation("TonKho");
+                });
+
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.Kho", b =>
                 {
                     b.HasOne("ClinicManagement.Domain.Facility.CoSo", "CoSo")
@@ -4191,6 +4477,25 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("KhoXuat");
 
                     b.Navigation("NguoiXuat");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.StocktakeCount", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Inventory.TonKho", "TonKho")
+                        .WithMany()
+                        .HasForeignKey("MaTonKho")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Inventory.Stocktake", "Stocktake")
+                        .WithMany("Counts")
+                        .HasForeignKey("StocktakeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Stocktake");
+
+                    b.Navigation("TonKho");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.TonKho", b =>
@@ -4568,6 +4873,11 @@ namespace ClinicManagement.Infrastructure.Migrations
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.PhieuXuatKho", b =>
                 {
                     b.Navigation("ChiTietXuatKhos");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.Stocktake", b =>
+                {
+                    b.Navigation("Counts");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Patient.BenhNhan", b =>

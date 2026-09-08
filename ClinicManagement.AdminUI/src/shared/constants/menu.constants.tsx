@@ -207,12 +207,13 @@ export const getSubMenuItems = (key: string): SubMenuItem[] => {
       { key: 'report-income', label: 'Thu chi', path: '/finance-reports/income' },
     ],
     inventory: [
-      { key: 'inventory-items', label: 'Thuốc & Vật tư', path: '/inventory' },
-      { key: 'inventory-import', label: 'Nhập kho', path: '/inventory/import' },
-      { key: 'inventory-export', label: 'Xuất kho', path: '/inventory/export' },
-      { key: 'inventory-stock', label: 'Tồn kho', path: '/inventory/stock' },
-      { key: 'inventory-supplier', label: 'Nhà cung cấp', path: '/inventory/supplier' },
+      { key: 'inventory-items',     label: 'Thuốc & Vật tư',       path: '/inventory' },
+      { key: 'inventory-stock',     label: 'Tồn kho',              path: '/inventory/stock' },
+      { key: 'inventory-import',    label: 'Nhập kho',             path: '/inventory/import' },
+      { key: 'inventory-dispense',  label: 'Cấp phát & Xuất kho',  path: '/inventory/dispense' },
+      { key: 'inventory-stocktake', label: 'Kiểm kê',              path: '/inventory/stocktake' },
     ],
+
     settings: [
       { key: 'setting-facility', label: 'Cơ sở', path: '/settings/facility' },
       { key: 'setting-department', label: 'Khoa', path: '/settings/department' },

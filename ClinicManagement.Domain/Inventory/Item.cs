@@ -16,6 +16,7 @@ namespace ClinicManagement.Domain.Inventory
         public decimal GiaBanLe { get; set; }
         public bool CanKeDon { get; set; }
         public bool IsActive { get; set; }
+        public decimal TonToiThieu { get; set; }
 
         public virtual ICollection<DonViTinhQuyDoi> DonViTinhQuyDois { get; set; }
         public virtual ICollection<TonKho> TonKhos { get; set; }

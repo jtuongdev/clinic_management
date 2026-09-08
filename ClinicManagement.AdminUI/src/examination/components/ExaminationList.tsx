@@ -28,6 +28,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useExamination } from '../hook/useExamination';
 import ActionBar from '../../shared/components/layouts/components/ActionBar';
 import { LuotKhamItemDto } from '../type/examination.types';
+import { examinationApi } from '../api/examination.api';
 
 const { Text } = Typography;
 
@@ -155,6 +156,28 @@ const ExaminationList: React.FC = () => {
     message.success(`Bắt đầu khám cho bệnh nhân ${item.tenBenhNhan}`);
   };
 
+  const handleCompleteExam = (item: LuotKhamItemDto) => {
+    Modal.confirm({
+      title: 'Hoàn tất lượt khám và tạo hóa đơn?',
+      content: `Hệ thống sẽ tạo hóa đơn và công nợ cho ${item.tenBenhNhan} nếu có dịch vụ hoặc thuốc phát sinh.`,
+      okText: 'Hoàn tất',
+      cancelText: 'Quay lại',
+      onOk: async () => {
+        try {
+          await examinationApi.completeExam(item.id);
+          message.success('Đã hoàn tất lượt khám và tạo hóa đơn/công nợ.');
+          setSelectedItem(null);
+          loadList();
+          if (filters.maCoSo) {
+            fetchThongKeKhamBenh({ maCoSo: filters.maCoSo, maKhoa: filters.maKhoa });
+          }
+        } catch {
+          message.error('Không thể hoàn tất lượt khám.');
+        }
+      },
+    });
+  };
+
   const handleCancelExam = (item: LuotKhamItemDto) => {
     Modal.confirm({
       title: 'Xác nhận hủy lượt khám?',
@@ -184,6 +207,14 @@ const ExaminationList: React.FC = () => {
       color: 'success' as const,
       onClick: () => {
         if (selectedItem) handleStartExam(selectedItem);
+      },
+    },
+    {
+      label: 'Hoàn tất & lập HĐ',
+      icon: 'check',
+      color: 'primary' as const,
+      onClick: () => {
+        if (selectedItem) handleCompleteExam(selectedItem);
       },
     },
     {
@@ -292,6 +323,16 @@ const ExaminationList: React.FC = () => {
               onClick={() => handleStartExam(record)}
             />
           </Tooltip>
+          {record.trangThai === 'DANG_KHAM' && (
+           <Tooltip title="Hoàn tất và lập hóa đơn">
+             <Button
+               type="text"
+               size="small"
+               icon={<CheckCircleOutlined style={{ color: '#2563eb' }} />}
+               onClick={() => handleCompleteExam(record)}
+             />
+           </Tooltip>
+          )}
           <Tooltip title="Hủy lượt khám">
             <Button
               type="text"

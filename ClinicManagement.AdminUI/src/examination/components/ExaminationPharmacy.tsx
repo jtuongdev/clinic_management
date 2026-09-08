@@ -29,6 +29,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useExamination } from '../hook/useExamination';
 import ActionBar, { ActionItem } from '../../shared/components/layouts/components/ActionBar';
 import { DonThuocListDto } from '../type/prescription.examination.type';
+import { examinationApi } from '../api/examination.api';
 
 const { Text } = Typography;
 
@@ -69,29 +70,50 @@ const ExaminationPharmacy: React.FC = () => {
     setSelectedDonThuoc(null);
   };
 
-  const handleApprovePrescription = (id: number | string) => {
+  const refreshPrescriptions = () => fetchDonThuocList({
+    pageIndex,
+    pageSize,
+    maKhoa: khoaFilter || filters.maKhoa,
+    trangThai: statusFilter || undefined,
+  });
+
+  const handleApprovePrescription = async (id: number | string) => {
+    if (!selectedDonThuoc) return;
     Modal.confirm({
       title: 'Xác nhận duyệt đơn thuốc?',
       content: `Duyệt cấp phát cho đơn thuốc #${id}?`,
       okText: 'Duyệt đơn',
-      onOk: () => {
+      onOk: async () => {
+        await examinationApi.approvePrescription(
+          Number(selectedDonThuoc.maLuotKham),
+          Number(id),
+        );
         message.success(`Đã duyệt đơn thuốc #${id}`);
+        await refreshPrescriptions();
       },
     });
   };
 
-  const handleDispenseMedicine = (id: number | string) => {
+  const handleDispenseMedicine = async (id: number | string) => {
+    await examinationApi.dispensePrescription(Number(id), `dispense-${id}-${Date.now()}`);
     message.success(`Đã xuất kho thuốc cho đơn #${id}`);
+    await refreshPrescriptions();
   };
 
-  const handleCancelPrescription = (id: number | string) => {
+  const handleCancelPrescription = async (id: number | string) => {
+    if (!selectedDonThuoc) return;
     Modal.confirm({
       title: 'Xác nhận hủy đơn thuốc?',
       content: `Bạn có chắc muốn hủy đơn thuốc #${id}?`,
       okText: 'Hủy đơn',
       okType: 'danger',
-      onOk: () => {
+      onOk: async () => {
+        await examinationApi.cancelPrescription(
+          Number(selectedDonThuoc.maLuotKham),
+          Number(id),
+        );
         message.info(`Đã hủy đơn thuốc #${id}`);
+        await refreshPrescriptions();
       },
     });
   };
@@ -510,13 +532,13 @@ const ExaminationPharmacy: React.FC = () => {
               <Alert
                 type="error"
                 showIcon
-                message="Paracetamol 500mg"
+                title="Paracetamol 500mg"
                 description="Còn 20 viên trong kho, dưới ngưỡng an toàn (50 viên)."
               />
               <Alert
                 type="warning"
                 showIcon
-                message="Amoxicillin 250mg"
+                title="Amoxicillin 250mg"
                 description="Lô hàng HSD-2026 sắp hết hạn trong 3 ngày tới."
               />
               <div style={{ marginTop: 8, textAlign: 'right' }}>

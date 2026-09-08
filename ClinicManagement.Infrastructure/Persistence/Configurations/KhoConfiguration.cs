@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ClinicManagement.Domain.Inventory;
+using ClinicManagement.Domain.Common.Enums;
 
 namespace ClinicManagement.Infrastructure.Persistence.Configurations
 {
@@ -23,7 +24,9 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasMaxLength(255);
                 
             builder.Property(k => k.TrangThai)
-                .HasConversion<string>()
+                .HasConversion(
+                    value => ToDatabaseStatus(value),
+                    value => FromDatabaseStatus(value))
                 .HasMaxLength(20);
             
             builder.HasOne(k => k.CoSo)
@@ -59,5 +62,23 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             builder.HasIndex(k => k.MaCoSo);
             builder.HasIndex(k => k.TrangThai);
         }
+
+        private static string ToDatabaseStatus(TrangThaiKho value)
+            => value switch
+            {
+            TrangThaiKho.HoatDong => "HoatDong",
+            TrangThaiKho.TamNgung => "TamNgung",
+            TrangThaiKho.DongCua => "DongCua",
+            _ => throw new InvalidOperationException($"Trạng thái kho không hợp lệ: {value}")
+            };
+
+        private static TrangThaiKho FromDatabaseStatus(string value)
+            => value switch
+            {
+            "ACTIVE" or "HoatDong" => TrangThaiKho.HoatDong,
+            "INACTIVE" or "TamNgung" => TrangThaiKho.TamNgung,
+            "CLOSED" or "DongCua" => TrangThaiKho.DongCua,
+            _ => throw new InvalidOperationException($"Trạng thái kho không hợp lệ: {value}")
+            };
     }
 }

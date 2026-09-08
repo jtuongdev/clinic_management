@@ -62,6 +62,7 @@ namespace ClinicManagement.Domain.Billing
 
             var chiTiet = new ChiTietHoaDon
             {
+                HoaDon = this,
                 MaHoaDon = Id,
                 LoaiDoiTuong = loaiDoiTuong,
                 MaDoiTuong = maDoiTuong,
@@ -121,7 +122,7 @@ namespace ClinicManagement.Domain.Billing
                 NgayThu = DateTime.UtcNow,
                 PhuongThuc = phuongThuc,
                 MaNguoiThu = nguoiThu,
-                CreatedBy = CreatedBy
+                CreatedBy = nguoiThu
             };
             PhieuThus.Add(phieuThu);
 
@@ -133,14 +134,16 @@ namespace ClinicManagement.Domain.Billing
         }
 
         /// <summary>
-        /// Phương thức bổ sung nhằm hỗ trợ nghiệp vụ hủy hóa đơn sai sót
+        /// Phương thức hỗ trợ nghiệp vụ hủy hóa đơn sai sót
         /// </summary>
-        public void HuyHoaDon()
+        public void HuyHoaDon(string? lyDo = null)
         {
             if (TrangThai == TrangThaiHoaDon.DA_THANH_TOAN || TrangThai == TrangThaiHoaDon.THANH_TOAN_MOT_PHAN)
                 throw new InvalidOperationException("Không thể hủy hóa đơn đã phát sinh giao dịch thanh toán.");
 
             TrangThai = TrangThaiHoaDon.DA_HUY;
+            if (!string.IsNullOrWhiteSpace(lyDo))
+                GhiChu = lyDo.Trim();
         }
 
         public decimal SoTienConNo() => SoTienBenhNhanChiTra - DaThanhToan;

@@ -1,194 +1,159 @@
-import React, { useState } from 'react';
-import { Card, Row, Col, Tag, Typography, Button, Space, Tooltip, Badge } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Badge, Button, Empty, Row, Col, Select, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import {
-  AppstoreOutlined,
-  CheckCircleOutlined,
-  ShopOutlined,
-  ToolOutlined,
-  AlertOutlined,
-  MedicineBoxOutlined,
-  UserOutlined,
-  TeamOutlined,
+  ApartmentOutlined,
+  ClockCircleOutlined,
   ReloadOutlined,
+  ShopOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
+import { facilityExaminationApi } from '../api/facility.examination.api';
+import {
+  ExaminationFacilityDepartment,
+  ExaminationFacilityLocation,
+  ExaminationFacilityRoom,
+} from '../type/facility.examination.type';
 
 const { Text } = Typography;
 
-interface RoomItem {
-  name: string;
-  type: string;
-  doctor: string;
-  patient: string;
-  status: 'doing' | 'alert' | 'idle' | string;
-}
-
-const mockFacility = {
-  kpis: [
-    { label: 'Tổng phòng khám', value: '28', color: '#0b4f6c', bgColor: '#e8f4f7', icon: <AppstoreOutlined style={{ fontSize: 20, color: '#0b4f6c' }} /> },
-    { label: 'Đang hoạt động', value: '18', color: '#10b981', bgColor: '#ecfdf5', icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
-    { label: 'Phòng trống', value: '8', color: '#0284c7', bgColor: '#e0f2fe', icon: <ShopOutlined style={{ fontSize: 20, color: '#0284c7' }} /> },
-    { label: 'Bảo trì kỹ thuật', value: '2', color: '#f59e0b', bgColor: '#fffbeb', icon: <ToolOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
-    { label: 'Sự cố thiết bị', value: '1', color: '#ef4444', bgColor: '#fef2f2', icon: <AlertOutlined style={{ fontSize: 20, color: '#ef4444' }} /> },
-    { label: 'Bàn khám lâm sàng', value: '5', color: '#8b5cf6', bgColor: '#f3e8ff', icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#8b5cf6' }} /> },
-  ],
-  rooms: [
-    { name: 'P101', type: 'Khoa Nội', doctor: 'BS. Tuấn', patient: 'Nguyễn Văn An', status: 'doing' },
-    { name: 'P205', type: 'Khoa Ngoại', doctor: 'BS. Hoa', patient: 'Ngô Thị Hoa', status: 'doing' },
-    { name: 'P302', type: 'Khoa Nhi', doctor: 'BS. Minh', patient: 'Lê Văn Cường', status: 'alert' },
-    { name: 'P408', type: 'Khoa Sản', doctor: 'BS. Lan', patient: 'Phạm Thị Dung', status: 'doing' },
-    { name: 'P510', type: 'Tai Mũi Họng', doctor: 'BS. Hùng', patient: '—', status: 'idle' },
-  ] as RoomItem[],
-};
-
 const ExaminationFacility: React.FC = () => {
-  const [data] = useState(mockFacility);
-  const [loading, setLoading] = useState(false);
+  const [locations, setLocations] = useState<ExaminationFacilityLocation[]>([]);
+  const [departments, setDepartments] = useState<ExaminationFacilityDepartment[]>([]);
+  const [rooms, setRooms] = useState<ExaminationFacilityRoom[]>([]);
+  const [locationId, setLocationId] = useState<number>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
 
-  const handleRefresh = () => {
+  const loadFacility = useCallback(async (selectedLocationId?: number) => {
     setLoading(true);
-    setTimeout(() => setLoading(false), 500);
-  };
+    setError(undefined);
+    try {
+      const [locationsResponse, departmentsResponse] = await Promise.all([
+        facilityExaminationApi.getLocations(),
+        facilityExaminationApi.getDepartments(selectedLocationId),
+      ]);
+      const loadedLocations = Array.from(
+        new Map((locationsResponse.data.data ?? []).map((location) => [location.id, location])).values()
+      );
+      const loadedDepartments = Array.from(
+        new Map((departmentsResponse.data.data ?? []).map((department) => [department.maKhoa, department])).values()
+      );
+      setLocations(loadedLocations);
+      setDepartments(loadedDepartments);
 
-  const renderStatusTag = (status: string) => {
-    if (status === 'doing') return <Tag color="processing">Đang khám</Tag>;
-    if (status === 'alert') return <Tag color="error">Quá tải / Chờ lâu</Tag>;
-    return <Tag color="default">Phòng trống</Tag>;
-  };
+      const roomResponses = await Promise.all(
+        loadedDepartments.map((department) =>
+          facilityExaminationApi.getRoomsByDepartment(department.maKhoa)
+        )
+      );
+      const uniqueRooms = new Map<number, ExaminationFacilityRoom>();
+      roomResponses.forEach((response, index) => {
+        (response.data.data ?? []).forEach((room) => {
+          if (!uniqueRooms.has(room.id)) {
+            uniqueRooms.set(room.id, {
+              id: room.id,
+              code: room.ma,
+              name: room.ten,
+              status: room.trangThai,
+              departmentName: room.tenKhoa || loadedDepartments[index].tenKhoa,
+              waitingCount: loadedDepartments[index].soLuotCho,
+            });
+          }
+        });
+      });
+      setRooms([...uniqueRooms.values()]);
+    } catch (requestError) {
+      console.error('Không thể tải dữ liệu cơ sở và phòng khám', requestError);
+      setError('Không thể tải dữ liệu cơ sở và phòng khám.');
+      setDepartments([]);
+      setRooms([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadFacility(locationId);
+  }, [loadFacility, locationId]);
+
+  const kpis = useMemo(() => [
+    { label: 'Tổng phòng khám', value: rooms.length, icon: <ShopOutlined />, color: '#0b4f6c' },
+    { label: 'Tổng khoa', value: departments.length, icon: <ApartmentOutlined />, color: '#0284c7' },
+    {
+      label: 'Tổng lượt chờ',
+      value: departments.reduce((total, department) => total + department.soLuotCho, 0),
+      icon: <ClockCircleOutlined />,
+      color: '#f59e0b',
+    },
+    {
+      label: 'Bác sĩ hoạt động',
+      value: departments.reduce((total, department) => total + department.soBacSi, 0),
+      icon: <TeamOutlined />,
+      color: '#8b5cf6',
+    },
+  ], [departments, rooms.length]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        background: '#ffffff',
-      }}
-    >
-      {/* Metric Ribbon / Stat Bar */}
-      <div
-        style={{
-          height: 42,
-          minHeight: 42,
-          background: '#f8fafc',
-          borderBottom: '1px solid #e2e8f0',
-          padding: '0 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          overflowX: 'auto',
-          flexShrink: 0,
-        }}
-      >
-        {data.kpis.map((kpi, idx) => (
-          <React.Fragment key={idx}>
-            {idx > 0 && <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}>{kpi.icon}</span>
-              <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.label}:</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: kpi.color }}>
-                {kpi.value}
-              </span>
-            </div>
-          </React.Fragment>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: '#fff' }}>
+      <div style={{ minHeight: 42, background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '0 16px', display: 'flex', alignItems: 'center', gap: 18, overflowX: 'auto' }}>
+        {kpis.map((kpi) => (
+          <div key={kpi.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+            <span style={{ color: kpi.color }}>{kpi.icon}</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.label}:</span>
+            <strong style={{ color: kpi.color }}>{kpi.value}</strong>
+          </div>
         ))}
       </div>
 
-      {/* Control Toolbar */}
-      <div
-        style={{
-          minHeight: 46,
-          padding: '6px 16px',
-          borderBottom: '1px solid #e2e8f0',
-          background: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 10,
-          flexShrink: 0,
-        }}
-      >
-        <Space size="middle">
-          <Space size="small">
-            <ShopOutlined style={{ color: '#0b4f6c', fontSize: 16 }} />
-            <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
-              Sơ đồ trạng thái buồng khám & Thiết bị lâm sàng
-            </Text>
-          </Space>
-          <Badge count={data.rooms.length} style={{ backgroundColor: '#0b4f6c' }} />
+      <div style={{ minHeight: 46, padding: '6px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <Space>
+          <ApartmentOutlined style={{ color: '#0b4f6c' }} />
+          <Text strong>Sơ đồ cơ sở và phòng khám</Text>
+          <Badge count={rooms.length} style={{ backgroundColor: '#0b4f6c' }} />
         </Space>
-
-        <Tooltip title="Làm mới tình trạng phòng">
-          <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading} size="middle">
-            Làm mới
-          </Button>
-        </Tooltip>
+        <Space>
+          <Select
+            allowClear
+            placeholder="Tất cả cơ sở"
+            value={locationId}
+            options={locations.map((location) => ({ value: location.id, label: `${location.code} - ${location.name}` }))}
+            onChange={setLocationId}
+            style={{ minWidth: 220 }}
+          />
+          <Tooltip title="Tải lại dữ liệu từ API">
+            <Button icon={<ReloadOutlined />} onClick={() => void loadFacility(locationId)} loading={loading}>
+              Làm mới
+            </Button>
+          </Tooltip>
+        </Space>
       </div>
 
-      {/* Room Grid Body */}
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 16 }}>
-        <Row gutter={[12, 12]}>
-          {data.rooms.map((room, idx) => {
-            const isDoing = room.status === 'doing';
-            const isAlert = room.status === 'alert';
-            const borderCol = isAlert ? '#ffccc7' : isDoing ? '#bae0ff' : '#e2e8f0';
-            const topBarCol = isAlert ? '#ff4d4f' : isDoing ? '#0b4f6c' : '#cbd5e1';
-
-            return (
-              <Col xs={24} sm={12} md={8} lg={6} xl={4.8} key={idx}>
-                <div
-                  style={{
-                    borderRadius: 6,
-                    border: `1px solid ${borderCol}`,
-                    background: '#ffffff',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    padding: '12px 14px',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: 3,
-                      backgroundColor: topBarCol,
-                    }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <div>
-                      <Text strong style={{ fontSize: 15, color: '#0b4f6c', display: 'block' }}>
-                        {room.name}
-                      </Text>
-                      <Tag color="blue" style={{ marginTop: 2, marginRight: 0, fontSize: 11 }}>
-                        {room.type}
-                      </Tag>
-                    </div>
-                    {renderStatusTag(room.status)}
+        {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
+        {loading ? <Spin description="Đang tải dữ liệu cơ sở và phòng khám..." /> : rooms.length === 0 ? (
+          <Empty description="Chưa có dữ liệu phòng khám từ hệ thống" />
+        ) : (
+          <Row gutter={[12, 12]}>
+            {rooms.map((room) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={room.id}>
+                <div style={{ border: '1px solid #bae0ff', borderRadius: 6, padding: '12px 14px', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#0b4f6c' }} />
+                  <Text strong style={{ fontSize: 15, color: '#0b4f6c', display: 'block' }}>{room.code}</Text>
+                  <Text type="secondary">{room.name}</Text>
+                  <div style={{ marginTop: 10 }}>
+                    <Tag color="blue">{room.departmentName}</Tag>
+                    <Tag color={room.status === 'Hoạt động' ? 'success' : 'default'}>{room.status}</Tag>
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <UserOutlined style={{ color: '#94a3b8' }} />
-                      <Text type="secondary">Bác sĩ:</Text>
-                      <Text strong style={{ color: '#1e293b' }}>{room.doctor}</Text>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <TeamOutlined style={{ color: '#94a3b8' }} />
-                      <Text type="secondary">BN:</Text>
-                      <Text strong style={{ color: room.patient === '—' ? '#bfbfbf' : '#0b4f6c' }}>
-                        {room.patient}
-                      </Text>
-                    </div>
+                  <div style={{ marginTop: 8 }}>
+                    <Tag icon={<ClockCircleOutlined />} color={room.waitingCount > 0 ? 'warning' : 'success'}>
+                      {room.waitingCount > 0 ? `${room.waitingCount} lượt đang chờ` : 'Không có lượt chờ'}
+                    </Tag>
                   </div>
                 </div>
               </Col>
-            );
-          })}
-        </Row>
+            ))}
+          </Row>
+        )}
       </div>
     </div>
   );

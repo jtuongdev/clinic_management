@@ -36,22 +36,22 @@ export const usePatientData = () => {
         }
       } else {
         const res = await patientApi.getPaged({ pageIndex, pageSize });
-        if (res.data.success) {
-          const dtos = res.data.data.items;
+        if (res.data.success && res.data.data) {
+          const dtos = res.data.data.items ?? [];
           
           const mappedPatients: Patient[] = dtos.map((item: BenhNhanDto) => ({
             id: item.id,
-            maBN: item.maBenhNhanNoiBo,
-            name: item.hoTen,
-            gender: item.gioiTinh as 'M' | 'F',
+            maBN: item.maBenhNhanNoiBo || `BN-${item.id}`,
+            name: item.hoTen || `${item.ho || ''} ${item.ten || ''}`.trim(),
+            gender: (item.gioiTinh === 'F' ? 'F' : 'M') as 'M' | 'F',
             dob: item.ngaySinh,
-            phone: item.dienThoai,
-            dept: item.tenKhoa,
-            status: item.trangThaiLuotKham as PatientStatus,
+            phone: item.dienThoai || '',
+            dept: item.tenKhoa || '',
+            status: (item.trangThaiLuotKham || 'CHO_KHAM') as PatientStatus,
           }));
 
           setPatients(mappedPatients);
-          setTotal(res.data.data.totalCount); 
+          setTotal(res.data.data.totalCount ?? mappedPatients.length);
         }
       }
     } catch (error) {

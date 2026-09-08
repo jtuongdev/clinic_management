@@ -7,6 +7,9 @@ namespace ClinicManagement.Application.DTOs.BenhNhan
     {
         public int Id { get; set; }
         public string SoHoaDon { get; set; } = string.Empty;
+        public int MaLuotKham { get; set; }
+        public int MaBenhNhan { get; set; }
+        public string TenBenhNhan { get; set; } = string.Empty;
         public DateTime NgayLap { get; set; }
         public decimal TongTien { get; set; }
         public decimal SoTienBaoHiemChiTra { get; set; }

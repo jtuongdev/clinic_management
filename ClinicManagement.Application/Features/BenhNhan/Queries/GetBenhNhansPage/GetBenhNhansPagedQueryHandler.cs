@@ -40,40 +40,65 @@ namespace ClinicManagement.Application.Features.BenhNhan.Queries
                 query = query.Where(b => !b.IsDeleted);
             }
             var totalCount = await _benhNhanRepo.CountAsync(query);
-            var items = await query
+
+            var rawItems = await query
+                .AsNoTracking()
                 .OrderByDescending(b => b.CreatedAt)
                 .Skip((request.PageIndex - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(b => new BenhNhanDto
+                .Select(b => new
                 {
-                    Id = b.Id,
-                    Ho = b.Ho,
-                    Ten = b.Ten,
-                    NgaySinh = b.NgaySinh,
-                    GioiTinh = b.GioiTinh.ToString(),
-                    DienThoai = b.DienThoai,
-                    Email = b.Email,
-                    SoCCCD = b.SoCCCD,
-                    DiaChi = b.DiaChi,
-                    NguoiLienHeTen = b.NguoiLienHeTen,
-                    NguoiLienHeDienThoai = b.NguoiLienHeDienThoai,
-                    CreatedAt = b.CreatedAt,
-                    IsDeleted = b.IsDeleted,
-                    
-                   
-                    MaCoSo = b.BenhNhanCoSo.FirstOrDefault().MaCoSo,
-                    MaBenhNhanNoiBo = b.BenhNhanCoSo.FirstOrDefault().MaBenhNhanNoiBo,
-                    TenCoSo = b.BenhNhanCoSo.FirstOrDefault().CoSo.Ten ,
+                    b.Id,
+                    b.Ho,
+                    b.Ten,
+                    b.NgaySinh,
+                    GioiTinh = (ClinicManagement.Domain.Common.Enums.GioiTinh?)b.GioiTinh,
+                    b.DienThoai,
+                    b.Email,
+                    b.SoCCCD,
+                    b.DiaChi,
+                    b.NguoiLienHeTen,
+                    b.NguoiLienHeDienThoai,
+                    b.CreatedAt,
+                    b.IsDeleted,
+                    MaCoSo = b.BenhNhanCoSo.Select(bn => (int?)bn.MaCoSo).FirstOrDefault(),
+                    MaBenhNhanNoiBo = b.BenhNhanCoSo.Select(bn => bn.MaBenhNhanNoiBo).FirstOrDefault(),
+                    TenCoSo = b.BenhNhanCoSo.Select(bn => bn.CoSo.Ten).FirstOrDefault(),
                     TrangThaiLuotKham = b.LuotKhams
-                        .OrderByDescending(lk => lk.CreatedAt)
-                        .Select(lk => lk.TrangThai.ToString())
-                        .FirstOrDefault() ?? string.Empty,
+                        .OrderByDescending(lk => lk.NgayKham)
+                        .ThenByDescending(lk => lk.CreatedAt)
+                        .Select(lk => (ClinicManagement.Domain.Common.Enums.TrangThaiLuotKham?)lk.TrangThai)
+                        .FirstOrDefault(),
                     TenKhoa = b.LuotKhams
-                        .OrderByDescending(lk => lk.CreatedAt)
-                        .Select(lk => lk.Khoa.Ten) 
-                        .FirstOrDefault() ?? string.Empty
-                            })
+                        .OrderByDescending(lk => lk.NgayKham)
+                        .ThenByDescending(lk => lk.CreatedAt)
+                        .Select(lk => lk.Khoa.Ten)
+                        .FirstOrDefault()
+                })
                 .ToListAsync(cancellationToken);
+
+            var items = rawItems.Select(x => new BenhNhanDto
+            {
+                Id = x.Id,
+                Ho = x.Ho ?? string.Empty,
+                Ten = x.Ten ?? string.Empty,
+                NgaySinh = x.NgaySinh,
+                GioiTinh = x.GioiTinh?.ToString() ?? "M",
+                DienThoai = x.DienThoai ?? string.Empty,
+                Email = x.Email ?? string.Empty,
+                SoCCCD = x.SoCCCD ?? string.Empty,
+                DiaChi = x.DiaChi ?? string.Empty,
+                NguoiLienHeTen = x.NguoiLienHeTen ?? string.Empty,
+                NguoiLienHeDienThoai = x.NguoiLienHeDienThoai ?? string.Empty,
+                CreatedAt = x.CreatedAt,
+                IsDeleted = x.IsDeleted,
+
+                MaCoSo = x.MaCoSo ?? 0,
+                MaBenhNhanNoiBo = x.MaBenhNhanNoiBo ?? string.Empty,
+                TenCoSo = x.TenCoSo ?? string.Empty,
+                TrangThaiLuotKham = x.TrangThaiLuotKham?.ToString() ?? string.Empty,
+                TenKhoa = x.TenKhoa ?? string.Empty
+            }).ToList();
 
             return new PagedResult<BenhNhanDto>
             {

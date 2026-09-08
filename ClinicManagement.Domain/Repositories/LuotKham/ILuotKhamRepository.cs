@@ -10,6 +10,7 @@ namespace ClinicManagement.Domain.Repositories
 {
     public partial interface ILuotKhamRepository : IRepository<LuotKham>
     {
+        Task<LuotKham?> GetForCompletionAsync(int id, CancellationToken cancellationToken = default);
         Task<(IReadOnlyList<LuotKham> Items, int TotalCount)> GetPagedAsync(
             int pageIndex,
             int pageSize,

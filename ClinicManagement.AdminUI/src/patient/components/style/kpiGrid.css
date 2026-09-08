@@ -1,13 +1,5 @@
 .kpi-grid {
   width: 100%;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 14px;
-}
-
-.kpi-grid .ant-col {
-  flex: 1 1 0;
-  min-width: 0;
 }
 
 .kpi-grid .kpi-card {

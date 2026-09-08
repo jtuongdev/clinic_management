@@ -75,9 +75,10 @@ export const KPIGrid = ({
           sm={12}
           md={8}
           lg={8}
-          xl={0}
+          xl={4}
           style={{
             display: 'flex',
+            flex: '1 1 auto', // Allow it to flex equally if possible or stretch
           }}
         >
           <Card

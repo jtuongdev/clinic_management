@@ -13,6 +13,8 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             
             builder.Property(tk => tk.SoLuongTon)
                 .HasColumnType("decimal(12,3)");
+            builder.Property(tk => tk.Version)
+                .IsConcurrencyToken();
             
             builder.HasOne(tk => tk.Kho)
                 .WithMany(k => k.TonKhos)

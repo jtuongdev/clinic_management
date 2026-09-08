@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ClinicManagement.Application.Features.LuotKham.Queries;
+using ClinicManagement.Application.Features.LuotKham.Commands.CompleteExam;
 using System.Threading.Tasks;
 
 namespace ClinicManagement.API.Controllers
@@ -54,6 +55,14 @@ namespace ClinicManagement.API.Controllers
             var query = new GetLuotKhamByIdQuery { Id = id };
             var result = await _mediator.Send(query);
             return Success(result);
+        }
+
+        [HttpPost("{id}/complete")]
+        public async Task<IActionResult> Complete(int id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(
+                new CompleteExamCommand(id, CurrentUserId), cancellationToken);
+            return Success(result, "Hoàn thành lượt khám và tạo hóa đơn thành công");
         }
 
         [HttpGet("{id}/summary")]

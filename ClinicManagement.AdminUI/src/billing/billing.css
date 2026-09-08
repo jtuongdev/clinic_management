@@ -1,0 +1,365 @@
+/* ===== Billing Module Styles ===== */
+.billing-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f5f7fb;
+}
+
+.billing-header {
+  padding: 16px 24px 0;
+  background: #fff;
+  border-bottom: 1px solid #e9edf4;
+  flex-shrink: 0;
+}
+
+.billing-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.billing-tab-content {
+  padding: 16px 24px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* KPI Summary Cards */
+.billing-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .billing-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.billing-kpi-card {
+  background: #fff;
+  border: 1px solid #e9edf4;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: box-shadow 0.15s;
+}
+
+.billing-kpi-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.billing-kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.billing-kpi-icon.blue   { background: #e8f4fd; color: #0b4f6c; }
+.billing-kpi-icon.green  { background: #e6f7eb; color: #16a34a; }
+.billing-kpi-icon.orange { background: #fff4e5; color: #d46b08; }
+.billing-kpi-icon.red    { background: #fff1f0; color: #cf1322; }
+
+.billing-kpi-label {
+  font-size: 11px;
+  color: #8a9fb0;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.billing-kpi-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.billing-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.billing-tabs .ant-tabs-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.billing-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #0b4f6c;
+  font-weight: 600;
+}
+
+.billing-tabs .ant-tabs-ink-bar {
+  background: #0b4f6c;
+}
+
+/* ─── INVOICE PRINT STYLES ──────────────────────────────────────────────── */
+.invoice-print-container {
+  color: #1a1a1a;
+  font-family: 'Times New Roman', Times, 'Palatino Linotype', serif;
+  background: #ffffff;
+  padding: 8px 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.invoice-print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2.5px solid #0b4f6c;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.invoice-facility-info {
+  flex: 1;
+}
+
+.invoice-facility-info .invoice-upper-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #374151;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-facility-info .invoice-facility-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b4f6c;
+  margin-top: 3px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-facility-info .invoice-facility-meta {
+  font-size: 11.5px;
+  color: #4b5563;
+  margin-top: 2px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-code-info {
+  text-align: right;
+  font-size: 11.5px;
+  min-width: 170px;
+  font-family: Arial, sans-serif;
+  color: #374151;
+  line-height: 1.7;
+}
+
+.invoice-code-info .mono-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  color: #0b4f6c;
+  background: #f0f7ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.invoice-main-title {
+  text-align: center;
+  margin: 12px 0 14px;
+}
+
+.invoice-sub-title {
+  font-size: 12.5px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 2px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-patient-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-table th,
+.invoice-table td {
+  border: 1px solid #94a3b8;
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.invoice-table th {
+  background: #e8f0f7;
+  font-weight: 700;
+  color: #0b2a3c;
+  text-align: center;
+  font-size: 12px;
+  padding: 7px 8px;
+}
+
+.invoice-table tbody tr:nth-child(even) {
+  background: #f9fbfd;
+}
+
+.invoice-summary-box {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  margin-bottom: 14px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.invoice-summary-row:last-child {
+  margin-bottom: 0;
+}
+
+.invoice-sign-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 8px;
+}
+
+.invoice-sign-block {
+  text-align: center;
+  flex: 1;
+  min-width: 150px;
+  font-family: Arial, sans-serif;
+}
+
+.invoice-sign-title {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #0b4f6c;
+  text-transform: uppercase;
+}
+
+.invoice-sign-spacer {
+  height: 56px;
+  border-bottom: 1px solid #94a3b8;
+  margin: 6px 20px;
+}
+
+/* ─── PRINT MEDIA ───────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm 15mm 20mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .ant-modal-root,
+  .ant-modal-wrap,
+  .ant-modal,
+  .ant-modal-content,
+  .ant-modal-body,
+  #invoice-print-document,
+  #invoice-print-document * {
+    visibility: visible !important;
+  }
+
+  .ant-modal-wrap {
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  .ant-modal {
+    position: static !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  .ant-modal-content {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .ant-modal-body {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .ant-modal-header,
+  .ant-modal-footer,
+  .ant-modal-close {
+    display: none !important;
+  }
+
+  #invoice-print-document {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+  }
+
+  .invoice-print-container {
+    font-size: 12pt;
+    color: #000 !important;
+    line-height: 1.45;
+  }
+
+  .invoice-print-header {
+    border-bottom: 2pt solid #0b4f6c !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .invoice-table th {
+    background: #dce8f0 !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .invoice-table th,
+  .invoice-table td {
+    border: 0.75pt solid #374151 !important;
+  }
+}

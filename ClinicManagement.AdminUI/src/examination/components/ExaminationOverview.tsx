@@ -188,7 +188,7 @@ const ExaminationOverview: React.FC = () => {
   ];
 
   if (error) {
-    return <Alert type="error" message="Lỗi tải dữ liệu" description={error} showIcon style={{ marginBottom: 16 }} />;
+    return <Alert type="error" title="Lỗi tải dữ liệu" description={error} showIcon style={{ marginBottom: 16 }} />;
   }
 
   const doctorColumns: ColumnsType<any> = [
@@ -326,7 +326,7 @@ const ExaminationOverview: React.FC = () => {
               ) : (
                 <Statistic
                   value={kpi.value}
-                  valueStyle={{ fontSize: 20, fontWeight: 700, color: '#0b2a3c' }}
+                  styles={{ content: { fontSize: 20, fontWeight: 700, color: '#0b2a3c' } }}
                 />
               )}
               <Text type="secondary" style={{ fontSize: 11, marginTop: 2 }}>
@@ -354,7 +354,7 @@ const ExaminationOverview: React.FC = () => {
           <Row gutter={[10, 10]}>
             <Col xs={24} md={8}>
               <Alert
-                message={`Khoa ${departments[0]?.name || 'Nhi'} đang quá tải`}
+                title={`Khoa ${departments[0]?.name || 'Nhi'} đang quá tải`}
                 description="Hơn 30 lượt bệnh nhân chờ khám vượt ngưỡng cảnh báo."
                 type="warning"
                 showIcon
@@ -362,7 +362,7 @@ const ExaminationOverview: React.FC = () => {
             </Col>
             <Col xs={24} md={8}>
               <Alert
-                message="Thời gian chờ khám kéo dài tại P302"
+                title="Thời gian chờ khám kéo dài tại P302"
                 description="Thời gian chờ trung bình 22 phút, cần điều phối hỗ trợ."
                 type="info"
                 showIcon
@@ -370,7 +370,7 @@ const ExaminationOverview: React.FC = () => {
             </Col>
             <Col xs={24} md={8}>
               <Alert
-                message="Kiểm tra phân ca trực bác sĩ"
+                title="Kiểm tra phân ca trực bác sĩ"
                 description="1 bác sĩ chưa nhận phòng khám theo lịch phân công sáng nay."
                 type="error"
                 showIcon
@@ -429,7 +429,7 @@ const ExaminationOverview: React.FC = () => {
                   <Statistic
                     title="Chờ khám"
                     value={thongKe?.theoTrangThai?.find((t) => t.trangThai === 'CHO_KHAM')?.soLuong ?? 0}
-                    valueStyle={{ color: '#f59e0b', fontWeight: 700, fontSize: 18 }}
+                    styles={{ content: { color: '#f59e0b', fontWeight: 700, fontSize: 18 } }}
                     prefix={<ClockCircleOutlined />}
                   />
                 </div>
@@ -439,7 +439,7 @@ const ExaminationOverview: React.FC = () => {
                   <Statistic
                     title="Đang khám"
                     value={thongKe?.theoTrangThai?.find((t) => t.trangThai === 'DANG_KHAM')?.soLuong ?? 0}
-                    valueStyle={{ color: '#10b981', fontWeight: 700, fontSize: 18 }}
+                    styles={{ content: { color: '#10b981', fontWeight: 700, fontSize: 18 } }}
                     prefix={<MedicineBoxOutlined />}
                   />
                 </div>
@@ -449,7 +449,7 @@ const ExaminationOverview: React.FC = () => {
                   <Statistic
                     title="Phòng đang mở"
                     value="18 / 24"
-                    valueStyle={{ color: '#0b4f6c', fontWeight: 700, fontSize: 18 }}
+                    styles={{ content: { color: '#0b4f6c', fontWeight: 700, fontSize: 18 } }}
                     prefix={<ApartmentOutlined />}
                   />
                 </div>
@@ -459,7 +459,7 @@ const ExaminationOverview: React.FC = () => {
                   <Statistic
                     title="Thời gian chờ TB"
                     value="14 phút"
-                    valueStyle={{ color: '#0284c7', fontWeight: 700, fontSize: 18 }}
+                    styles={{ content: { color: '#0284c7', fontWeight: 700, fontSize: 18 } }}
                     prefix={<RiseOutlined />}
                   />
                 </div>

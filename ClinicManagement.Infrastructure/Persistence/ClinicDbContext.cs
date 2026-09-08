@@ -74,6 +74,10 @@ namespace ClinicManagement.Infrastructure.Persistence
         public DbSet<TonKho> TonKhos { get; set; }
         public DbSet<PhieuXuatKho> PhieuXuatKhos { get; set; }
         public DbSet<ChiTietXuatKho> ChiTietXuatKhos { get; set; }
+        public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+        public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
+        public DbSet<Stocktake> Stocktakes { get; set; }
+        public DbSet<StocktakeCount> StocktakeCounts { get; set; }
 
         // Phân hệ Đơn thuốc & Viện phí
         public DbSet<DonThuoc> DonThuocs { get; set; }
@@ -116,6 +120,15 @@ namespace ClinicManagement.Infrastructure.Persistence
             {
                 if (entry.Entity is BaseEntity)
                 {
+                    if (entry.Entity is InventoryTransaction transaction &&
+                        entry.State == EntityState.Added &&
+                        !transaction.CreatedBy.HasValue)
+                    {
+                        transaction.SetCreatedBy(transaction.MaNguoiThucHien
+                            ?? throw new InvalidOperationException(
+                                "InventoryTransaction phải có MaNguoiThucHien để xác định CreatedBy."));
+                    }
+
                     if (entry.State == EntityState.Added)
                     {
                         entry.Property("CreatedAt").CurrentValue = DateTime.UtcNow;

@@ -23,13 +23,13 @@ namespace ClinicManagement.Application.Common.Mappings
                         ? src.BenhNhanCoSo.First().MaCoSo
                         : 0))
                 .ForMember(dest => dest.TenCoSo,
-                    opt => opt.MapFrom(src => src.BenhNhanCoSo.FirstOrDefault() != null
+                    opt => opt.MapFrom(src => src.BenhNhanCoSo.FirstOrDefault() != null && src.BenhNhanCoSo.First().CoSo != null
                         ? src.BenhNhanCoSo.First().CoSo.Ten
                         : string.Empty))
                 .ForMember(dest => dest.TenKhoa,
                     opt => opt.MapFrom(src => src.LuotKhams
                         .OrderByDescending(l => l.NgayKham)
-                        .FirstOrDefault() != null
+                        .FirstOrDefault() != null && src.LuotKhams.OrderByDescending(l => l.NgayKham).First().Khoa != null
                         ? src.LuotKhams.OrderByDescending(l => l.NgayKham).First().Khoa.Ten
                         : string.Empty))
                 .ForMember(dest => dest.TrangThaiLuotKham,

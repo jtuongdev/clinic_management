@@ -10,6 +10,7 @@ namespace ClinicManagement.Domain.Inventory
         public int MaChiTietNhap { get; set; }
         public decimal SoLuongTon { get; set; }
         public DateTime NgayCapNhatCuoi { get; set; }
+        public int Version { get; private set; }
 
         public virtual Kho Kho { get; set; } = null!;
         public virtual Item Item { get; set; } = null!;
@@ -21,6 +22,7 @@ namespace ClinicManagement.Domain.Inventory
                 throw new ArgumentException("Số lượng phải lớn hơn 0");
             
             SoLuongTon += quantity;
+            Version++;
             NgayCapNhatCuoi = DateTime.UtcNow;
         }
 
@@ -33,6 +35,7 @@ namespace ClinicManagement.Domain.Inventory
                 throw new InvalidOperationException("Số lượng xuất vượt quá tồn kho");
 
             SoLuongTon -= quantity;
+            Version++;
             NgayCapNhatCuoi = DateTime.UtcNow;
         }
 

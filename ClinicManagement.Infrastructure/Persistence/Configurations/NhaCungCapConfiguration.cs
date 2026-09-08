@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Domain.Inventory;
 
 namespace ClinicManagement.Infrastructure.Persistence.Configurations
@@ -36,7 +37,21 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 
             builder.Property(ncc => ncc.TrangThai)
                 .IsRequired()
+                .HasConversion(
+                    value => ToDatabaseStatus(value),
+                    value => FromDatabaseStatus(value))
                 .HasMaxLength(30);
         }
+
+        private static string ToDatabaseStatus(TrangThaiNhaCungCap value)
+            => value == TrangThaiNhaCungCap.HoatDong ? "HoatDong" : "NgungHopTac";
+
+        private static TrangThaiNhaCungCap FromDatabaseStatus(string value)
+            => value switch
+            {
+                "ACTIVE" or "HoatDong" => TrangThaiNhaCungCap.HoatDong,
+                "INACTIVE" or "NgungHopTac" => TrangThaiNhaCungCap.NgungHopTac,
+                _ => throw new InvalidOperationException($"Trạng thái nhà cung cấp không hợp lệ: {value}")
+            };
     }
 }

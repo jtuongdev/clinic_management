@@ -6,11 +6,9 @@ import {
   Tag,
   Progress,
   Typography,
-  Button,
   Space,
   Spin,
   Empty,
-  Rate,
 } from 'antd';
 import {
   ApartmentOutlined,
@@ -19,7 +17,6 @@ import {
   UserOutlined,
   AlertOutlined,
   CheckCircleOutlined,
-  BarChartOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useExamination } from '../hook/useExamination';
@@ -109,15 +106,6 @@ const ExaminationDepartment: React.FC = () => {
     }));
   }, [khoaOverview, maxWait]);
 
-  // Đánh giá hài lòng mock ổn định
-  const satisfaction = useMemo(() => {
-    const defaultRatings = [4.8, 4.6, 4.9, 4.5, 4.7, 4.6];
-    return khoaOverview.map((k, idx) => ({
-      name: k.tenKhoa,
-      rating: defaultRatings[idx % defaultRatings.length],
-    }));
-  }, [khoaOverview]);
-
   const columns: ColumnsType<KhoaOverviewDto> = [
     {
       title: 'Tên khoa',
@@ -164,7 +152,7 @@ const ExaminationDepartment: React.FC = () => {
   ];
 
   if (loadingKhoaOverview) {
-    return <Spin tip="Đang tải dữ liệu khoa..." style={{ padding: 40 }} />;
+    return <Spin description="Đang tải dữ liệu khoa..." style={{ padding: 40 }} />;
   }
 
   if (khoaOverview.length === 0) {
@@ -237,15 +225,6 @@ const ExaminationDepartment: React.FC = () => {
           </Tag>
         </Space>
 
-        <Space>
-          <Button
-            icon={<BarChartOutlined />}
-            onClick={() => alert('So sánh hiệu suất các khoa')}
-            size="middle"
-          >
-            So sánh các khoa
-          </Button>
-        </Space>
       </div>
 
       {/* Main Department Table */}
@@ -259,9 +238,9 @@ const ExaminationDepartment: React.FC = () => {
         />
       </div>
 
-      {/* Bottom Split: Wait Progress + Satisfaction */}
+      {/* Bottom: Wait Progress */}
       <Row style={{ borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
-        <Col xs={24} lg={14} style={{ borderRight: '1px solid #e2e8f0', padding: 16 }}>
+        <Col span={24} style={{ padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <ClockCircleOutlined style={{ color: '#0b4f6c' }} />
             <Text strong style={{ fontSize: 13, color: '#0f172a' }}>
@@ -280,37 +259,6 @@ const ExaminationDepartment: React.FC = () => {
                   </Text>
                 </div>
                 <Progress percent={item.percent} strokeColor={item.color} showInfo={false} size={['100%', 6]} />
-              </div>
-            ))}
-          </div>
-        </Col>
-
-        <Col xs={24} lg={10} style={{ padding: 16, background: '#fafbfc' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span>⭐</span>
-            <Text strong style={{ fontSize: 13, color: '#0f172a' }}>
-              Đánh giá mức độ hài lòng
-            </Text>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {satisfaction.map((item, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '6px 12px',
-                  background: '#ffffff',
-                  borderRadius: 4,
-                  border: '1px solid #e2e8f0',
-                }}
-              >
-                <Text strong style={{ color: '#0b4f6c', fontSize: 13 }}>{item.name}</Text>
-                <Space size="middle">
-                  <Rate disabled allowHalf defaultValue={item.rating} style={{ fontSize: 13 }} />
-                  <Text strong style={{ color: '#f59e0b', fontSize: 13 }}>{item.rating}</Text>
-                </Space>
               </div>
             ))}
           </div>

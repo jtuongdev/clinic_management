@@ -14,6 +14,8 @@ import { MainLayout } from '../shared/components/layouts/MainLayout';
 import { patientRoutes } from '../patient/routes';
 import { examinationRoutes } from '../examination/routes';
 import { employeeRoutes } from '../employee/routes';
+import { inventoryRoutes } from '../inventory/routes';
+import { billingRoutes } from '../billing/routes';
 
 const protectedRoutes = [
   {
@@ -25,7 +27,10 @@ const protectedRoutes = [
   ...patientRoutes,
   ...examinationRoutes,
   ...employeeRoutes,
+  ...inventoryRoutes,
+  ...billingRoutes,
 ];
+
 
 const router = createBrowserRouter([
   {

@@ -7,7 +7,7 @@ namespace ClinicManagement.Domain.Common
     {
         public TId Id { get; protected set; } = default!;
         public DateTime CreatedAt { get; private set; }
-        public int CreatedBy { get; private set; } 
+        public int? CreatedBy { get; protected set; }
         public DateTime? UpdatedAt { get; private set; }
         public int? UpdatedBy { get; private set; }
 
@@ -18,6 +18,14 @@ namespace ClinicManagement.Domain.Common
         protected BaseEntity()
         {
             CreatedAt = DateTime.UtcNow;
+        }
+
+        public void SetCreatedBy(int createdBy)
+        {
+            if (createdBy <= 0)
+                throw new ArgumentOutOfRangeException(nameof(createdBy), "Người tạo bản ghi phải là người dùng hợp lệ.");
+
+            CreatedBy = createdBy;
         }
 
         public void MarkAsUpdated(int updatedBy)

@@ -92,5 +92,10 @@ namespace ClinicManagement.Domain.Prescription
         }
 
         public bool IsFullyDispensed() => TrangThai == TrangThaiDonThuoc.DA_XUAT_HET;
+
+        public void GhiChuForApplication(string? ghiChu)
+        {
+            GhiChu = ghiChu?.Trim() ?? string.Empty;
+        }
     }
 }

@@ -1,0 +1,537 @@
+/* ===== Inventory Module Styles ===== */
+.inventory-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f5f7fb;
+}
+
+.inventory-header {
+  padding: 16px 24px 0;
+  background: #fff;
+  border-bottom: 1px solid #e9edf4;
+  flex-shrink: 0;
+}
+
+.inventory-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-tab-content {
+  padding: 16px 24px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi-card {
+  background: #fff;
+  border: 1px solid #e9edf4;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: box-shadow 0.15s;
+}
+.kpi-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+.kpi-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.kpi-icon.blue   { background: #e8f4fd; color: #0b4f6c; }
+.kpi-icon.orange { background: #fff4e5; color: #d46b08; }
+.kpi-icon.gold   { background: #fffbe6; color: #ad8b00; }
+.kpi-icon.red    { background: #fff1f0; color: #cf1322; }
+.kpi-label { font-size: 11px; color: #8a9fb0; font-weight: 500; line-height: 1.3; }
+.kpi-value { font-size: 22px; font-weight: 700; color: #1e293b; line-height: 1; }
+
+.inventory-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.inventory-toolbar .spacer { flex: 1; }
+
+.batch-row-expiring { background: #fffbe6 !important; }
+.batch-row-expired  { background: #fff1f0 !important; }
+
+.inventory-tabs .ant-tabs-tab { padding: 10px 18px; font-size: 13px; font-weight: 500; }
+.inventory-tabs .ant-tabs-tab-active .ant-tabs-tab-btn { color: #0b4f6c; font-weight: 600; }
+.inventory-tabs .ant-tabs-ink-bar { background: #0b4f6c; }
+
+.workflow-hint {
+  background: #f0f7ff; border: 1px solid #91caff;
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 12px; color: #0b4f6c;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.import-total-row {
+  display: flex; justify-content: flex-end;
+  padding: 8px 0; font-weight: 600; color: #0b4f6c; font-size: 14px;
+}
+
+.dispense-result-alloc {
+  background: #f6ffed; border: 1px solid #b7eb8f;
+  border-radius: 6px; padding: 8px 12px; margin-top: 6px; font-size: 12px;
+}
+
+/* ─── PRESCRIPTION PRINT STYLES ─────────────────────────────────────────── */
+
+.prescription-print-container {
+  color: #1a1a1a;
+  font-family: 'Times New Roman', Times, 'Palatino Linotype', serif;
+  background: #ffffff;
+  padding: 6px 2px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── HEADER ── */
+.print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2.5px solid #0b4f6c;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.print-facility-info {
+  flex: 1;
+}
+
+.print-facility-info .print-upper-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #374151;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+}
+
+.print-facility-info .print-facility-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b4f6c;
+  margin-top: 3px;
+  font-family: Arial, sans-serif;
+}
+
+.print-facility-info .print-facility-meta {
+  font-size: 11.5px;
+  color: #4b5563;
+  margin-top: 2px;
+  font-family: Arial, sans-serif;
+}
+
+.print-code-info {
+  text-align: right;
+  font-size: 11.5px;
+  min-width: 170px;
+  font-family: Arial, sans-serif;
+  color: #374151;
+  line-height: 1.7;
+}
+
+.print-code-info .mono-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  color: #0b4f6c;
+  background: #f0f7ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+/* ── TITLE ── */
+.print-main-title {
+  text-align: center;
+  margin: 12px 0 14px;
+}
+
+.print-sub-title {
+  font-size: 12.5px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 2px;
+  font-family: Arial, sans-serif;
+}
+
+/* ── PATIENT BOX ── */
+.print-patient-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-family: Arial, sans-serif;
+}
+
+.print-grid-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+  align-items: baseline;
+}
+
+.print-grid-row:last-child {
+  margin-bottom: 0;
+}
+
+.print-grid-col {
+  padding-right: 8px;
+  font-size: 13px;
+}
+
+.print-grid-col.col-12 { width: 100%; }
+.print-grid-col.col-8  { width: 66.66%; }
+.print-grid-col.col-6  { width: 50%; }
+.print-grid-col.col-4  { width: 33.33%; }
+.print-grid-col.col-3  { width: 25%; }
+
+.print-diagnosis-row {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px dashed #94a3b8;
+}
+
+/* ── DRUG TABLE ── */
+.print-section {
+  margin-bottom: 14px;
+}
+
+.print-section-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0b4f6c;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+  border-left: 3px solid #0b4f6c;
+  padding-left: 8px;
+  font-family: Arial, sans-serif;
+}
+
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  font-family: Arial, sans-serif;
+}
+
+.print-table th,
+.print-table td {
+  border: 1px solid #94a3b8;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.print-table th {
+  background: #e8f0f7;
+  font-weight: 700;
+  color: #0b2a3c;
+  text-align: center;
+  font-size: 12px;
+  padding: 7px 8px;
+}
+
+.print-table tbody tr:nth-child(even) {
+  background: #f9fbfd;
+}
+
+.item-name-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.item-code {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.item-usage-instruction {
+  font-size: 11.5px;
+  color: #374151;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+.batch-alloc-list {
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.batch-alloc-item {
+  color: #0369a1;
+}
+
+.batch-number {
+  font-weight: 700;
+}
+
+.batch-exp {
+  color: #4b5563;
+}
+
+.batch-qty {
+  font-weight: 600;
+  color: #047857;
+}
+
+/* ── ADVICE ── */
+.print-advice-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  font-family: Arial, sans-serif;
+}
+
+.advice-list {
+  margin: 4px 0 0 18px;
+  padding: 0;
+  color: #374151;
+}
+
+/* ── SIGNATURE SECTION ── */
+.print-signature-section {
+  margin-top: 18px;
+  padding-top: 8px;
+}
+
+.print-signature-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.print-sign-block {
+  text-align: center;
+  flex: 1;
+  min-width: 140px;
+  font-family: Arial, sans-serif;
+}
+
+.sign-title {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #0b4f6c;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sign-date {
+  font-size: 11.5px;
+  color: #6b7280;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+
+/* Khoảng trống ký tên */
+.sign-spacer {
+  height: 56px;
+  border-bottom: 1px solid #94a3b8;
+  margin: 6px 20px;
+}
+
+.sign-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.sign-cchn {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.sign-status-text {
+  font-size: 11px;
+  font-style: italic;
+  color: #047857;
+  margin-top: 2px;
+}
+
+/* ── FOOTER NOTES ── */
+.print-footer-notes {
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.footer-note-line {
+  margin-bottom: 2px;
+}
+
+/* ─── MEDIA PRINT STYLES ─────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm 15mm 20mm; /* trên phải dưới trái — chuẩn mẫu y tế */
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .ant-modal-root,
+  .ant-modal-wrap,
+  .ant-modal,
+  .ant-modal-content,
+  .ant-modal-body,
+  #prescription-print-document,
+  #prescription-print-document * {
+    visibility: visible !important;
+  }
+
+  .ant-modal-wrap {
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  .ant-modal {
+    position: static !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  .ant-modal-content {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .ant-modal-body {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .ant-modal-header,
+  .ant-modal-footer,
+  .ant-modal-close {
+    display: none !important;
+  }
+
+  #prescription-print-document {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+  }
+
+  .prescription-print-container {
+    font-size: 12pt;
+    color: #000 !important;
+    line-height: 1.45;
+  }
+
+  .print-header {
+    border-bottom: 2pt solid #0b4f6c !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-patient-box {
+    background: transparent !important;
+    border: 1pt solid #374151 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-table th {
+    background: #dce8f0 !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-table tbody tr:nth-child(even) {
+    background: #f5f8fb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 0.75pt solid #374151 !important;
+  }
+
+  .print-advice-box {
+    background: transparent !important;
+    border: 1pt dashed #6b7280 !important;
+  }
+
+  .sign-spacer {
+    border-bottom: 1pt solid #374151 !important;
+  }
+
+  /* Tránh vỡ bảng thuốc sang trang */
+  .print-items-section {
+    page-break-inside: avoid;
+  }
+
+  /* Nếu bảng quá dài, cho phép vỡ giữa các hàng nhưng giữ nguyên header */
+  .print-table { page-break-inside: auto; }
+  .print-table tr { page-break-inside: avoid; page-break-after: auto; }
+  .print-table thead { display: table-header-group; }
+
+  .print-signature-section {
+    page-break-inside: avoid;
+  }
+
+  /* Ẩn Tag Ant Design, hiện text thay thế */
+  .ant-tag {
+    display: none !important;
+  }
+
+  .sign-status-text {
+    display: block !important;
+  }
+
+  .print-section-title {
+    border-left: 3pt solid #0b4f6c !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+

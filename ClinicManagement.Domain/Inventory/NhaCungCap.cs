@@ -1,4 +1,5 @@
 using ClinicManagement.Domain.Common;
+using ClinicManagement.Domain.Common.Enums;
 using System.Collections.Generic;
 
 namespace ClinicManagement.Domain.Inventory
@@ -11,7 +12,7 @@ namespace ClinicManagement.Domain.Inventory
         public string DienThoai { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string MaSoThue { get; set; } = string.Empty;
-        public string TrangThai { get; set; } = string.Empty;
+        public TrangThaiNhaCungCap TrangThai { get; set; } = TrangThaiNhaCungCap.HoatDong;
 
         public virtual ICollection<PhieuNhapKho> PhieuNhapKhos { get; set; }
 

@@ -8,3 +8,8 @@ obj/
 ## Thư mục thư viện của Frontend (nếu có)
 node_modules/
 dist/
+
+## Local package/cache directories
+.nuget/
+.local/
+Library/

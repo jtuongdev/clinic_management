@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ClinicManagement.Domain.Inventory;
+using ClinicManagement.Domain.Common.Enums;
 
 namespace ClinicManagement.Infrastructure.Persistence.Configurations
 {
@@ -12,7 +13,13 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             builder.HasKey(i => i.Id);
             
             builder.Property(i => i.LoaiItem)
-                .HasConversion<string>()
+                .HasConversion(
+                    v => v.ToString(),
+                    s => s.Equals("VatTu", StringComparison.OrdinalIgnoreCase) ||
+                         s.Equals("VAT_TU", StringComparison.OrdinalIgnoreCase) ||
+                         s.Equals("VA_TU", StringComparison.OrdinalIgnoreCase)
+                            ? LoaiItem.VA_TU
+                            : LoaiItem.THUOC)
                 .HasMaxLength(20);
                 
             builder.Property(i => i.Ma)
@@ -41,6 +48,8 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 
             builder.Property(i => i.GiaBanLe)
                 .HasColumnType("decimal(18,2)");
+            builder.Property(i => i.TonToiThieu)
+                .HasColumnType("decimal(12,3)");
             
             builder.HasMany(i => i.DonViTinhQuyDois)
                 .WithOne(dv => dv.Item)

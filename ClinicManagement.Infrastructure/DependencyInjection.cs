@@ -6,6 +6,7 @@ using ClinicManagement.Domain.Common;
 using ClinicManagement.Infrastructure.Persistence;
 using ClinicManagement.Infrastructure.Persistence.Repositories;
 using ClinicManagement.Application.Common.Interfaces;
+using ClinicManagement.Application.Features.Kho;
 using ClinicManagement.Infrastructure.Identity.Services;
 
 namespace ClinicManagement.Infrastructure
@@ -35,11 +36,21 @@ namespace ClinicManagement.Infrastructure
             services.AddScoped<IPayrollRepository, PayrollRepository>();
             services.AddScoped<INghiPhepRepository, NghiPhepRepository>();
             services.AddScoped<IDanhMucDichVuRepository, DanhMucDichVuRepository>();
+            services.AddScoped<IKhoRepository, KhoRepository>();
+            services.AddScoped<IHoaDonRepository, HoaDonRepository>();
+            services.AddScoped<IInventorySettings, InventorySettings>();
+            services.AddScoped<IKhoService, KhoService>();
 
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
 
             return services;
+        }
+
+        private sealed class InventorySettings(IConfiguration configuration) : IInventorySettings
+        {
+            public int DefaultWarehouseId =>
+                int.TryParse(configuration["Inventory:DefaultWarehouseId"], out var id) ? id : 1;
         }
     }
 }

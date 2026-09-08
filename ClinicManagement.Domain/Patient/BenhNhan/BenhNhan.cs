@@ -18,7 +18,6 @@ namespace ClinicManagement.Domain.Patient;
         public string NguoiLienHeDienThoai { get; private set; } = string.Empty;
         public string Username { get; private set; } = string.Empty;
         public string PasswordHash { get; private set; } = string.Empty;
-        public int? CreatedBy { get; private set; }
 
         public virtual ICollection<BenhNhanCoSo> BenhNhanCoSo { get; private set; }
         public virtual ICollection<BaoHiem> BaoHiems { get; private set; }

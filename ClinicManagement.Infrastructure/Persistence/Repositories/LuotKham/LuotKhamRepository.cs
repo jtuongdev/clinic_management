@@ -16,6 +16,16 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
     public partial class LuotKhamRepository : Repository<LuotKham>, ILuotKhamRepository
     {
         public LuotKhamRepository(ClinicDbContext context) : base(context) { }
+
+        public Task<LuotKham?> GetForCompletionAsync(
+            int id, CancellationToken cancellationToken = default)
+            => _context.LuotKhams
+                .Include(l => l.HoaDons)
+                .Include(l => l.DonThuocs)
+                    .ThenInclude(d => d.ChiTietDonThuocs)
+                .Include(l => l.ChiDinhDichVus)
+                    .ThenInclude(c => c.DanhMucDichVu)
+                .SingleOrDefaultAsync(l => l.Id == id && !l.IsDeleted, cancellationToken);
         public async Task<(IReadOnlyList<LuotKham> Items, int TotalCount)> GetPagedAsync(
             int pageIndex,
             int pageSize,

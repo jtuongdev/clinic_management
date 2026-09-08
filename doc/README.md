@@ -9,6 +9,8 @@ Thu muc nay luu tai lieu mo ta he thong va ke hoach phat trien.
 - [frontend-current-state.md](frontend-current-state.md): hien trang DoctorUI va tab Xu tri.
 - [treatment-business-process.md](treatment-business-process.md): quy trinh nghiep vu tab Xu tri.
 - [domain-database-plan.md](domain-database-plan.md): ke hoach Domain/database va contract API de xuat.
+- [ke-hoach-kho-duoc-end-to-end.md](ke-hoach-kho-duoc-end-to-end.md): blueprint flow kho dược end-to-end, API contract va transaction.
+- [huong-dan-tao-file-va-to-chuc-code.md](huong-dan-tao-file-va-to-chuc-code.md): quy tac tao file, nhom feature va phan tach Domain/Application/Infrastructure/API.
 - `ClinicManagement-Domain-Database-Plan.docx`: ban ke hoach dinh dang DOCX.
 
 ## Pham vi tai lieu
