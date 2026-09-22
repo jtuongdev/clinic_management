@@ -22,14 +22,14 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("by-khoa/{maKhoa}")]
         public async Task<IActionResult> GetByKhoa(int maKhoa)
         {
-            var query = new GetPhongKhamByKhoaQuery { MaKhoa = maKhoa };
+            var query = new LayPhongKhamTheoKhoaQuery { MaKhoa = maKhoa };
             var result = await _mediator.Send(query);
             return Success(result);
         }
         [HttpGet("dropdown")]
         public async Task<IActionResult> GetDropdown([FromQuery] int maKhoa)
         {
-            var query = new GetPhongKhamDropdownQuery { MaKhoa = maKhoa };
+            var query = new LayDanhSachPhongKhamDropdownQuery { MaKhoa = maKhoa };
             var result = await _mediator.Send(query);
             return Success(result);
         }

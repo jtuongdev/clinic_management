@@ -47,11 +47,17 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(pn => pn.MaNguoiNhap)
                 .OnDelete(DeleteBehavior.Restrict);
             
+            builder.HasOne(pn => pn.DonDatHang)
+                .WithMany(ddh => ddh.PhieuNhapKhos)
+                .HasForeignKey(pn => pn.MaDonDatHang)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasMany(pn => pn.ChiTietNhapKhos)
                 .WithOne(ct => ct.PhieuNhapKho)
                 .HasForeignKey(ct => ct.MaPhieuNhap)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasIndex(pn => pn.MaDonDatHang);
             builder.HasIndex(pn => pn.NgayNhap);
             builder.HasIndex(pn => pn.TrangThai);
         }

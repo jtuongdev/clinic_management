@@ -8,7 +8,7 @@
 }
 
 .billing-header {
-  padding: 16px 24px 0;
+  padding: 12px 16px 0;
   background: #fff;
   border-bottom: 1px solid #e9edf4;
   flex-shrink: 0;
@@ -22,7 +22,7 @@
 }
 
 .billing-tab-content {
-  padding: 16px 24px;
+  padding: 12px 16px;
   flex: 1;
   overflow-y: auto;
   display: flex;
@@ -108,6 +108,108 @@
 
 .billing-tabs .ant-tabs-ink-bar {
   background: #0b4f6c;
+}
+
+/* ===== Billing Master-Detail Split-View Layout ===== */
+.invoice-split-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 175px);
+  overflow: hidden;
+  gap: 12px;
+}
+
+.invoice-master-panel {
+  width: 340px;
+  flex: 0 0 340px;
+  min-width: 300px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.invoice-master-header {
+  padding: 8px 10px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.invoice-master-table-wrapper {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Active Row Highlight for Master Table */
+.invoice-master-table .master-row-selected > td {
+  background: #eff6ff !important;
+  color: #0f172a !important;
+}
+.invoice-master-table .master-row-selected > td:first-child {
+  border-left: 3px solid #0284c7 !important;
+}
+
+/* Tắt hiệu ứng di chuột (hover) trên các dòng bảng cột trái */
+.invoice-master-table .ant-table-tbody > tr:hover > td,
+.invoice-master-table .ant-table-tbody > tr.ant-table-row:hover > td,
+.invoice-master-table .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+  background: transparent !important;
+}
+.invoice-master-table .ant-table-tbody > tr.master-row-selected:hover > td {
+  background: #eff6ff !important;
+}
+
+.invoice-detail-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.invoice-detail-header {
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.invoice-detail-body {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.invoice-detail-footer {
+  padding: 8px 16px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 /* ─── INVOICE PRINT STYLES ──────────────────────────────────────────────── */

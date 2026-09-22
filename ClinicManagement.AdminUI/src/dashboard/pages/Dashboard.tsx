@@ -1,141 +1,300 @@
-import { User, Stethoscope, Wallet, Clock, HandCoins, Plus, Calendar, FileText, Bed, BarChart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  User, Stethoscope, Wallet, Clock, HandCoins, Plus, 
+  Calendar, FileText, Bed, BarChart, RefreshCw, AlertCircle 
+} from 'lucide-react';
+import { message, Empty, Alert, Button } from 'antd';
 import { StatCard } from '../components/StatCard';
 import { ActivityItem } from '../components/ActivityItem';
 import { QuickAction } from '../components/QuickAction';
 import { useAuth } from '../../Auth/context/AuthProvider';
-import { useThongKeBenhNhan } from '../../patient/hook/useThongKeBenhNhan';
+import { dashboardApi, DashboardOverviewDto } from '../api/dashboard.api';
 
-export const Dashboard = () => {
+export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { data: thongKe, loading } = useThongKeBenhNhan();
+  const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState<DashboardOverviewDto | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Tích hợp API Backend: GET /api/admin/dashboard/overview
+  const fetchOverview = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      // Không truyền facilityId để mặc định lấy toàn bộ hệ thống phòng khám
+      const res = await dashboardApi.getOverview();
+      if (res.data?.success && res.data.data) {
+        setDashboardData(res.data.data);
+      } else {
+        const msg = (res.data as any)?.message || 'Không thể lấy dữ liệu thống kê tổng quan';
+        setErrorMessage(msg);
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Không thể kết nối đến máy chủ hoặc lỗi tải dữ liệu';
+      setErrorMessage(msg);
+      message.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOverview();
+  }, []);
+
+  const formatCurrency = (val?: number) => {
+    if (!val) return '0 đ';
+    if (val >= 1000000000) return `${(val / 1000000000).toFixed(1)} tỷ`;
+    if (val >= 1000000) return `${(val / 1000000).toFixed(0)} tr`;
+    return val.toLocaleString('vi-VN') + ' đ';
+  };
+
+  const isInitialLoading = loading && !dashboardData;
 
   const stats = [
-    { prefix: <User size={20} />,
+    {
+      prefix: <User size={20} />,
       color: '#1890ff',
-      value: thongKe?.tongBenhNhan ?? 0,
+      value: dashboardData?.totalPatients ?? 0,
       title: 'Tổng bệnh nhân',
-      change: { value: 12.5, type: 'up' as const }, },
-    { prefix: <Stethoscope size={20} />, color: '#2e8b57', value: '56', title: 'Lượt khám hôm nay', change: { value: 8.3, type: 'up' as const } },
-    { prefix: <Wallet size={20} />, color: '#faad14', value: '1,2 tỷ', title: 'Doanh thu tháng', change: { value: 3.7, type: 'down' as const } },
-    { prefix: <HandCoins size={20} />, color: '#ff4d4f', value: '280 tr', title: 'Công nợ quá hạn', change: { value: 5.2, type: 'up' as const } },
-    { prefix: <Clock size={20} />, color: '#722ed1', value: '12', title: 'Chờ khám', change: { value: 2.1, type: 'down' as const } },
+    },
+    {
+      prefix: <Stethoscope size={20} />,
+      color: '#2e8b57',
+      value: dashboardData?.visitsToday ?? 0,
+      title: 'Lượt khám hôm nay',
+    },
+    {
+      prefix: <Wallet size={20} />,
+      color: '#faad14',
+      value: dashboardData ? formatCurrency(dashboardData.revenueMonth) : '0 đ',
+      title: 'Doanh thu tháng',
+    },
+    {
+      prefix: <HandCoins size={20} />,
+      color: '#ff4d4f',
+      value: dashboardData ? formatCurrency(dashboardData.overdueDebt) : '0 đ',
+      title: 'Công nợ quá hạn',
+    },
+    {
+      prefix: <Clock size={20} />,
+      color: '#722ed1',
+      value: dashboardData?.pendingVisits ?? 0,
+      title: 'Chờ khám',
+    },
   ];
 
-  const activities = [
-    { dotColor: 'blue' as const, text: 'Bệnh nhân được tạo mới', highlight: 'Nguyễn Thị An', time: '10 phút trước · Khoa Nội' },
-    { dotColor: 'green' as const, text: 'Đơn thuốc mới kê cho', highlight: 'BN-10234', time: '25 phút trước · Bs. Tuấn' },
-    { dotColor: 'orange' as const, text: 'Hóa đơn đã thanh toán thành công', highlight: 'VP-001', time: '1 giờ trước · 12.500.000₫' },
-    { dotColor: 'red' as const, text: 'Công nợ quá hạn 15 ngày', highlight: 'BN-10234', time: '2 giờ trước · 2.300.000₫' },
-    { dotColor: 'blue' as const, text: 'Phiếu thu được xác nhận', highlight: 'PT-005', time: '3 giờ trước · 8.700.000₫' },
-  ];
+  const activities = (dashboardData?.activities && dashboardData.activities.length > 0)
+    ? dashboardData.activities
+    : [];
 
   const quickActions = [
-    { icon: <Plus size={18} />, label: 'Thêm bệnh nhân' },
-    { icon: <Calendar size={18} />, label: 'Tạo lượt khám' },
-    { icon: <FileText size={18} />, label: 'Tạo hóa đơn' },
-    { icon: <HandCoins size={18} />, label: 'Thu công nợ' },
-    { icon: <Bed size={18} />, label: 'Nhập viện' },
-    { icon: <BarChart size={18} />, label: 'Báo cáo nhanh' },
+    { 
+      icon: <Plus size={18} />, 
+      label: 'Thêm bệnh nhân',
+      onClick: () => navigate('/patients') 
+    },
+    { 
+      icon: <Calendar size={18} />, 
+      label: 'Tạo lượt khám',
+      onClick: () => navigate('/examination') 
+    },
+    { 
+      icon: <FileText size={18} />, 
+      label: 'Tạo hóa đơn',
+      onClick: () => navigate('/invoices') 
+    },
+    { 
+      icon: <HandCoins size={18} />, 
+      label: 'Thu công nợ',
+      onClick: () => navigate('/debts') 
+    },
+    { 
+      icon: <Bed size={18} />, 
+      label: 'Nhập viện',
+      onClick: () => navigate('/examination') 
+    },
+    { 
+      icon: <BarChart size={18} />, 
+      label: 'Báo cáo nhanh',
+      onClick: () => navigate('/examination/reports') 
+    },
   ];
 
-  const debts = [
-    { debtor: 'Nguyễn Thị An', badge: 'Quá hạn 15d', badgeColor: 'danger' as const, amount: '-2.300.000₫', amountColor: 'overdue' as const },
-    { debtor: 'Trần Văn Bình', badge: 'Sắp hạn', badgeColor: 'warning' as const, amount: '1.500.000₫', amountColor: 'pending' as const },
-    { debtor: 'Công ty Dược ABC', badge: 'NCC', badgeColor: 'default' as const, amount: '4.200.000₫', amountColor: 'pending' as const },
-    { debtor: 'Lê Thị Hoa', badge: 'Đã thanh toán', badgeColor: 'success' as const, amount: '0₫', amountColor: 'paid' as const },
-  ];
+  const debts = (dashboardData?.overdueDebts && dashboardData.overdueDebts.length > 0)
+    ? dashboardData.overdueDebts
+    : [];
+
+  const formattedDate = dashboardData?.date 
+    ? new Date(dashboardData.date).toLocaleDateString('vi-VN')
+    : new Date().toLocaleDateString('vi-VN');
 
   return (
-    <div style={{ padding: '20px 24px' }}>
+    <div style={{ padding: '16px' }}>
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: '#0b2a3c', letterSpacing: '-0.2px' }}>Tổng quan bệnh viện</h2>
-          <p style={{ fontSize: 13, color: '#6a7f96', marginTop: 2 }}>
-            Chào mừng <strong>{user?.fullName || 'Bác sĩ'}</strong>, hôm nay có <strong>5</strong> bệnh nhân đang chờ khám
+          <h2 style={{ fontSize: 20, fontWeight: 600, color: '#0b2a3c', letterSpacing: '-0.2px', margin: 0 }}>
+            Tổng quan bệnh viện
+          </h2>
+          <p style={{ fontSize: 13, color: '#6a7f96', marginTop: 4, marginBottom: 0 }}>
+            Chào mừng <strong>{user?.fullName || 'Quản trị viên'}</strong>, hôm nay có <strong>{dashboardData?.pendingVisits ?? 0}</strong> bệnh nhân đang chờ khám
           </p>
         </div>
-        <div style={{ fontSize: 12, color: '#4a637a', background: '#fff', padding: '6px 14px', borderRadius: 6, border: '1px solid #e9edf4', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
-          <span>📅</span> {new Date().toLocaleDateString('vi-VN')}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            onClick={fetchOverview}
+            disabled={loading}
+            style={{
+              background: '#fff', 
+              border: '1px solid #e9edf4', 
+              borderRadius: 6,
+              padding: '6px 14px', 
+              fontSize: 12, 
+              cursor: loading ? 'not-allowed' : 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              color: '#4a637a',
+              transition: 'all 0.2s',
+            }}
+          >
+            <RefreshCw size={14} className={loading ? 'fa-spin' : ''} /> Cập nhật
+          </button>
+          <div style={{ fontSize: 12, color: '#4a637a', background: '#fff', padding: '6px 14px', borderRadius: 6, border: '1px solid #e9edf4', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+            <span>📅</span> {formattedDate}
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Alert Error if any */}
+      {errorMessage && (
+        <Alert
+          type="error"
+          showIcon
+          message="Lỗi tải dữ liệu bảng điều khiển"
+          description={errorMessage}
+          style={{ marginBottom: 16 }}
+          action={
+            <Button size="small" type="primary" danger onClick={fetchOverview}>
+              Thử lại
+            </Button>
+          }
+        />
+      )}
+
+      {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 24 }}>
         {stats.map((stat, idx) => (
-          <StatCard key={idx} title={stat.title} value={stat.value} prefix={stat.prefix} color={stat.color} />
+          <StatCard 
+            key={idx} 
+            title={stat.title} 
+            value={stat.value} 
+            prefix={stat.prefix} 
+            color={stat.color} 
+            loading={isInitialLoading} 
+          />
         ))}
       </div>
 
-      {/* Grid 2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+      {/* Grid 2: Left Activities, Right Quick Actions & Debts */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
         {/* Left: Activity */}
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9edf4', padding: '16px 18px' }}>
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9edf4', padding: '16px 18px', minHeight: 320, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #f0f4fa' }}>
             <span style={{ fontWeight: 600, fontSize: 14, color: '#0b2a3c', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#0b4f6c' }}>⚡</span> Hoạt động gần đây
             </span>
-            <span style={{ fontSize: 12, color: '#0b4f6c', cursor: 'pointer', fontWeight: 500 }}>Xem tất cả →</span>
+            <span 
+              onClick={() => navigate('/settings')}
+              style={{ fontSize: 12, color: '#0b4f6c', cursor: 'pointer', fontWeight: 500 }}
+            >
+              Xem tất cả →
+            </span>
           </div>
-          {activities.map((item, idx) => (
-            <ActivityItem key={idx} dotColor={item.dotColor} time={item.time} highlight={item.highlight}>
-              {item.text}
-            </ActivityItem>
-          ))}
+
+          <div style={{ flex: 1 }}>
+            {activities.length > 0 ? (
+              activities.map((item, idx) => (
+                <ActivityItem key={idx} dotColor={item.dotColor} time={item.time} highlight={item.highlight}>
+                  {item.text}
+                </ActivityItem>
+              ))
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 180 }}>
+                <Empty 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                  description="Chưa có hoạt động gần đây" 
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Quick Actions + Debts */}
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Quick Actions */}
-          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9edf4', padding: '16px 18px', marginBottom: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9edf4', padding: '16px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #f0f4fa' }}>
               <span style={{ fontWeight: 600, fontSize: 14, color: '#0b2a3c', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ color: '#0b4f6c' }}>⚡</span> Tác vụ nhanh
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
               {quickActions.map((action, idx) => (
-                <QuickAction key={idx} icon={action.icon} label={action.label} />
+                <QuickAction 
+                  key={idx} 
+                  icon={action.icon} 
+                  label={action.label} 
+                  onClick={action.onClick} 
+                />
               ))}
             </div>
           </div>
 
           {/* Debts */}
-          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9edf4', padding: '16px 18px' }}>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9edf4', padding: '16px 18px', flex: 1, minHeight: 200, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #f0f4fa' }}>
               <span style={{ fontWeight: 600, fontSize: 14, color: '#0b2a3c', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#c0392b' }}>🤝</span> Công nợ cần xử lý
+                <span style={{ color: '#0b4f6c' }}>💳</span> Theo dõi công nợ
               </span>
-              <span style={{ fontSize: 12, color: '#0b4f6c', cursor: 'pointer', fontWeight: 500 }}>Xem tất cả →</span>
+              <span 
+                onClick={() => navigate('/debts')}
+                style={{ fontSize: 12, color: '#0b4f6c', cursor: 'pointer', fontWeight: 500 }}
+              >
+                Chi tiết →
+              </span>
             </div>
-            {debts.map((debt, idx) => {
-              const badgeStyles = {
-                danger: { bg: '#fde8e8', color: '#c0392b' },
-                warning: { bg: '#fdf0e0', color: '#d48a2c' },
-                success: { bg: '#e2f0e6', color: '#2e8b57' },
-                default: { bg: '#ecf3fa', color: '#0b4f6c' },
-              };
-              const amountStyles = {
-                overdue: '#c0392b',
-                pending: '#d48a2c',
-                paid: '#2e8b57',
-              };
-              const style = badgeStyles[debt.badgeColor] || badgeStyles.default;
-              return (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f4fa', fontSize: 13 }}>
-                  <span style={{ fontWeight: 500 }}>
-                    {debt.debtor}{' '}
-                    <span style={{ fontSize: 10, padding: '1px 8px', borderRadius: 12, background: style.bg, color: style.color }}>
-                      {debt.badge}
-                    </span>
-                  </span>
-                  <span style={{ fontWeight: 600, color: amountStyles[debt.amountColor] || '#1e293b' }}>{debt.amount}</span>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {debts.length > 0 ? (
+                debts.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: idx < debts.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{item.debtor}</div>
+                      <span style={{ 
+                        fontSize: 11, padding: '1px 6px', borderRadius: 4, 
+                        background: item.badgeColor === 'danger' ? '#fef2f2' : item.badgeColor === 'warning' ? '#fffbeb' : '#f0fdf4',
+                        color: item.badgeColor === 'danger' ? '#dc2626' : item.badgeColor === 'warning' ? '#d97706' : '#16a34a' 
+                      }}>
+                        {item.badge}
+                      </span>
+                    </div>
+                    <strong style={{ fontSize: 13, color: item.amountColor === 'overdue' ? '#dc2626' : '#0f172a' }}>
+                      {item.amount}
+                    </strong>
+                  </div>
+                ))
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 120 }}>
+                  <Empty 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                    description="Không có công nợ quá hạn" 
+                  />
                 </div>
-              );
-            })}
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f0f4fa', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 500 }}>Tổng công nợ quá hạn</span>
-              <span style={{ fontWeight: 700, color: '#c0392b' }}>8.000.000₫</span>
+              )}
             </div>
           </div>
         </div>
@@ -143,3 +302,5 @@ export const Dashboard = () => {
     </div>
   );
 };
+
+export default Dashboard;

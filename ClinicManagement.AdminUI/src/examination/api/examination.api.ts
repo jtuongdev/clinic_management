@@ -7,7 +7,11 @@ import { CoSoDto, KhoaDto, ThongKeLuotKhamDto, LuotKhamDangXuLyDto,
   PagedResultLuotKham,
   ThongKeKhamBenhDto,
   ChiDinhDichVuListDto,
-  ThongKeChiDinhDichVuDto
+  ThongKeChiDinhDichVuDto,
+  ChiDinhDichVuChiTietDto,
+  NhapKetQuaChiDinhRequest,
+  TiepNhanChiDinhRequest,
+  HuyChiDinhRequest,
  } from '../type/examination.types';
  
 import { DonThuocListDto, ThongKeDonThuocDto, } from '../type/prescription.examination.type';
@@ -76,6 +80,22 @@ export const examinationApi = {
 
   getThongKeChiDinhDichVu: (params?: { maKhoa?: number; maBacSi?: number }) => {
     return api.get<ApiResponse<ThongKeChiDinhDichVuDto>>('/LuotKham/thong-ke-chi-dinh', { params });
+  },
+
+  getChiDinhChiTiet: (chiDinhId: number) => {
+    return api.get<ApiResponse<ChiDinhDichVuChiTietDto>>(`/LuotKham/chi-dinh/${chiDinhId}/chi-tiet`);
+  },
+
+  tiepNhanChiDinh: (chiDinhId: number, data?: TiepNhanChiDinhRequest) => {
+    return api.post<ApiResponse<any>>(`/LuotKham/chi-dinh/${chiDinhId}/tiep-nhan`, data || {});
+  },
+
+  nhapKetQuaChiDinh: (chiDinhId: number, data: NhapKetQuaChiDinhRequest) => {
+    return api.post<ApiResponse<any>>(`/LuotKham/chi-dinh/${chiDinhId}/nhap-ket-qua`, data);
+  },
+
+  huyChiDinh: (chiDinhId: number, data?: HuyChiDinhRequest) => {
+    return api.post<ApiResponse<any>>(`/LuotKham/chi-dinh/${chiDinhId}/huy`, data || {});
   },
   // ĐƠN THUỐC
   getDonThuocList: (params: {

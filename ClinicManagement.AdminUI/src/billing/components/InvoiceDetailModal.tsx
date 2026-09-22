@@ -13,6 +13,7 @@ import {
   Divider,
   Spin,
   Alert,
+  App,
 } from 'antd';
 import {
   DollarOutlined,
@@ -50,6 +51,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   onClose,
   onInvoiceUpdated,
 }) => {
+  const { message } = App.useApp();
   const [detail, setDetail] = useState<HoaDonDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,13 +67,15 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
       const res = await billingApi.getInvoiceById(id);
       if (res.data.success && res.data.data) {
         setDetail(res.data.data);
+      } else {
+        message.error(res.data.message || 'Không tìm thấy thông tin hóa đơn');
       }
     } catch {
-      // Error handling
+      message.error('Lỗi khi tải dữ liệu chi tiết hóa đơn');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     if (open && invoiceId) {

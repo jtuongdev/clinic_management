@@ -7,6 +7,7 @@ import {
   StockAlertDto,
   GetItemsParams,
   GetStockParams,
+  GetStockResponseData,
   StocktakeCreateRequest,
   StocktakeCountRequest,
   StocktakeCountsRequest,
@@ -26,6 +27,11 @@ import {
   PrescriptionPrintDto,
   SupplierDto,
   SupplierRequest,
+  FefoPreviewResult,
+  PurchaseOrderPendingDto,
+  PurchaseOrderForImportDto,
+  CreateImportFromPoRequest,
+  ImportFromPoResult,
 } from '../types/inventory.types';
 
 export const inventoryApi = {
@@ -72,8 +78,14 @@ export const inventoryApi = {
   approveImport: (id: number) =>
     api.post<ApiResponse<ImportReceiptResult>>(`/inventory/import-receipts/${id}/approve`),
 
-  exportRetail: (data: ExportRequest) =>
-    api.post<ApiResponse<ExportResult>>('/inventory/exports/retail', data),
+  updateImportReceipt: (id: number, data: ImportReceiptRequest) =>
+    api.put<ApiResponse<ImportReceiptResult>>(`/inventory/import-receipts/${id}`, data),
+
+  cancelImportReceipt: (id: number, reason?: string) =>
+    api.post<ApiResponse<ImportReceiptResult>>(`/inventory/import-receipts/${id}/cancel`, { reason }),
+
+  previewFefo: (prescriptionId: number) =>
+    api.get<ApiResponse<FefoPreviewResult>>(`/inventory/prescriptions/${prescriptionId}/preview-fefo`),
   exportInternalUse: (data: ExportRequest) =>
     api.post<ApiResponse<ExportResult>>('/inventory/exports/internal-use', data),
   returnToSupplier: (data: StockMutationRequest) =>
@@ -100,9 +112,9 @@ export const inventoryApi = {
 
   // ─── TỒN KHO ──────────────────────────────────────────────────────────────
 
-  /** Lấy danh sách tồn kho (bao gồm thông tin lô) */
+  /** Lấy danh sách tồn kho (bao gồm thông tin lô và thống kê) */
   getStock: (params?: GetStockParams) =>
-    api.get<ApiResponse<{ items: StockDto[]; total: number }>>('/inventory/stock', { params }),
+    api.get<ApiResponse<GetStockResponseData>>('/inventory/stock', { params }),
 
   /** Lấy thông tin cảnh báo tồn kho (KPI) */
   getStockAlerts: (params?: { expiringWithinDays?: number }) =>
@@ -122,4 +134,16 @@ export const inventoryApi = {
 
   approveStocktake: (stocktakeId: number, data: StocktakeCountsRequest) =>
     api.post<ApiResponse<StocktakeResult>>(`/inventory/stocktakes/${stocktakeId}/approve`, data),
+
+  // ─── PURCHASE ORDERS (ĐƠN ĐẶT HÀNG) ──────────────────────────────────────
+  getPendingPurchaseOrders: (supplierId?: number) =>
+    api.get<ApiResponse<PurchaseOrderPendingDto[]>>('/purchase-orders/active-pending', {
+      params: supplierId ? { supplierId } : undefined,
+    }),
+
+  getPurchaseOrderForImport: (id: number) =>
+    api.get<ApiResponse<PurchaseOrderForImportDto>>(`/purchase-orders/${id}/for-import`),
+
+  createImportFromPo: (data: CreateImportFromPoRequest) =>
+    api.post<ApiResponse<ImportFromPoResult>>('/purchase-orders/import-receipt', data),
 };

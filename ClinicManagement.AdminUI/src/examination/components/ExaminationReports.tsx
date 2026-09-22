@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Progress, Typography, Button, Space, Table, Tag, message } from 'antd';
 import {
   DollarCircleOutlined,
@@ -11,8 +11,10 @@ import {
   FilePdfOutlined,
   TrophyOutlined,
   RiseOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { dashboardApi, ExaminationReportsDto } from '../../dashboard/api/dashboard.api';
 
 const { Text } = Typography;
 
@@ -30,220 +32,226 @@ interface DoctorKPIItem {
   rating: string;
 }
 
-const mockReports = {
-  kpis: [
-    { label: 'Doanh thu tháng', value: '2,8 tỷ đ', color: '#0b4f6c', bgColor: '#e8f4f7', icon: <DollarCircleOutlined style={{ fontSize: 20, color: '#0b4f6c' }} /> },
-    { label: 'Lượt khám hoàn thành', value: '3.247', color: '#0284c7', bgColor: '#e0f2fe', icon: <TeamOutlined style={{ fontSize: 20, color: '#0284c7' }} /> },
-    { label: 'Tỷ lệ hưởng BHYT', value: '78%', color: '#10b981', bgColor: '#ecfdf5', icon: <SafetyCertificateOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
-    { label: 'Chỉ số hài lòng', value: '4.8 / 5', color: '#f59e0b', bgColor: '#fffbeb', icon: <SmileOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
-    { label: 'Bác sĩ hoạt động', value: '12', color: '#10b981', bgColor: '#ecfdf5', icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
-    { label: 'Chuyên khoa mở', value: '5', color: '#8b5cf6', bgColor: '#f3e8ff', icon: <AppstoreOutlined style={{ fontSize: 20, color: '#8b5cf6' }} /> },
-  ],
-  revenue: [
-    { name: 'Khoa Nội tổng quát', value: '1,2 tỷ đ', percent: 100, strokeColor: '#0b4f6c' },
-    { name: 'Khoa Ngoại khoa', value: '850 triệu đ', percent: 70, strokeColor: '#10b981' },
-    { name: 'Khoa Nhi', value: '650 triệu đ', percent: 55, strokeColor: '#f59e0b' },
-    { name: 'Khoa Sản phụ', value: '450 triệu đ', percent: 40, strokeColor: '#0284c7' },
-    { name: 'Khoa Tai Mũi Họng', value: '350 triệu đ', percent: 30, strokeColor: '#8b5cf6' },
-  ] as RevenueItem[],
-  doctors: [
-    { rank: 1, name: 'BS. Tuấn (Nội)', count: '142 lượt', rating: '98%' },
-    { rank: 2, name: 'BS. Hoa (Ngoại)', count: '128 lượt', rating: '96%' },
-    { rank: 3, name: 'BS. Minh (Nhi)', count: '115 lượt', rating: '94%' },
-  ] as DoctorKPIItem[],
-};
-
 const ExaminationReports: React.FC = () => {
-  const [data] = useState(mockReports);
+  const [reportsData, setReportsData] = useState<ExaminationReportsDto | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const handleExportExcel = () => {
-    message.success('Đang khởi tạo tệp báo cáo tổng hợp Excel...');
+  // Tích hợp API Backend: GET /api/admin/dashboard/reports
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const res = await dashboardApi.getReports({ facilityId: 1 });
+      if (res.data?.success && res.data.data) {
+        setReportsData(res.data.data);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleExportPdf = () => {
-    message.info('Đang kết xuất báo cáo PDF tổng quan...');
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  // Tích hợp API Backend: GET /api/admin/dashboard/reports/export (CSV)
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await dashboardApi.exportReportsCsv({ facilityId: 1 });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `bao_cao_dieu_hanh_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      message.success('Đã xuất báo cáo CSV điều hành thành công!');
+    } catch {
+      message.error('Không thể xuất báo cáo CSV. Vui lòng thử lại.');
+    } finally {
+      setExporting(false);
+    }
   };
+
+  const formatCurrency = (val?: number) => {
+    if (!val) return '0 đ';
+    if (val >= 1000000000) return `${(val / 1000000000).toFixed(1)} tỷ đ`;
+    if (val >= 1000000) return `${(val / 1000000).toFixed(0)} triệu đ`;
+    return val.toLocaleString('vi-VN') + ' đ';
+  };
+
+  const kpiList = reportsData ? [
+    { label: 'Doanh thu tháng', value: formatCurrency(reportsData.kpis.revenue), color: '#0b4f6c', bgColor: '#e8f4f7', icon: <DollarCircleOutlined style={{ fontSize: 20, color: '#0b4f6c' }} /> },
+    { label: 'Lượt khám hoàn thành', value: reportsData.kpis.completedVisits.toLocaleString('vi-VN'), color: '#0284c7', bgColor: '#e0f2fe', icon: <TeamOutlined style={{ fontSize: 20, color: '#0284c7' }} /> },
+    { label: 'Tỷ lệ hưởng BHYT', value: reportsData.kpis.bhytReimbursementRate == null ? '--' : `${reportsData.kpis.bhytReimbursementRate}%`, color: '#10b981', bgColor: '#ecfdf5', icon: <SafetyCertificateOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
+    { label: 'Chỉ số hài lòng', value: '--', color: '#f59e0b', bgColor: '#fffbeb', icon: <SmileOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
+    { label: 'Bác sĩ hoạt động', value: String(reportsData.kpis.activeDoctors), color: '#10b981', bgColor: '#ecfdf5', icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
+    { label: 'Chuyên khoa mở', value: String(reportsData.kpis.openDepartments), color: '#8b5cf6', bgColor: '#f3e8ff', icon: <AppstoreOutlined style={{ fontSize: 20, color: '#8b5cf6' }} /> },
+  ] : [];
+
+  const maxRev = reportsData?.revenueByDepartment?.reduce((max, r) => Math.max(max, r.value), 1) || 1;
+  const colors = ['#0b4f6c', '#10b981', '#f59e0b', '#0284c7', '#8b5cf6'];
+
+  const revenueList: RevenueItem[] = (reportsData?.revenueByDepartment && reportsData.revenueByDepartment.length > 0)
+    ? reportsData.revenueByDepartment.map((r, i) => ({
+        name: r.name,
+        value: formatCurrency(r.value),
+        percent: Math.round((r.value / maxRev) * 100),
+        strokeColor: colors[i % colors.length],
+      }))
+    : [];
+
+  const doctorList: DoctorKPIItem[] = (reportsData?.doctorKpis && reportsData.doctorKpis.length > 0)
+    ? reportsData.doctorKpis.map(d => ({
+        rank: d.rank,
+        name: `${d.name} (${d.department})`,
+        count: `${d.count} lượt`,
+        rating: '--',
+      }))
+    : [];
 
   const doctorColumns: ColumnsType<DoctorKPIItem> = [
     {
       title: 'Hạng',
       dataIndex: 'rank',
       key: 'rank',
-      width: 80,
+      width: 70,
       align: 'center',
-      render: (rank) => {
-        if (rank === 1) return <Tag color="gold" style={{ fontWeight: 700 }}>#1</Tag>;
-        if (rank === 2) return <Tag color="cyan" style={{ fontWeight: 700 }}>#2</Tag>;
-        return <Tag color="orange" style={{ fontWeight: 700 }}>#3</Tag>;
+      render: (rank: number) => {
+        if (rank === 1) return <TrophyOutlined style={{ color: '#f59e0b', fontSize: 18 }} />;
+        if (rank === 2) return <TrophyOutlined style={{ color: '#94a3b8', fontSize: 16 }} />;
+        if (rank === 3) return <TrophyOutlined style={{ color: '#b45309', fontSize: 14 }} />;
+        return <Text strong>{rank}</Text>;
       },
     },
     {
-      title: 'Bác sĩ & Khoa',
+      title: 'Bác sĩ',
       dataIndex: 'name',
       key: 'name',
-      render: (name) => <Text strong style={{ color: '#0b4f6c' }}>{name}</Text>,
+      render: (name: string) => <Text strong>{name}</Text>,
     },
     {
-      title: 'Lượt khám hoàn thành',
+      title: 'Số ca khám',
       dataIndex: 'count',
       key: 'count',
-      align: 'right',
-      render: (count) => <Tag color="blue">{count}</Tag>,
+      align: 'center',
+      render: (count: string) => <Tag color="blue">{count}</Tag>,
     },
     {
-      title: 'Tỷ lệ hài lòng',
+      title: 'Hài lòng',
       dataIndex: 'rating',
       key: 'rating',
-      align: 'right',
-      render: (rating) => (
-        <Space>
-          <Text strong style={{ color: '#10b981' }}>{rating}</Text>
-        </Space>
-      ),
+      align: 'center',
+      render: (rating: string) => <Tag color="green">{rating}</Tag>,
     },
   ];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        background: '#ffffff',
-      }}
-    >
-      {/* Metric Ribbon / Stat Bar */}
-      <div
-        style={{
-          height: 42,
-          minHeight: 42,
-          background: '#f8fafc',
-          borderBottom: '1px solid #e2e8f0',
-          padding: '0 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          overflowX: 'auto',
-          flexShrink: 0,
-        }}
-      >
-        {data.kpis.map((kpi, idx) => (
-          <React.Fragment key={idx}>
-            {idx > 0 && <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}>{kpi.icon}</span>
-              <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.label}:</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: kpi.color }}>
-                {kpi.value}
-              </span>
-            </div>
-          </React.Fragment>
-        ))}
-      </div>
-
-      {/* Control Toolbar */}
-      <div
-        style={{
-          minHeight: 46,
-          padding: '6px 16px',
-          borderBottom: '1px solid #e2e8f0',
-          background: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 10,
-          flexShrink: 0,
-        }}
-      >
-        <div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginRight: 12 }}>
-            Báo cáo & Thống kê điều hành khám chữa bệnh
-          </span>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Tổng hợp doanh thu, lượt phục vụ, BHYT và xếp hạng KPI lâm sàng
-          </Text>
-        </div>
-
-        <Space size="small">
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#0b2a3c', margin: 0 }}>
+          Báo cáo & Thống kê Lâm sàng
+        </h3>
+        <Space>
           <Button
-            type="primary"
-            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
-            icon={<FileExcelOutlined />}
-            onClick={handleExportExcel}
-            size="middle"
+            icon={<ReloadOutlined />}
+            loading={loading}
+            onClick={fetchReports}
           >
-            Xuất Excel
+            Làm mới
           </Button>
           <Button
-            type="default"
-            icon={<FilePdfOutlined style={{ color: '#ef4444' }} />}
-            onClick={handleExportPdf}
-            size="middle"
+            type="primary"
+            icon={<FileExcelOutlined />}
+            loading={exporting}
+            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+            onClick={handleExportExcel}
           >
+            Xuất CSV / Excel
+          </Button>
+          <Button danger icon={<FilePdfOutlined />} disabled title="Chưa có contract PDF từ Backend">
             Xuất PDF
           </Button>
         </Space>
       </div>
 
-      {/* Analysis Grid Body */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        <Row style={{ minHeight: '100%' }}>
-          {/* Revenue by Department */}
-          <Col xs={24} lg={12} style={{ borderRight: '1px solid #e2e8f0', padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <RiseOutlined style={{ color: '#0b4f6c', fontSize: 16 }} />
-              <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
-                Doanh thu theo chuyên khoa
-              </Text>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
+        {kpiList.map((kpi, idx) => (
+          <div
+            key={idx}
+            style={{
+              background: '#fff',
+              borderRadius: 8,
+              padding: '14px 16px',
+              border: '1px solid #e9edf4',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 8,
+                background: kpi.bgColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {kpi.icon}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {data.revenue.map((item, idx) => (
+            <div>
+              <div style={{ fontSize: 12, color: '#6a7f96' }}>{kpi.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: kpi.color, marginTop: 2 }}>{kpi.value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e9edf4', padding: '16px', height: '100%' }}>
+            <h4 style={{ fontSize: 14, fontWeight: 600, color: '#0b2a3c', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <RiseOutlined style={{ color: '#0b4f6c' }} />
+              Doanh thu theo Khoa phòng
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {revenueList.map((item, idx) => (
                 <div key={idx}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text strong style={{ color: '#1e293b' }}>{item.name}</Text>
-                    <Text strong style={{ color: '#0b4f6c' }}>{item.value}</Text>
+                    <Text strong style={{ fontSize: 13 }}>{item.name}</Text>
+                    <Text style={{ fontSize: 13, color: '#6a7f96' }}>{item.value}</Text>
                   </div>
-                  <Progress
-                    percent={item.percent}
-                    strokeColor={item.strokeColor}
-                    size={['100%', 8]}
-                    showInfo={false}
-                  />
+                  <Progress percent={item.percent} strokeColor={item.strokeColor} size="small" showInfo={false} />
                 </div>
               ))}
             </div>
-          </Col>
+          </div>
+        </Col>
 
-          {/* Doctor KPIs */}
-          <Col xs={24} lg={12}>
-            <div
-              style={{
-                height: 44,
-                padding: '0 16px',
-                borderBottom: '1px solid #e2e8f0',
-                background: '#fafbfc',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <Space size="small">
-                <TrophyOutlined style={{ color: '#f59e0b', fontSize: 16 }} />
-                <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
-                  Bác sĩ tiêu biểu trong tháng
-                </Text>
-              </Space>
-            </div>
-            <Table<DoctorKPIItem>
+        <Col xs={24} lg={12}>
+          <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e9edf4', padding: '16px', height: '100%' }}>
+            <h4 style={{ fontSize: 14, fontWeight: 600, color: '#0b2a3c', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <TrophyOutlined style={{ color: '#f59e0b' }} />
+              Bác sĩ có hiệu suất khám cao
+            </h4>
+            <Table
               columns={doctorColumns}
-              dataSource={data.doctors.map((d, i) => ({ ...d, key: i }))}
+              dataSource={doctorList}
+              rowKey="rank"
               pagination={false}
-              size="middle"
+              size="small"
+              loading={loading}
             />
-          </Col>
-        </Row>
-      </div>
+          </div>
+        </Col>
+      </Row>
     </div>
   );
 };

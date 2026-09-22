@@ -35,9 +35,14 @@ export default function AuthLayout() {
       // KIỂM TRA QUYỀN BÁC SĨ
       // ==========================
 
-      const roles = result.data.user.roles;
+      const roles = result.data?.user?.roles || [];
 
-      if (!roles.includes('BacSi')) {
+      const isDoctorRole = roles.some((r: string) => {
+        const norm = r.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return norm.includes('BACSI') || norm.includes('ADMIN') || norm.includes('QUANTRI');
+      });
+
+      if (!isDoctorRole) {
         logout();
 
         alert(

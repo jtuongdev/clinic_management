@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ClinicManagement.Domain.Identity;
 using ClinicManagement.Domain.Repositories;
+using ClinicManagement.Domain.System;
 
 
 namespace ClinicManagement.Infrastructure.Persistence.Repositories
@@ -71,7 +72,6 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 var targetDate = (ngay ?? DateTime.UtcNow).Date;
                 query = query.Where(n => n.NhanVienKhoa.Any(assignment =>
                     assignment.MaKhoa == maKhoa.Value &&
-                    assignment.TuNgay.Date <= targetDate &&
                     (assignment.DenNgay == null || assignment.DenNgay.Value.Date >= targetDate)));
             }
             return query;
@@ -102,6 +102,13 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 .OrderBy(role => role.TenVaiTro)
                 .ToListAsync(cancellationToken);
 
+        public async Task<List<ChucVu>> GetAllChucVusAsync(CancellationToken cancellationToken = default)
+            => await _context.ChucVus
+                .AsNoTracking()
+                .Where(c => !c.IsDeleted)
+                .OrderBy(c => c.TenChucVu)
+                .ToListAsync(cancellationToken);
+
         public async Task<List<VaiTro>> GetRolesByIdsAsync(IEnumerable<int> roleIds, CancellationToken cancellationToken = default)
         {
             var ids = roleIds.Distinct().ToList();
@@ -115,69 +122,115 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 .Include(employee => employee.NhanVienVaiTro)
                 .FirstOrDefaultAsync(employee => employee.Id == id && !employee.IsDeleted, cancellationToken);
 
-        public async Task<List<Quyen>> GetPermissionsByUserIdAsync(int userId)
+        public async Task<List<MaTranPhanQuyen>> GetPermissionsByUserIdAsync(int userId)
         {
             var today = DateTime.UtcNow.Date;
-            return await _context.Set<NhanVienVaiTro>()
+            var roleIds = await _context.Set<NhanVienVaiTro>()
                 .AsNoTracking()
                 .Where(nvvt => nvvt.MaNhanVien == userId &&
                     nvvt.NgayBatDau.Date <= today &&
                     (nvvt.NgayKetThuc == null || nvvt.NgayKetThuc.Value.Date >= today))
-                .SelectMany(nvvt => nvvt.VaiTro!.VaiTroQuyens)
-                .Select(vtq => vtq.Quyen)
-                .Where(q => q != null)
+                .Select(nvvt => nvvt.MaVaiTro)
                 .Distinct()
-                .ToListAsync()!;
+                .ToListAsync();
+
+            if (roleIds.Count == 0)
+                return [];
+
+            return await _context.Set<MaTranPhanQuyen>()
+                .AsNoTracking()
+                .Where(m => roleIds.Contains(m.MaVaiTro) && m.DuocPhep)
+                .ToListAsync();
         }
        
-        public async Task<List<NhanVien>> GetBacSiByKhoaAsync(
+        public async Task<List<BacSiKhoaModel>> GetBacSiByKhoaAsync(
             int maKhoa,
             int maCoSo,
             CancellationToken cancellationToken = default)
         {
-            var today = DateTime.UtcNow.Date;
-            var now = DateTime.UtcNow.TimeOfDay;
+            // 1. Tính toán thời gian thực tế theo múi giờ Việt Nam (GMT+7)
+            TimeZoneInfo vnTimeZone;
+            try
+            {
+                vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
+            catch
+            {
+                try
+                {
+                    vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+                }
+                catch
+                {
+                    vnTimeZone = TimeZoneInfo.CreateCustomTimeZone("VN_TIME", TimeSpan.FromHours(7), "Vietnam Time", "Vietnam Time");
+                }
+            }
 
-            // Lấy danh sách ca làm việc đang diễn ra (ThoiGianBatDau <= now <= ThoiGianKetThuc)
-            var activeCaLam = await _context.CaTrucs
-                .Where(c => c.ThoiGianBatDau <= now && c.ThoiGianKetThuc >= now)
+            var nowVn = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
+            var todayVn = nowVn.Date;
+            var currentTimeVn = nowVn.TimeOfDay;
+
+            // 2. Lấy danh sách ca làm việc đang diễn ra tại thời điểm hiện tại
+            var activeCaLamIds = await _context.CaTrucs
+                .AsNoTracking()
+                .Where(c => c.ThoiGianBatDau <= currentTimeVn && c.ThoiGianKetThuc >= currentTimeVn)
                 .Select(c => c.Id)
                 .ToListAsync(cancellationToken);
 
-            // Lấy danh sách nhân viên có lịch làm việc hôm nay và đang trong ca
-            var nhanVienIdsWithLichLam = await _context.LichLamViecs
-                .Where(llv => llv.NgayLam.Date == today && activeCaLam.Contains(llv.MaCaTruc))
-                .Select(llv => llv.MaNhanVien)
-                .Distinct()
-                .ToListAsync(cancellationToken);
+            // 3. Lấy lịch làm việc hôm nay của các bác sĩ thuộc khoa
+            var activeDutySchedules = new List<ClinicManagement.Domain.Identity.LichLamViec>();
+            if (activeCaLamIds.Count > 0)
+            {
+                activeDutySchedules = await _context.LichLamViecs
+                    .AsNoTracking()
+                    .Include(llv => llv.PhongKham)
+                    .Where(llv => llv.NgayLam.Date == todayVn &&
+                                  llv.MaKhoa == maKhoa &&
+                                  activeCaLamIds.Contains(llv.MaCaTruc) &&
+                                  llv.TrangThai == ClinicManagement.Domain.Common.Enums.TrangThaiLichLamViec.LAM_VIEC)
+                    .ToListAsync(cancellationToken);
+            }
 
-            // Nếu không có ca làm việc nào, trả về danh sách rỗng
-            if (!activeCaLam.Any())
-                return new List<NhanVien>();
+            var activeDoctorScheduleMap = activeDutySchedules
+                .GroupBy(llv => llv.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First());
 
-            // Nếu không có nhân viên nào có lịch làm việc, trả về rỗng
-            if (!nhanVienIdsWithLichLam.Any())
-                return new List<NhanVien>();
-
-            // Query chính
-            return await _context.NhanViens
+            // 4. Truy vấn danh sách Bác sĩ thuộc Khoa & Cơ sở (BỎ CHẶN CỨNG LỊCH TRỰC)
+            var doctors = await _context.NhanViens
                 .AsNoTracking()
                 .Include(nv => nv.NhanVienKhoa)
                     .ThenInclude(nvk => nvk.Khoa)
-                .Where(nv => nv.MaChucVu == 4) // Bác sĩ
+                .Include(nv => nv.ChucVu)
+                .Where(nv => (nv.ChucVu != null && (nv.ChucVu.TenChucVu.Contains("Bác sĩ") || nv.ChucVu.TenChucVu.Contains("bác sĩ") || nv.ChucVu.TenChucVu.Contains("Bac si") || nv.ChucVu.TenChucVu.Contains("bac si"))) || nv.MaChucVu == 4 || nv.ChuyenKhoa != null)
                 .Where(nv => nv.IsActive && !nv.IsDeleted)
                 .Where(nv => nv.NhanVienKhoa.Any(nvk =>
                     nvk.MaKhoa == maKhoa &&
-                    nvk.TuNgay <= today &&
-                    (nvk.DenNgay == null || nvk.DenNgay >= today)
+                    nvk.TuNgay <= todayVn &&
+                    (nvk.DenNgay == null || nvk.DenNgay >= todayVn)
                 ))
                 .Where(nv => nv.PhanQuyenCoSo.Any(pq =>
                     pq.MaCoSo == maCoSo &&
-                    pq.NgayBatDau.Date <= today &&
-                    (pq.NgayKetThuc == null || pq.NgayKetThuc.Value.Date >= today)
+                    pq.NgayBatDau.Date <= todayVn &&
+                    (pq.NgayKetThuc == null || pq.NgayKetThuc.Value.Date >= todayVn)
                 ))
-                .Where(nv => nhanVienIdsWithLichLam.Contains(nv.Id)) // Chỉ lấy nhân viên có lịch làm việc
                 .ToListAsync(cancellationToken);
+
+            // 5. Map ra BacSiKhoaModel kèm cờ Đang trực và Phòng khám mặc định
+            return doctors
+                .Select(nv =>
+                {
+                    var isOnDuty = activeDoctorScheduleMap.TryGetValue(nv.Id, out var schedule);
+                    return new BacSiKhoaModel
+                    {
+                        NhanVien = nv,
+                        DangTruc = isOnDuty,
+                        MaPhongKhamMacDinh = schedule?.MaPhongKham,
+                        TenPhongKhamMacDinh = schedule?.PhongKham?.Ten
+                    };
+                })
+                .OrderByDescending(b => b.DangTruc)
+                .ThenBy(b => b.NhanVien.HoTen)
+                .ToList();
         }
             
     

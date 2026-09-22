@@ -11,6 +11,9 @@ public interface IKhoRepository : IUnitOfWork
     IQueryable<Item> Items { get; }
     IQueryable<DonViTinhQuyDoi> DonViTinhQuyDois { get; }
     IQueryable<NhaCungCap> NhaCungCaps { get; }
+    IQueryable<Kho> Khos { get; }
+    IQueryable<DonDatHang> DonDatHangs { get; }
+    IQueryable<ChiTietDonDatHang> ChiTietDonDatHangs { get; }
     IQueryable<PhieuNhapKho> PhieuNhapKhos { get; }
     IQueryable<TonKho> TonKhos { get; }
     IQueryable<InventoryTransaction> InventoryTransactions { get; }
@@ -22,8 +25,11 @@ public interface IKhoRepository : IUnitOfWork
     IQueryable<HoaDon> HoaDons { get; }
     IQueryable<Stocktake> Stocktakes { get; }
     IQueryable<StocktakeCount> StocktakeCounts { get; }
+    IQueryable<ClinicManagement.Domain.Service.DinhMucVatTuDichVu> DinhMucVatTuDichVus { get; }
 
     void Add<TEntity>(TEntity entity) where TEntity : class;
+    void Remove<TEntity>(TEntity entity) where TEntity : class;
+    void RemoveRange<TEntity>(IEnumerable<TEntity> entities) where TEntity : class;
 
     Task<IKhoTransaction> BeginTransactionAsync(
         CancellationToken cancellationToken = default);

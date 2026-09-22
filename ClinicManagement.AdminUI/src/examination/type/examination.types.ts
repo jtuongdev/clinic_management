@@ -140,3 +140,81 @@ export interface ThongKeChiDinhDichVuDto {
   batThuong: number;
   khoaYeuCau: number;
 }
+
+export interface ChiTietKetQuaXetNghiemDto {
+  tenChiSo: string;
+  giaTri: string;
+  donVi: string;
+  khoangThamChieu: string;
+  batThuong?: boolean | null;
+}
+
+export interface ChiDinhDichVuChiTietDto {
+  id: number;
+  maLuotKham: number;
+  maBenhNhan: number;
+  maBenhNhanNoiBo: string;
+  tenBenhNhan: string;
+  tuoi?: number | null;
+  gioiTinh: string;
+  dienThoai: string;
+  diaChi: string;
+  maDanhMucDichVu: number;
+  tenDichVu: string;
+  loaiDichVu: string;
+  maBacSiChiDinh: number;
+  tenBacSiChiDinh: string;
+  maKhoa: number;
+  tenKhoa: string;
+  maNguoiThucHien?: number | null;
+  tenNguoiThucHien: string;
+  trangThai: string;
+  ngayChiDinh: string;
+  ngayTiepNhan?: string | null;
+  ngayThucHien?: string | null;
+  ngayCoKetQua?: string | null;
+  ketLuan: string;
+  urlKetQua: string;
+  chanDoanSoBo: string;
+  chiTietKetQuas: ChiTietKetQuaXetNghiemDto[];
+  vatTuSuDungs?: VatTuSuDungDto[];
+}
+
+export interface VatTuSuDungDto {
+  maItem: number;
+  maVatTu: string;
+  tenVatTu: string;
+  soLuongDinhMuc: number;
+  donViTinh: string;
+  soLuongXuat: number;
+  donViTinhKho: string;
+  soLo: string;
+  maPhieuXuat: string;
+  trangThai: string;
+  ghiChu: string;
+}
+
+export interface ChiTietKetQuaItemRequest {
+  tenChiSo: string;
+  giaTri: string;
+  donVi: string;
+  khoangThamChieu: string;
+  batThuong?: boolean | null;
+}
+
+export interface NhapKetQuaChiDinhRequest {
+  maNguoiThucHien?: number | null;
+  ketLuan?: string | null;
+  urlKetQua?: string | null;
+  hoanThanh: boolean;
+  chiTietKetQuas: ChiTietKetQuaItemRequest[];
+}
+
+export interface TiepNhanChiDinhRequest {
+  maNguoiThucHien?: number | null;
+  ghiChu?: string | null;
+}
+
+export interface HuyChiDinhRequest {
+  lyDo: string;
+}

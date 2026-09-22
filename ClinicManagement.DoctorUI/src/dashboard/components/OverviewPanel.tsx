@@ -1,67 +1,171 @@
-import React from 'react';
-import '../../styles/components/OverviewPanel.css'
-
-// Dữ liệu mock
-const mockData = {
-  totalPatients: 18,
-  waiting: 6,
-  examining: 1,
-  completed: 10,
-  pending: 4,
-  cancelled: 1,
-  currentPatient: {
-    name: 'Nguyễn Thị An',
-    code: 'BN000123 · LK202608270001',
-    avatar: 'NA',
-    startTime: '08:20',
-  },
-  nextPatients: [
-    { stt: 2, name: 'Trần Văn Bình', age: 47, gender: 'Nam', priority: 'normal' },
-    { stt: 3, name: 'Lê Thị Hoa', age: 32, gender: 'Nữ', priority: 'normal' },
-    { stt: 4, name: 'Phạm Văn Hùng', age: 59, gender: 'Nam', priority: 'urgent' },
-  ],
-  alerts: [
-    { type: 'danger', icon: 'fa-circle-exclamation', title: 'Có bệnh nhân có cảnh báo y tế', msg: 'Nguyễn Thị An có thông tin dị ứng cần lưu ý', time: '08:12' },
-    { type: 'warning', icon: 'fa-flask', title: 'Có kết quả xét nghiệm chờ xem', msg: '4 kết quả xét nghiệm chưa được bác sĩ xem', time: '08:20' },
-    { type: 'success', icon: 'fa-users', title: 'Hàng đợi đang tăng', msg: 'Hiện có 6 bệnh nhân đang chờ khám', time: '08:25' },
-  ],
-  tasks: [
-    { icon: 'fa-flask', title: 'Kết quả xét nghiệm cần xem', count: '4 kết quả', priority: 'high' },
-    { icon: 'fa-prescription', title: 'Đơn thuốc chưa hoàn tất', count: '2 đơn', priority: 'medium' },
-    { icon: 'fa-file-lines', title: 'Lượt khám chưa hoàn tất', count: '1 lượt', priority: 'high' },
-  ],
-  appointments: [
-    { time: '08:00', name: 'Nguyễn Thị An', reason: 'Tái khám', status: 'done' },
-    { time: '08:30', name: 'Trần Văn Bình', reason: 'Khám bệnh', status: 'exam' },
-    { time: '09:00', name: 'Lê Thị Hoa', reason: 'Tái khám', status: 'wait' },
-    { time: '09:30', name: 'Phạm Văn Hùng', reason: 'Khám mới', status: 'wait' },
-  ],
-  recentPatients: [
-    { avatar: 'NA', name: 'Nguyễn Thị An', dx: 'Viêm đường hô hấp cấp', date: 'Hôm nay' },
-    { avatar: 'DT', name: 'Đỗ Minh Tâm', dx: 'Viêm họng cấp', date: 'Hôm qua' },
-    { avatar: 'NA', name: 'Nguyễn Văn A', dx: 'Tăng huyết áp', date: 'Hôm qua' },
-  ],
-  statsToday: { visits: 10, avgTime: '18 phút/lượt' },
-  statsWeek: { patients: 82, completionRate: '92.7%' },
-};
+import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import '../../styles/components/OverviewPanel.css';
+import { useAuth } from '../../Auth/context/AuthProvider';
+import { doctorScheduleApi, type TodayStatusDto } from '../../schedule/api/doctorSchedule.api';
+import { examinationApi } from '../../examination/api/examination.api';
+import type { BenhNhanListDto } from '../../examination/types/examination/index';
 
 const OverviewPanel: React.FC = () => {
+  const { user } = useAuth();
+  const [todayStatus, setTodayStatus] = useState<TodayStatusDto | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [queuePatients, setQueuePatients] = useState<BenhNhanListDto[]>([]);
+  const [isLoadingQueue, setIsLoadingQueue] = useState(false);
+
+  const loadStatus = useCallback(async () => {
+    try {
+      const res = await doctorScheduleApi.getTodayStatus();
+      if (res?.data) setTodayStatus(res.data);
+    } catch (err) {
+      console.error('Không thể tải trạng thái hôm nay:', err);
+    }
+  }, []);
+
+  const loadQueue = useCallback(async () => {
+    setIsLoadingQueue(true);
+    try {
+      const res = await examinationApi.getHangDoi({ 
+        maBacSi: user?.id || 0,
+        pageSize: 50 
+      });
+      const items = res.data?.data?.items || [];
+      setQueuePatients(items);
+    } catch (err) {
+      console.error('Không thể tải hàng đợi hôm nay:', err);
+    } finally {
+      setIsLoadingQueue(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadStatus();
+    loadQueue();
+  }, [loadStatus, loadQueue]);
+
+  const handleQuickCheck = async (isCheckIn: boolean) => {
+    try {
+      setActionLoading(true);
+      if (isCheckIn) {
+        const res = await doctorScheduleApi.checkIn('Check-in nhanh từ Dashboard');
+        toast.success(res.message || 'Check-in thành công!');
+      } else {
+        const res = await doctorScheduleApi.checkOut('Check-out nhanh từ Dashboard');
+        toast.success(res.message || 'Check-out thành công!');
+      }
+      await loadStatus();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Thao tác thất bại';
+      toast.error(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'BS';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  // Tính toán KPI thực tế từ hàng đợi CSDL
+  const totalPatients = queuePatients.length;
+  const waitingPatients = queuePatients.filter(p => p.trangThaiLuotKham === 'CHO_KHAM');
+  const examiningPatients = queuePatients.filter(p => p.trangThaiLuotKham === 'DANG_KHAM');
+  const completedPatients = queuePatients.filter(p => p.trangThaiLuotKham === 'HOAN_THANH');
+  const pendingClsPatients = queuePatients.filter(p => p.trangThaiLuotKham === 'CHO_KET_QUA_CLS');
+  const cancelledPatients = queuePatients.filter(p => p.trangThaiLuotKham === 'DA_HUY');
+
+  // Bệnh nhân đang khám hiện tại
+  const currentExamPatient = examiningPatients[0] || null;
+
+  // 4 bệnh nhân tiếp theo đang chờ
+  const nextPatients = waitingPatients.slice(0, 4);
+
+  // 3 bệnh nhân hoàn tất gần đây nhất
+  const recentCompleted = completedPatients.slice(0, 3);
+
   return (
     <div className="panel-overview active">
       {/* Doctor strip */}
       <div className="doctor-strip">
         <div className="doc-info">
-          <div className="doc-avatar">NT</div>
+          <div className="doc-avatar">{getInitials(user?.fullName)}</div>
           <div>
-            <div className="doc-name">BS. Nguyễn Văn Tuấn</div>
-            <div className="doc-title">Bác sĩ · <span className="doc-dept">Khoa Nội</span></div>
+            <div className="doc-name">{user?.fullName || 'Bác sĩ điều trị'}</div>
+            <div className="doc-title">
+              Bác sĩ · <span className="doc-dept">{user?.chuyenKhoa || todayStatus?.schedule?.tenKhoa || 'Khoa Khám Bệnh'}</span>
+            </div>
           </div>
         </div>
-        <div className="doc-meta">
-          <span className="badge-status"><i className="fa-solid fa-circle" style={{fontSize: '8px', marginRight: '5px', color: '#1f9d61'}}></i>Đang làm việc</span>
-          <span className="doc-time"><i className="fa-regular fa-clock"></i> Ca sáng: 07:30 – 11:30</span>
-          <span className="doc-time"><i className="fa-regular fa-calendar"></i> Phòng PK01</span>
-          <span className="doc-time" style={{background: '#f1f5f9', padding: '2px 8px', borderRadius: '3px'}}><i className="fa-regular fa-circle-check"></i> <strong>{mockData.totalPatients}</strong> bệnh nhân</span>
+        <div className="doc-meta" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {todayStatus?.attendance?.checkIn && !todayStatus?.attendance?.checkOut ? (
+            <span className="badge-status" style={{ background: '#ecfdf5', color: '#16834f' }}>
+              <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '5px', color: '#1f9d61' }}></i>
+              Đang trong ca
+            </span>
+          ) : todayStatus?.attendance?.checkOut ? (
+            <span className="badge-status" style={{ background: '#eff6ff', color: '#1d4ed8' }}>
+              <i className="fa-solid fa-circle-check" style={{ marginRight: '5px' }}></i>
+              Đã hoàn thành ca
+            </span>
+          ) : todayStatus?.hasSchedule ? (
+            <span className="badge-status" style={{ background: '#fffbeb', color: '#b45309' }}>
+              <i className="fa-regular fa-clock" style={{ marginRight: '5px' }}></i>
+              Chưa Check-in
+            </span>
+          ) : (
+            <span className="badge-status" style={{ background: '#f1f5f9', color: '#64748b' }}>
+              Không có ca hôm nay
+            </span>
+          )}
+
+          {todayStatus?.schedule && (
+            <>
+              <span className="doc-time">
+                <i className="fa-regular fa-clock"></i> {todayStatus.schedule.tenCa}: {todayStatus.schedule.thoiGianBatDau?.substring(0, 5)} – {todayStatus.schedule.thoiGianKetThuc?.substring(0, 5)}
+              </span>
+              <span className="doc-time">
+                <i className="fa-regular fa-calendar"></i> {todayStatus.schedule.tenPhongKham || 'Phòng khám'}
+              </span>
+            </>
+          )}
+
+          {/* Nút check-in / check-out nhanh */}
+          {todayStatus?.hasSchedule && !todayStatus?.attendance?.checkIn && (
+            <button
+              className="btn btn-sm btn-primary"
+              style={{ padding: '4px 10px', fontSize: '12px', background: '#1f9d61', borderColor: '#1f9d61', color: '#fff' }}
+              disabled={actionLoading}
+              onClick={() => handleQuickCheck(true)}
+            >
+              <i className="fa-solid fa-right-to-bracket"></i> Vào Ca Ngay
+            </button>
+          )}
+
+          {todayStatus?.attendance?.checkIn && !todayStatus?.attendance?.checkOut && (
+            <button
+              className="btn btn-sm btn-secondary"
+              style={{ padding: '4px 10px', fontSize: '12px' }}
+              disabled={actionLoading}
+              onClick={() => handleQuickCheck(false)}
+            >
+              <i className="fa-solid fa-right-from-bracket"></i> Check-out Ca
+            </button>
+          )}
+
+          <span className="doc-time" style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '3px' }}>
+            <i className="fa-regular fa-circle-check"></i> <strong>{totalPatients}</strong> bệnh nhân trong ca
+          </span>
+          <button 
+            className="btn" 
+            style={{ padding: '2px 8px', fontSize: '11px' }}
+            onClick={() => { loadStatus(); loadQueue(); }}
+            title="Làm mới dữ liệu"
+          >
+            <i className={`fa-solid fa-arrows-rotate ${isLoadingQueue ? 'fa-spin' : ''}`}></i>
+          </button>
         </div>
       </div>
 
@@ -69,32 +173,32 @@ const OverviewPanel: React.FC = () => {
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-label">Tổng bệnh nhân</div>
-          <div className="kpi-value">{mockData.totalPatients}</div>
-          <div className="kpi-sub">Hôm nay</div>
+          <div className="kpi-value">{totalPatients}</div>
+          <div className="kpi-sub">Trong ca làm việc</div>
         </div>
         <div className="kpi-card warning">
           <div className="kpi-label">Đang chờ</div>
-          <div className="kpi-value">{mockData.waiting}</div>
+          <div className="kpi-value">{waitingPatients.length}</div>
           <div className="kpi-sub">Chưa được khám</div>
         </div>
         <div className="kpi-card success">
           <div className="kpi-label">Đang khám</div>
-          <div className="kpi-value">{mockData.examining}</div>
+          <div className="kpi-value">{examiningPatients.length}</div>
           <div className="kpi-sub">Đang xử trí</div>
         </div>
         <div className="kpi-card primary">
           <div className="kpi-label">Đã hoàn thành</div>
-          <div className="kpi-value">{mockData.completed}</div>
-          <div className="kpi-sub">Đã kết thúc</div>
+          <div className="kpi-value">{completedPatients.length}</div>
+          <div className="kpi-sub">Đã đóng bệnh án</div>
         </div>
         <div className="kpi-card info">
-          <div className="kpi-label">Kết quả chờ</div>
-          <div className="kpi-value">{mockData.pending}</div>
-          <div className="kpi-sub">Xét nghiệm</div>
+          <div className="kpi-label">Chờ CLS</div>
+          <div className="kpi-value">{pendingClsPatients.length}</div>
+          <div className="kpi-sub">Xét nghiệm / CĐHA</div>
         </div>
         <div className="kpi-card danger">
           <div className="kpi-label">Đã hủy</div>
-          <div className="kpi-value">{mockData.cancelled}</div>
+          <div className="kpi-value">{cancelledPatients.length}</div>
           <div className="kpi-sub">Hủy lượt khám</div>
         </div>
       </div>
@@ -106,21 +210,31 @@ const OverviewPanel: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-head">
               <h3><i className="fa-solid fa-user-doctor" style={{color: 'var(--success)'}}></i> Bệnh nhân đang khám</h3>
-              <span className="badge-count">Đang xử trí</span>
+              <span className="badge-count">{currentExamPatient ? 'Đang xử trí' : 'Trống'}</span>
             </div>
             <div className="dash-card-body">
-              <div className="current-patient">
-                <div className="cp-avatar">{mockData.currentPatient.avatar}</div>
-                <div className="cp-info">
-                  <div className="cp-name">{mockData.currentPatient.name}</div>
-                  <div className="cp-code">{mockData.currentPatient.code}</div>
-                  <div className="cp-time"><i className="fa-regular fa-clock"></i> Bắt đầu: {mockData.currentPatient.startTime}</div>
+              {currentExamPatient ? (
+                <div className="current-patient">
+                  <div className="cp-avatar">{getInitials(currentExamPatient.hoTen)}</div>
+                  <div className="cp-info">
+                    <div className="cp-name">{currentExamPatient.hoTen}</div>
+                    <div className="cp-code">{currentExamPatient.maBenhNhanNoiBo} · {currentExamPatient.maLuotKhamGanNhat}</div>
+                    <div className="cp-time">
+                      <i className="fa-regular fa-clock"></i> Giới tính: {currentExamPatient.gioiTinh === 'M' ? 'Nam' : 'Nữ'} · {currentExamPatient.tuoi} tuổi
+                    </div>
+                  </div>
+                  <div>
+                    <span className="cp-status">Đang khám</span>
+                    <div style={{fontSize: '11px', color: 'var(--muted)', marginTop: '4px', textAlign: 'right'}}>
+                      STT #{currentExamPatient.soThuTu ?? 1}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="cp-status">Đang khám</span>
-                  <div style={{fontSize: '10px', color: 'var(--muted)', marginTop: '4px'}}>STT 01</div>
+              ) : (
+                <div style={{ padding: '18px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
+                  Hiện tại không có bệnh nhân nào đang trong phòng khám.
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -128,137 +242,76 @@ const OverviewPanel: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-head">
               <h3><i className="fa-solid fa-list-ol"></i> Bệnh nhân tiếp theo</h3>
-              <span className="badge-count">{mockData.nextPatients.length} người</span>
+              <span className="badge-count">{waitingPatients.length} người chờ</span>
             </div>
             <div className="dash-card-body">
-              <div className="queue-list-compact">
-                {mockData.nextPatients.map(p => (
-                  <div className="ql-item" key={p.stt}>
-                    <div className="ql-num">{p.stt}</div>
-                    <span className="ql-name">{p.name}</span>
-                    <span className="ql-age">{p.age} tuổi · {p.gender}</span>
-                    <span className={`ql-priority ${p.priority === 'normal' ? 'normal' : ''}`}>
-                      {p.priority === 'urgent' && <><i className="fa-solid fa-triangle-exclamation" style={{fontSize: '8px'}}></i> Ưu tiên</>}
-                      {p.priority === 'normal' && 'Bình thường'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div style={{marginTop: '8px', fontSize: '11px', color: 'var(--muted)'}}>
-                <i className="fa-regular fa-clock"></i> Thời gian chờ trung bình: <strong>12 phút</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Alerts */}
-          <div className="dash-card">
-            <div className="dash-card-head">
-              <h3><i className="fa-solid fa-triangle-exclamation" style={{color: 'var(--danger)'}}></i> Cảnh báo</h3>
-              <span className="badge-count" style={{background: 'var(--danger-soft)', color: 'var(--danger)'}}>{mockData.alerts.length} mới</span>
-            </div>
-            <div className="dash-card-body">
-              <div className="alert-list">
-                {mockData.alerts.map((alert, idx) => (
-                  <div className={`alert-item ${alert.type}`} key={idx}>
-                    <div className="alert-icon"><i className={`fa-solid ${alert.icon}`}></i></div>
-                    <div className="alert-content">
-                      <div className="alert-title">{alert.title}</div>
-                      <div className="alert-msg">{alert.msg}</div>
+              {nextPatients.length === 0 ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
+                  Hàng đợi đang trống.
+                </div>
+              ) : (
+                <div className="queue-list-compact">
+                  {nextPatients.map(p => (
+                    <div className="ql-item" key={p.id}>
+                      <div className="ql-num">{p.soThuTu ?? '-'}</div>
+                      <span className="ql-name">{p.hoTen}</span>
+                      <span className="ql-age">{p.tuoi} tuổi · {p.gioiTinh === 'M' ? 'Nam' : 'Nữ'}</span>
+                      <span className="ql-priority normal">
+                        Bình thường
+                      </span>
                     </div>
-                    <span className="alert-time">{alert.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Pending tasks */}
-          <div className="dash-card">
-            <div className="dash-card-head">
-              <h3><i className="fa-solid fa-clock"></i> Công việc chờ</h3>
-              <span className="badge-count">{mockData.tasks.length} việc</span>
-            </div>
-            <div className="dash-card-body">
-              <div className="task-list">
-                {mockData.tasks.map((task, idx) => (
-                  <div className="task-item" key={idx}>
-                    <div className="task-icon"><i className={`fa-solid ${task.icon}`}></i></div>
-                    <div className="task-info">
-                      <div className="task-title">{task.title}</div>
-                      <div className="task-count">{task.count}</div>
-                    </div>
-                    <span className={`task-priority ${task.priority}`}>{task.priority.toUpperCase()}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="dash-col">
-          {/* Appointments */}
-          <div className="dash-card">
-            <div className="dash-card-head">
-              <h3><i className="fa-solid fa-calendar-check" style={{color: 'var(--primary)'}}></i> Lịch hẹn hôm nay</h3>
-              <span className="badge-count">15 lịch</span>
-            </div>
-            <div className="dash-card-body">
-              <div className="appt-list">
-                {mockData.appointments.map((appt, idx) => (
-                  <div className="appt-item" key={idx} style={appt.status === 'exam' ? {background: 'var(--primary-soft)', borderColor: 'var(--primary)'} : {}}>
-                    <span className="appt-time">{appt.time}</span>
-                    <span className="appt-name">{appt.name}</span>
-                    <span className="appt-reason">{appt.reason}</span>
-                    <span className={`appt-status ${appt.status}`}>
-                      {appt.status === 'done' && 'Hoàn thành'}
-                      {appt.status === 'exam' && 'Đang khám'}
-                      {appt.status === 'wait' && 'Chờ'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div style={{marginTop: '8px', fontSize: '11px', color: 'var(--muted)'}}>
-                <i className="fa-regular fa-circle-check" style={{color: 'var(--success)'}}></i> Tỷ lệ hoàn thành: <strong>66.7%</strong>
-              </div>
-            </div>
-          </div>
-
           {/* Recent patients */}
           <div className="dash-card">
             <div className="dash-card-head">
-              <h3><i className="fa-solid fa-clock-rotate-left"></i> Bệnh nhân gần đây</h3>
-              <span className="badge-count">{mockData.recentPatients.length} người</span>
+              <h3><i className="fa-solid fa-clock-rotate-left"></i> Bệnh nhân đã hoàn thành gần đây</h3>
+              <span className="badge-count">{completedPatients.length} lượt</span>
             </div>
             <div className="dash-card-body">
-              <div className="recent-list">
-                {mockData.recentPatients.map((p, idx) => (
-                  <div className="recent-item" key={idx}>
-                    <div className="recent-avatar">{p.avatar}</div>
-                    <span className="recent-name">{p.name}</span>
-                    <span className="recent-dx">{p.dx}</span>
-                    <span className="recent-date">{p.date}</span>
-                  </div>
-                ))}
-              </div>
+              {recentCompleted.length === 0 ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
+                  Chưa có bệnh nhân nào hoàn tất khám trong ca này.
+                </div>
+              ) : (
+                <div className="recent-list">
+                  {recentCompleted.map(p => (
+                    <div className="recent-item" key={p.id}>
+                      <div className="recent-avatar">{getInitials(p.hoTen)}</div>
+                      <span className="recent-name">{p.hoTen}</span>
+                      <span className="recent-dx">{p.khoa || 'Đã hoàn tất'}</span>
+                      <span className="recent-date">{p.maBenhNhanNoiBo}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Statistics */}
           <div className="dash-card">
             <div className="dash-card-head">
-              <h3><i className="fa-solid fa-chart-simple"></i> Thống kê nhanh</h3>
+              <h3><i className="fa-solid fa-chart-simple"></i> Thống kê tiến độ ca trực</h3>
             </div>
             <div className="dash-card-body">
               <div className="stats-row">
                 <div className="stat-box">
-                  <div className="stat-label">Hôm nay</div>
-                  <div className="stat-value">{mockData.statsToday.visits} <span style={{fontSize: '13px', fontWeight: 400, color: 'var(--muted)'}}>lượt</span></div>
-                  <div className="stat-sub">TB {mockData.statsToday.avgTime}</div>
+                  <div className="stat-label">Tổng lượt tiếp nhận</div>
+                  <div className="stat-value">{totalPatients} <span style={{fontSize: '13px', fontWeight: 400, color: 'var(--muted)'}}>ca</span></div>
+                  <div className="stat-sub">Phòng: {todayStatus?.schedule?.tenPhongKham || 'Phòng khám'}</div>
                 </div>
                 <div className="stat-box">
-                  <div className="stat-label">Tuần này</div>
-                  <div className="stat-value">{mockData.statsWeek.patients} <span style={{fontSize: '13px', fontWeight: 400, color: 'var(--muted)'}}>bệnh nhân</span></div>
-                  <div className="stat-sub">Tỷ lệ hoàn thành {mockData.statsWeek.completionRate}</div>
+                  <div className="stat-label">Tiến độ giải quyết</div>
+                  <div className="stat-value">
+                    {totalPatients > 0 ? Math.round((completedPatients.length / totalPatients) * 100) : 0}%
+                  </div>
+                  <div className="stat-sub">{completedPatients.length} / {totalPatients} bệnh nhân đã khám xong</div>
                 </div>
               </div>
             </div>

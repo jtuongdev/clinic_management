@@ -13,10 +13,12 @@ namespace ClinicManagement.Domain.Service
         public decimal Gia { get; set; }
 
         public virtual ICollection<ChiDinhDichVu> ChiDinhDichVus { get; set; }
+        public virtual ICollection<DinhMucVatTuDichVu> DinhMucVatTus { get; set; }
 
         public DanhMucDichVu()
         {
             ChiDinhDichVus = new List<ChiDinhDichVu>();
+            DinhMucVatTus = new List<DinhMucVatTuDichVu>();
         }
     }
 }

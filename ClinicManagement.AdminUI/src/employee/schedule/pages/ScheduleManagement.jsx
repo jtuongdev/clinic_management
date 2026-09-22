@@ -21,7 +21,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
     selectedCoSo, selectedKhoa, setNote, roomId, setRoomId, dailyStatus, setDailyStatus,
     setSelectedCoSo, setSelectedKhoa,
     setWeekStart, weekStart, shifts, weekDays, goToday, fixedSchedules, fixedLoading,
-    createFixed, bulkCreateFixed, updateFixed, removeFixed, generateSchedules, previewGenerate,
+    createFixed, bulkCreateFixed, setFixedSchedule, generateMonthlySchedule, updateFixed, removeFixed, generateSchedules, previewGenerate,
     markLeave,
     getAttendance, checkIn, checkOut,
     finalizeAbsent,
@@ -71,18 +71,13 @@ export const ScheduleManagement = ({ embedded = false }) => {
     (schedule) => Number(schedule.maCaTruc) === Number(shiftId)
       && dayjs(schedule.ngayLam).isSame(date, 'day'),
   );
-  const kpis = {
-    employees: new Set(filteredSchedules.map((item) => item.maNhanVien)).size,
-    shifts: filteredSchedules.length,
-    working: filteredSchedules.filter((item) => item.trangThai === 'LAM_VIEC').length,
-    leave: filteredSchedules.filter((item) => item.trangThai === 'NGHI').length,
-    incomplete: attendanceKpi?.thieuCheckOut ?? filteredSchedules.filter((item) => item.trangThai === 'LAM_VIEC' && ['CHUA_CHAM_CONG', undefined].includes(getAttendance(item.id)?.trangThai)).length,
-    absent: attendanceKpi?.vangMat ?? filteredSchedules.filter((item) => getAttendance(item.id)?.trangThai === 'VANG_MAT').length,
-    late: attendanceKpi?.diMuon ?? filteredSchedules.filter((item) => ['DI_MUON', 'DI_MUON_VE_SOM'].includes(getAttendance(item.id)?.trangThai)).length,
-    checkedIn: attendanceKpi?.daCheckIn ?? filteredSchedules.filter((item) => Boolean(getAttendance(item.id)?.checkIn)).length,
-    checkedOut: attendanceKpi?.daCheckOut ?? filteredSchedules.filter((item) => Boolean(getAttendance(item.id)?.checkOut)).length,
-    pending: attendanceKpi?.choXacNhan ?? filteredSchedules.filter((item) => getAttendance(item.id)?.trangThai === 'CHO_XAC_NHAN').length,
-  };
+  const kpiStats = [
+    ['Tổng ca', attendanceKpi?.tongLich ?? schedules.length],
+    ['Đã check-in', attendanceKpi?.daCheckIn ?? 0],
+    ['Đã check-out', attendanceKpi?.daCheckOut ?? 0],
+    ['Vắng mặt', attendanceKpi?.vangMat ?? 0],
+    ['Đi muộn', attendanceKpi?.diMuon ?? 0],
+  ];
   const statusMeta = (schedule) => {
     if (schedule.trangThai === 'NGHI') return { label: statusCatalog.NGHI || schedule.trangThai, color: 'red', icon: '●' };
     if (schedule.trangThai === 'HUY') return { label: statusCatalog.HUY || schedule.trangThai, color: 'default', icon: '×' };
@@ -90,6 +85,15 @@ export const ScheduleManagement = ({ embedded = false }) => {
     if (attendanceStatus === 'VANG_MAT') return { label: attendanceStatusCatalog.VANG_MAT || attendanceStatus, color: 'red', icon: '!' };
     if (attendanceStatus === 'THIEU_CHECK_OUT') return { label: attendanceStatusCatalog.THIEU_CHECK_OUT || attendanceStatus, color: 'volcano', icon: '!' };
     if (attendanceStatus === 'NGHI_PHEP') return { label: attendanceStatusCatalog.NGHI_PHEP || attendanceStatus, color: 'orange', icon: '●' };
+    if (schedule.nguonLich === 'TU_DONG_THEO_LICH_MAU' || schedule.nguonLich === 'CO_DINH') {
+      return { label: 'Lịch mẫu', color: 'blue', icon: '⚡' };
+    }
+    if (schedule.nguonLich === 'DOI_CA') {
+      return { label: 'Đổi ca', color: 'purple', icon: '🔄' };
+    }
+    if (schedule.nguonLich === 'PHAT_SINH_THU_CONG') {
+      return { label: 'Thủ công', color: 'gold', icon: '✍️' };
+    }
     return { label: schedule.nguonLich, color: 'blue', icon: '✓' };
   };
   const exportSchedule = () => {
@@ -231,13 +235,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
           <div className="schedule-header-right">
             {showKpi && (
               <div className="schedule-inline-stats" aria-label="Tổng quan lịch làm việc">
-                {[
-                  ['Nhân viên', kpis.employees],
-                  ['Ca làm', kpis.shifts],
-                  ['Đã check-in', kpis.checkedIn],
-                  ['Vắng', kpis.absent],
-                  ['Đi muộn', kpis.late],
-                ].map(([label, value]) => (
+                {kpiStats.map(([label, value]) => (
                   <span className="schedule-inline-stat" key={label}>
                     <strong>{value}</strong>
                     <span>{label}</span>
@@ -459,7 +457,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
                                           ) : null;
                                         })()}
                                         <Tooltip title="Trạng thái lịch và nguồn phân công">
-                                          <Tag color={schedule.trangThai === 'NGHI' ? 'red' : schedule.trangThai === 'HUY' ? 'default' : (schedule.nguonLich === 'CO_DINH' ? 'blue' : 'gold')}>
+                                          <Tag color={schedule.trangThai === 'NGHI' ? 'red' : schedule.trangThai === 'HUY' ? 'default' : (schedule.nguonLich === 'TU_DONG_THEO_LICH_MAU' || schedule.nguonLich === 'CO_DINH' ? 'blue' : schedule.nguonLich === 'DOI_CA' ? 'purple' : 'gold')}>
                                             {statusCatalog[schedule.trangThai] || schedule.trangThai}
                                           </Tag>
                                         </Tooltip>
@@ -473,8 +471,8 @@ export const ScheduleManagement = ({ embedded = false }) => {
                                         {schedule.ghiChu && <em>{schedule.ghiChu}</em>}
                                         <span className="schedule-card-actions">
                                           <span>Sửa</span>
-                                          {schedule.trangThai === 'LAM_VIEC' && !getAttendance(schedule.id)?.checkIn && <span role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); checkIn(schedule.id); }}>Check-in</span>}
-                                          {getAttendance(schedule.id)?.checkIn && !getAttendance(schedule.id)?.checkOut && <span role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); checkOut(schedule.id); }}>Check-out</span>}
+                                          {schedule.trangThai === 'LAM_VIEC' && !getAttendance(schedule.id)?.checkIn && <span role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); checkIn({ maNhanVien: schedule.maNhanVien }); }}>Check-in</span>}
+                                          {getAttendance(schedule.id)?.checkIn && !getAttendance(schedule.id)?.checkOut && <span role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); checkOut({ maNhanVien: schedule.maNhanVien }); }}>Check-out</span>}
                                           {schedule.trangThai !== 'NGHI' && <span role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); markLeave(schedule); }} onKeyDown={(event) => event.key === 'Enter' && markLeave(schedule)}>Nghỉ</span>}
                                           <span role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); remove(schedule); }} onKeyDown={(event) => event.key === 'Enter' && remove(schedule)}><Trash2 size={13} /> Xóa</span>
                                         </span>
@@ -527,7 +525,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
           ),
           children: (
             <AttendanceManagement
-              schedules={filteredSchedules}
+              schedules={schedules}
               attendance={attendance}
               checkIn={checkIn}
               checkOut={checkOut}
@@ -540,6 +538,9 @@ export const ScheduleManagement = ({ embedded = false }) => {
               reviewAdjustment={reviewAttendanceAdjustment}
               createPeriod={createAttendancePeriod}
               togglePeriod={toggleAttendancePeriod}
+              employees={employees}
+              khoas={khoas}
+              selectedKhoa={selectedKhoa}
             />
           ),
         },
@@ -570,6 +571,8 @@ export const ScheduleManagement = ({ embedded = false }) => {
               fixedLoading={fixedLoading}
               createFixed={createFixed}
               bulkCreateFixed={bulkCreateFixed}
+              setFixedSchedule={setFixedSchedule}
+              generateMonthlySchedule={generateMonthlySchedule}
               previewGenerate={previewGenerate}
               updateFixed={updateFixed}
               removeFixed={removeFixed}
@@ -655,8 +658,8 @@ export const ScheduleManagement = ({ embedded = false }) => {
               <Space>
                 <Button onClick={async () => setAdjustments(await getAdjustments(detailSchedule.id))}>Lịch sử điều chỉnh</Button>
                 <Button onClick={() => { setDetailSchedule(null); openEdit(detailSchedule); }}>Điều chỉnh lịch</Button>
-                {detailSchedule.trangThai === 'LAM_VIEC' && !currentAttendance?.checkIn && <Button type="primary" onClick={() => checkIn(detailSchedule.id)}>Check-in</Button>}
-                {currentAttendance?.checkIn && !currentAttendance?.checkOut && <Button type="primary" onClick={() => checkOut(detailSchedule.id)}>Check-out</Button>}
+                {detailSchedule.trangThai === 'LAM_VIEC' && !currentAttendance?.checkIn && <Button type="primary" onClick={() => checkIn({ maNhanVien: detailSchedule.maNhanVien })}>Check-in</Button>}
+                {currentAttendance?.checkIn && !currentAttendance?.checkOut && <Button type="primary" onClick={() => checkOut({ maNhanVien: detailSchedule.maNhanVien })}>Check-out</Button>}
               </Space>
               {adjustments.length > 0 && (
                 <div className="schedule-adjustment-history">

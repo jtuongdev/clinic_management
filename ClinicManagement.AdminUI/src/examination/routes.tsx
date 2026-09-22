@@ -10,6 +10,7 @@ import ExaminationFinance from './components/ExaminationFinance';
 import ExaminationHR from './components/ExaminationHR';
 import ExaminationFacility from './components/ExaminationFacility';
 import ExaminationReports from './components/ExaminationReports';
+import NhapKetQuaPage from './page/NhapKetQuaPage';
 
 export const examinationRoutes = [
   {
@@ -25,6 +26,7 @@ export const examinationRoutes = [
       { path: 'patients', element: <ExaminationPatients /> },
       { path: 'list', element: <ExaminationList /> },
       { path: 'cls', element: <ExaminationCLS /> },
+      { path: 'cls/nhap-ket-qua/:id', element: <NhapKetQuaPage /> },
       { path: 'pharmacy', element: <ExaminationPharmacy /> },
       { path: 'finance', element: <ExaminationFinance /> },
       { path: 'hr', element: <ExaminationHR /> },

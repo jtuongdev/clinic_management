@@ -89,5 +89,7 @@ namespace ClinicManagement.Domain.Repositories
     
         // Chuan doan luokham
         Task<IEnumerable<LuotKham>> GetDiagnosePatientInExamination(int id, CancellationToken cancellationToken = default);
+
+        Task<ClinicManagement.Domain.Service.ChiDinhDichVu?> GetChiDinhDichVuByIdAsync(int chiDinhId, CancellationToken cancellationToken = default);
     }
 }

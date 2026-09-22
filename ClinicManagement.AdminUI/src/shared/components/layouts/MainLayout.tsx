@@ -40,7 +40,7 @@ export const MainLayout = () => {
         <Header />
         <Content
           style={{
-            background: '#ffffff',
+            background: '#f1f5f9',
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
@@ -50,12 +50,25 @@ export const MainLayout = () => {
             margin: 0,
           }}
         >
-          <Outlet />
+          {/* Scrollable page wrapper — từng page tự cuộn bên trong */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              minHeight: 0,
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Outlet />
+          </div>
         </Content>
         {/* Status bar */}
         <div
           style={{
-            padding: '8px 24px',
+            padding: '6px 16px',
             background: '#fafcfe',
             borderTop: '1px solid #e9edf4',
             fontSize: 12,

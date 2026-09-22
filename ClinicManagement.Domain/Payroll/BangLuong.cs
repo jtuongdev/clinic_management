@@ -21,6 +21,7 @@ namespace ClinicManagement.Domain.Payroll
         public decimal TienTangCa { get; private set; }
         public decimal KhauTruDiMuonVeSom { get; private set; }
         public decimal TienBaoHiem { get; private set; }
+        public decimal TienNoKyNay { get; private set; }
 
         public virtual KyLuong KyLuong { get; private set; } = null!;
         public virtual NhanVien NhanVien { get; private set; } = null!;
@@ -59,11 +60,24 @@ namespace ClinicManagement.Domain.Payroll
 
         public void AddItem(string loaiKhoan, string tenKhoan, decimal soTien, string ghiChu = "")
         {
-            if (KyLuong != null && KyLuong.TrangThai != "NHAP")
+            if (KyLuong != null && KyLuong.TrangThai != "NHAP" && KyLuong.TrangThai != "DA_DUYET")
                 throw new InvalidOperationException("Bảng lương đã đóng không thể thay đổi.");
             var item = new ChiTietBangLuong(Id, loaiKhoan, tenKhoan, soTien, ghiChu);
             ChiTiets.Add(item);
             Recalculate();
+        }
+
+        public ChiTietBangLuong? RemoveItem(int itemId)
+        {
+            if (KyLuong != null && KyLuong.TrangThai != "NHAP" && KyLuong.TrangThai != "DA_DUYET")
+                throw new InvalidOperationException("Bảng lương đã đóng không thể thay đổi.");
+            var item = ChiTiets.FirstOrDefault(x => x.Id == itemId);
+            if (item != null)
+            {
+                ChiTiets.Remove(item);
+                Recalculate();
+            }
+            return item;
         }
 
         public void SetAttendanceSnapshot(int maKyChamCong, decimal soNgayCong, decimal soNgayNghiKhongLuong)
@@ -99,10 +113,20 @@ namespace ClinicManagement.Domain.Payroll
                     TongKhauTru += item.SoTien;
             }
 
-            ThucLinh = LuongTheoNgayCong + TienTangCa + TongPhuCap
-                - KhauTruNghiKhongLuong - KhauTruDiMuonVeSom - TienBaoHiem - TongKhauTru;
-            if (ThucLinh < 0)
-                throw new InvalidOperationException("Thực lĩnh không thể âm.");
+            decimal tongThuNhap = LuongTheoNgayCong + TienTangCa + TongPhuCap;
+            decimal tongGiamTru = KhauTruNghiKhongLuong + KhauTruDiMuonVeSom + TienBaoHiem + TongKhauTru;
+            decimal net = tongThuNhap - tongGiamTru;
+
+            if (net >= 0)
+            {
+                ThucLinh = net;
+                TienNoKyNay = 0;
+            }
+            else
+            {
+                ThucLinh = 0;
+                TienNoKyNay = Math.Abs(net);
+            }
         }
     }
 }

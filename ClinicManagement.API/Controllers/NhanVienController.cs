@@ -1,3 +1,6 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.API.Extensions;
+using ClinicManagement.Domain.Common.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +15,7 @@ namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.XEM, PhamViDuLieu.TOAN_HE_THONG)]
     public class NhanVienController : BaseController
     {
         private readonly IMediator _mediator;
@@ -33,7 +36,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int pageSize = 20,
             CancellationToken cancellationToken = default)
         {
-            var result = await _mediator.Send(new GetNhanViensPagedQuery
+            var result = await _mediator.Send(new LayDanhSachNhanVienPhanTrangQuery
             {
                 Keyword = keyword,
                 MaChucVu = maChucVu,
@@ -50,20 +53,27 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetNhanVienByIdQuery(id), cancellationToken);
+            var result = await _mediator.Send(new LayNhanVienTheoIdQuery(id), cancellationToken);
             return result == null ? Failure("Không tìm thấy nhân viên.", 404) : Success(result);
+        }
+
+        [HttpGet("positions")]
+        [HttpGet("chuc-vu")]
+        public async Task<IActionResult> GetChucVus(CancellationToken cancellationToken)
+        {
+            return Success(await _mediator.Send(new LayDanhSachChucVuQuery(), cancellationToken));
         }
 
         [HttpGet("roles")]
         public async Task<IActionResult> GetRoles(CancellationToken cancellationToken)
         {
-            return Success(await _mediator.Send(new GetRolesQuery(), cancellationToken));
+            return Success(await _mediator.Send(new LayDanhSachVaiTroQuery(), cancellationToken));
         }
 
         [HttpGet("{id:int}/permissions")]
         public async Task<IActionResult> GetPermissions(int id, CancellationToken cancellationToken)
         {
-            return Success(await _mediator.Send(new GetEmployeePermissionsQuery(id), cancellationToken));
+            return Success(await _mediator.Send(new LayQuyenNhanVienQuery(id), cancellationToken));
         }
 
         [HttpPut("{id:int}/roles")]
@@ -72,7 +82,7 @@ namespace ClinicManagement.API.Controllers
             [FromBody] UpdateEmployeeRolesRequest request,
             CancellationToken cancellationToken)
         {
-            await _mediator.Send(new UpdateEmployeeRolesCommand(id, request), cancellationToken);
+            await _mediator.Send(new CapNhatVaiTroNhanVienCommand(id, request), cancellationToken);
             return Success<object>(null, "Cập nhật vai trò nhân viên thành công.");
         }
 
@@ -81,7 +91,7 @@ namespace ClinicManagement.API.Controllers
             [FromBody] CreateNhanVienRequest request,
             CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new CreateNhanVienCommand(request), cancellationToken);
+            var result = await _mediator.Send(new TaoNhanVienCommand(request), cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, ApiResponse<object>.Ok(result, "Tạo nhân viên thành công."));
         }
 
@@ -91,14 +101,14 @@ namespace ClinicManagement.API.Controllers
             [FromBody] UpdateNhanVienRequest request,
             CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new UpdateNhanVienCommand(id, request), cancellationToken);
+            var result = await _mediator.Send(new CapNhatNhanVienCommand(id, request), cancellationToken);
             return Success(result, "Cập nhật nhân viên thành công.");
         }
 
         [HttpPatch("{id:int}/status")]
         public async Task<IActionResult> SetStatus(
             int id,
-            [FromBody] SetNhanVienStatusCommand command,
+            [FromBody] CapNhatTrangThaiNhanVienCommand command,
             CancellationToken cancellationToken)
         {
             if (command.Id != id)
@@ -111,13 +121,17 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("bac-si")]
         public async Task<IActionResult> GetBacSiByKhoa(
             [FromQuery] int maKhoa,
-            [FromQuery] int maCoSo,
+            [FromQuery] int? maCoSo = null,
             CancellationToken cancellationToken = default)
         {
-            var query = new GetBacSiByKhoaQuery
+            var coSoId = (maCoSo.HasValue && maCoSo.Value > 0)
+                ? maCoSo.Value
+                : (User.GetCoSoId() > 0 ? User.GetCoSoId() : 1);
+
+            var query = new LayBacSiTheoKhoaQuery
             {
                 MaKhoa = maKhoa,
-                MaCoSo = maCoSo
+                MaCoSo = coSoId
             };
 
             var result = await _mediator.Send(query, cancellationToken);
@@ -129,7 +143,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int? maCoSo = null,
             [FromQuery] int? maKhoa = null)
         {
-            var query = new GetBacSiTrucQuery
+            var query = new LayBacSiTrucQuery
             {
                 MaCoSo = maCoSo,
                 MaKhoa = maKhoa

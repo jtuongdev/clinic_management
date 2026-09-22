@@ -1,3 +1,5 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.API.Common;
 using ClinicManagement.Application.DTOs.LichLamViec;
 using ClinicManagement.Domain.Identity;
@@ -10,7 +12,7 @@ namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.XEM, PhamViDuLieu.TOAN_HE_THONG)]
     public class CaTrucController : BaseController
     {
         private readonly ClinicDbContext context;

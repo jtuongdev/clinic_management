@@ -5,6 +5,7 @@ import {
   Tag,
   Space,
   Typography,
+  Tooltip,
   App,
 } from 'antd';
 import {
@@ -12,6 +13,7 @@ import {
   CheckOutlined,
   ReloadOutlined,
   PrinterOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -21,6 +23,7 @@ import {
 } from '../types/inventory.types';
 import { inventoryApi } from '../api/inventory.api';
 import PrescriptionPrintModal from './PrescriptionPrintModal';
+import FefoPreviewModal from './FefoPreviewModal';
 
 const { Text } = Typography;
 
@@ -29,11 +32,16 @@ interface DispensePanelProps {
 }
 
 const DispensePanel: React.FC<DispensePanelProps> = ({ onDispenseSuccess }) => {
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
 
   const [prescriptions, setPrescriptions] = useState<PendingPrescriptionDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [dispensingId, setDispensingId] = useState<number | null>(null);
+
+  // Modal xem trước phân bổ FEFO
+  const [previewPrescriptionId, setPreviewPrescriptionId] = useState<number | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [confirmingDispense, setConfirmingDispense] = useState(false);
 
   // Modal in đơn thuốc sau cấp phát hoặc in lại
   const [printData, setPrintData] = useState<PrescriptionPrintDto | null>(null);
@@ -83,56 +91,36 @@ const DispensePanel: React.FC<DispensePanelProps> = ({ onDispenseSuccess }) => {
     }
   };
 
-  const handleDispense = (record: PendingPrescriptionDto) => {
-    const pId = record.prescriptionId || record.id || 0;
-    const visitId = record.maLuotKham || record.visitId;
+  const handleConfirmDispense = async (pId: number) => {
+    setConfirmingDispense(true);
+    setDispensingId(pId);
+    try {
+      const idempotencyKey = `DISP-${pId}-${Date.now()}`;
+      const res = await inventoryApi.dispensePrescription(pId, idempotencyKey);
+      if (res.data.success) {
+        const result = res.data.data;
+        message.success(`Đã cấp phát thành công đơn thuốc #${pId}`);
+        setPreviewModalOpen(false);
+        onDispenseSuccess?.(result);
 
-    modal.confirm({
-      title: 'Xác nhận cấp phát thuốc',
-      icon: <MedicineBoxOutlined style={{ color: '#0b4f6c' }} />,
-      content: (
-        <div>
-          <p>
-            Cấp phát đơn thuốc <Text strong>#{pId}</Text>
-            {visitId ? <> (lượt khám <Text strong>#{visitId}</Text>)</> : null}?
-          </p>
-          <p style={{ color: '#64748b', fontSize: 13 }}>
-            Hệ thống sẽ tự động phân bổ tồn kho theo nguyên tắc FEFO và sinh phiếu xuất kho cấp phát.
-          </p>
-        </div>
-      ),
-      okText: 'Cấp phát',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        setDispensingId(pId);
-        try {
-          const idempotencyKey = `DISP-${pId}-${Date.now()}`;
-          const res = await inventoryApi.dispensePrescription(pId, idempotencyKey);
-          if (res.data.success) {
-            const result = res.data.data;
-            message.success(`Đã cấp phát thành công đơn thuốc #${pId}`);
-            onDispenseSuccess?.(result);
-
-            // Mở modal in đơn thuốc ngay lập tức theo DTO printData từ backend
-            if (result.printData) {
-              setPrintData(result.printData);
-              setPrintModalOpen(true);
-            } else {
-              // Dự phòng gọi API GET print-data nếu printData không đính kèm
-              await handleOpenPrint(pId);
-            }
-
-            await fetchPending();
-          } else {
-            message.error(res.data.message || 'Cấp phát thất bại');
-          }
-        } catch {
-          message.error('Có lỗi xảy ra khi cấp phát thuốc');
-        } finally {
-          setDispensingId(null);
+        // Mở modal in đơn thuốc ngay lập tức theo DTO printData từ backend
+        if (result.printData) {
+          setPrintData(result.printData);
+          setPrintModalOpen(true);
+        } else {
+          await handleOpenPrint(pId);
         }
-      },
-    });
+
+        await fetchPending();
+      } else {
+        message.error(res.data.message || 'Cấp phát thất bại');
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Có lỗi xảy ra khi cấp phát thuốc');
+    } finally {
+      setConfirmingDispense(false);
+      setDispensingId(null);
+    }
   };
 
   const formatDate = (dateStr?: string) => {
@@ -175,7 +163,14 @@ const DispensePanel: React.FC<DispensePanelProps> = ({ onDispenseSuccess }) => {
       title: 'Bệnh nhân',
       dataIndex: 'patientName',
       key: 'patientName',
-      render: (name) => name || <Text type="secondary">--</Text>,
+      render: (name, record) => (
+        <div>
+          <Text strong>{name || '--'}</Text>
+          {record.patientCode && (
+            <div style={{ fontSize: 12, color: '#64748b' }}>{record.patientCode}</div>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Bác sĩ kê',
@@ -190,13 +185,33 @@ const DispensePanel: React.FC<DispensePanelProps> = ({ onDispenseSuccess }) => {
       render: (_, record) => formatDate(record.ngayKe || record.prescribedAt),
     },
     {
+      title: 'Viện phí',
+      key: 'payment',
+      width: 150,
+      align: 'center',
+      render: (_, record) => {
+        if (record.isPaid) {
+          return (
+            <Tag color="success" style={{ fontWeight: 600, padding: '2px 8px' }}>
+              ● ĐÃ THANH TOÁN
+            </Tag>
+          );
+        }
+        return (
+          <Tag color="warning" style={{ fontWeight: 600, padding: '2px 8px' }}>
+            ● CHƯA THANH TOÁN
+          </Tag>
+        );
+      },
+    },
+    {
       title: 'Trạng thái',
       key: 'status',
       width: 130,
       render: (_, record) => {
         const status = record.trangThai || record.status;
         if (status === 'CHO_CAP_PHAT' || status === 'CHO_CAP') {
-          return <Tag color="warning">Chờ cấp phát</Tag>;
+          return <Tag color="processing">Chờ cấp phát</Tag>;
         }
         if (status === 'DA_XUAT_HET' || status === 'DA_CAP') {
           return <Tag color="success">Đã cấp phát</Tag>;
@@ -207,25 +222,40 @@ const DispensePanel: React.FC<DispensePanelProps> = ({ onDispenseSuccess }) => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
+      width: 170,
       align: 'center',
       render: (_, record) => {
         const pId = record.prescriptionId || record.id || 0;
         const status = record.trangThai || record.status;
         const isPending = status === 'CHO_CAP_PHAT' || status === 'CHO_CAP';
+        const canDispense = record.canDispense !== false;
 
         return (
           <Space size="small">
             {isPending ? (
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                loading={dispensingId === pId}
-                onClick={() => handleDispense(record)}
+              <Tooltip
+                title={
+                  !canDispense
+                    ? 'Bệnh nhân chưa thanh toán viện phí tại quầy thu ngân'
+                    : 'Xem trước phân bổ FEFO và xác nhận cấp phát'
+                }
               >
-                Cấp phát
-              </Button>
+                <span>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<EyeOutlined />}
+                    disabled={!canDispense}
+                    loading={dispensingId === pId}
+                    onClick={() => {
+                      setPreviewPrescriptionId(pId);
+                      setPreviewModalOpen(true);
+                    }}
+                  >
+                    Xem & Cấp phát
+                  </Button>
+                </span>
+              </Tooltip>
             ) : (
               <Button
                 size="small"
@@ -279,6 +309,18 @@ const DispensePanel: React.FC<DispensePanelProps> = ({ onDispenseSuccess }) => {
               Không có đơn thuốc nào đang chờ cấp phát
             </div>
           ),
+        }}
+      />
+
+      {/* Modal xem trước phân bổ FEFO */}
+      <FefoPreviewModal
+        open={previewModalOpen}
+        prescriptionId={previewPrescriptionId}
+        onConfirmDispense={handleConfirmDispense}
+        confirming={confirmingDispense}
+        onCancel={() => {
+          setPreviewModalOpen(false);
+          setPreviewPrescriptionId(null);
         }}
       />
 

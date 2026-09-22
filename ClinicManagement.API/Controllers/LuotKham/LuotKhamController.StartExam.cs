@@ -1,3 +1,5 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using System;
 using System.Threading.Tasks;
 using ClinicManagement.Application.Features.LuotKham.Commands;
@@ -5,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public partial class LuotKhamController : BaseController
     {
         [HttpPost("{id}/start-exam")]
@@ -12,7 +15,7 @@ namespace ClinicManagement.API.Controllers
         {
             try
             {
-                var command = new StartExamCommand
+                var command = new BatDauKhamCommand
                 {
                     Id = id,
                     MaBacSi = CurrentUserId

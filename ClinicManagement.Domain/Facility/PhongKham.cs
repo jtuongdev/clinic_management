@@ -9,7 +9,7 @@ namespace ClinicManagement.Domain.Facility
         public int MaKhoa { get; set; }
         public string Ma { get; set; } = string.Empty;
         public string Ten { get; set; } = string.Empty;
-        public string TrangThai { get; set; } = "HoatDong"; 
+        public string TrangThai { get; set; } = "HOAT_DONG"; 
 
         // Navigation
         public virtual Khoa Khoa { get; set; } = null!;

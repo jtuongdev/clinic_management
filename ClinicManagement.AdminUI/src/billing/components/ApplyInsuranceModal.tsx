@@ -47,8 +47,12 @@ export const ApplyInsuranceModal: React.FC<ApplyInsuranceModalProps> = ({
       } else {
         message.error(res.data.message || 'Lỗi khi áp dụng bảo hiểm');
       }
-    } catch {
-      // Validation error
+    } catch (err: any) {
+      if (err?.response?.data?.message) {
+        message.error(err.response.data.message);
+      } else if (err?.message && !err?.errorFields) {
+        message.error(err.message);
+      }
     } finally {
       setLoading(false);
     }

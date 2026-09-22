@@ -24,7 +24,19 @@ namespace ClinicManagement.Infrastructure.Identity.Services
 
             try
             {
-                return BCrypt.Net.BCrypt.EnhancedVerify(password, hash);
+                if (BCrypt.Net.BCrypt.EnhancedVerify(password, hash))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // Fallback to standard verify below
+            }
+
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, hash);
             }
             catch
             {

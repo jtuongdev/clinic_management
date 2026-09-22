@@ -25,8 +25,13 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
             
+            var gioiTinhConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<ClinicManagement.Domain.Common.Enums.GioiTinh, string>(
+                v => v == ClinicManagement.Domain.Common.Enums.GioiTinh.M ? "NAM" : v == ClinicManagement.Domain.Common.Enums.GioiTinh.F ? "NU" : "KHAC",
+                v => v == "NAM" ? ClinicManagement.Domain.Common.Enums.GioiTinh.M : v == "NU" ? ClinicManagement.Domain.Common.Enums.GioiTinh.F : ClinicManagement.Domain.Common.Enums.GioiTinh.O
+            );
+            
             builder.Property(n => n.GioiTinh)
-                .HasConversion<string>()
+                .HasConversion(gioiTinhConverter)
                 .HasMaxLength(10);
             
             builder.Property(n => n.Email)

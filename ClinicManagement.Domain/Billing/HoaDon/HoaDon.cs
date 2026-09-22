@@ -10,7 +10,7 @@ namespace ClinicManagement.Domain.Billing
 {
     public class HoaDon : BaseEntity, IAggregateRoot
     {
-        public string SoHoaDon { get; private set; }
+        public string SoHoaDon { get; private set; } = string.Empty;
         public int MaLuotKham { get; private set; }
         public int MaBenhNhan { get; private set; }
         public int MaCoSo { get; private set; }
@@ -20,7 +20,7 @@ namespace ClinicManagement.Domain.Billing
         public decimal SoTienBenhNhanChiTra { get; private set; }
         public decimal DaThanhToan { get; private set; }
         public TrangThaiHoaDon TrangThai { get; private set; }
-        public string GhiChu { get; private set; }
+        public string GhiChu { get; private set; } = string.Empty;
         public int? CreatedBy { get; private set; }
 
         // Navigation
@@ -31,14 +31,20 @@ namespace ClinicManagement.Domain.Billing
         public virtual ICollection<PhieuThu> PhieuThus { get; private set; }
         public virtual CongNoBenhNhan CongNoBenhNhan { get; set; }
 
-        private HoaDon() { }
+        private HoaDon()
+        {
+            SoHoaDon = string.Empty;
+            GhiChu = string.Empty;
+            ChiTietHoaDons = new List<ChiTietHoaDon>();
+            PhieuThus = new List<PhieuThu>();
+        }
 
-        public HoaDon(int maLuotKham, int maBenhNhan, int maCoSo, string soHoaDon, int createdBy)
+        public HoaDon(int maLuotKham, int maBenhNhan, int maCoSo, string soHoaDon, int createdBy, string? ghiChu = null)
         {
             MaLuotKham = maLuotKham;
             MaBenhNhan = maBenhNhan;
             MaCoSo = maCoSo;
-            SoHoaDon = soHoaDon;
+            SoHoaDon = soHoaDon ?? string.Empty;
             CreatedBy = createdBy;
             NgayLap = DateTime.UtcNow;
             TrangThai = TrangThaiHoaDon.CHO_THANH_TOAN; 
@@ -46,6 +52,7 @@ namespace ClinicManagement.Domain.Billing
             SoTienBaoHiemChiTra = 0;
             SoTienBenhNhanChiTra = 0;
             DaThanhToan = 0;
+            GhiChu = ghiChu ?? string.Empty;
 
             ChiTietHoaDons = new List<ChiTietHoaDon>();
             PhieuThus = new List<PhieuThu>();
@@ -88,11 +95,32 @@ namespace ClinicManagement.Domain.Billing
             if (baoHiemChiTra > TongTien)
                 throw new InvalidOperationException("Số tiền bảo hiểm chi trả không thể vượt quá tổng tiền hóa đơn.");
 
+            if (TongTien - baoHiemChiTra < DaThanhToan)
+                throw new InvalidOperationException("Số tiền bảo hiểm khiến số tiền bệnh nhân phải trả nhỏ hơn số tiền đã thanh toán.");
+
             SoTienBaoHiemChiTra = baoHiemChiTra;
             SoTienBenhNhanChiTra = TongTien - baoHiemChiTra;
+
+            // Đồng bộ sang bảng công nợ bệnh nhân nếu có
+            if (CongNoBenhNhan != null)
+            {
+                CongNoBenhNhan.SoTienNo = SoTienBenhNhanChiTra;
+                if (CongNoBenhNhan.SoTienConLai <= 0)
+                {
+                    CongNoBenhNhan.TrangThai = TrangThaiCongNo.DA_TAT_TOAN;
+                }
+            }
+
+            // Cập nhật trạng thái thanh toán
+            if (DaThanhToan >= SoTienBenhNhanChiTra && SoTienBenhNhanChiTra > 0)
+                TrangThai = TrangThaiHoaDon.DA_THANH_TOAN;
+            else if (DaThanhToan > 0)
+                TrangThai = TrangThaiHoaDon.THANH_TOAN_MOT_PHAN;
+            else
+                TrangThai = TrangThaiHoaDon.CHO_THANH_TOAN;
         }
 
-        public void RecordPayment(decimal amount, PhuongThucThanhToan phuongThuc, int nguoiThu)
+        public void RecordPayment(decimal amount, PhuongThucThanhToan phuongThuc, int nguoiThu, string? ghiChu = null)
         {
             if (TrangThai == TrangThaiHoaDon.DA_HUY)
                 throw new InvalidOperationException("Không thể thực hiện thanh toán cho hóa đơn đã bị hủy.");
@@ -122,6 +150,7 @@ namespace ClinicManagement.Domain.Billing
                 NgayThu = DateTime.UtcNow,
                 PhuongThuc = phuongThuc,
                 MaNguoiThu = nguoiThu,
+                GhiChu = !string.IsNullOrWhiteSpace(ghiChu) ? ghiChu.Trim() : $"Thu tiền viện phí hóa đơn {SoHoaDon}",
                 CreatedBy = nguoiThu
             };
             PhieuThus.Add(phieuThu);
@@ -144,6 +173,12 @@ namespace ClinicManagement.Domain.Billing
             TrangThai = TrangThaiHoaDon.DA_HUY;
             if (!string.IsNullOrWhiteSpace(lyDo))
                 GhiChu = lyDo.Trim();
+
+            // Đồng bộ sang bảng công nợ bệnh nhân
+            if (CongNoBenhNhan != null)
+            {
+                CongNoBenhNhan.TrangThai = TrangThaiCongNo.DA_TAT_TOAN;
+            }
         }
 
         public decimal SoTienConNo() => SoTienBenhNhanChiTra - DaThanhToan;

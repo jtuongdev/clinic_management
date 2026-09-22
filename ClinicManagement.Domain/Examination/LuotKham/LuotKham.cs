@@ -28,6 +28,10 @@ namespace ClinicManagement.Domain.Examination
         public string LyDoKham { get; private set; } = string.Empty;
         public int? MaPhongKham { get; private set; }
         public int? CreatedBy { get; private set; }
+        public bool EmrLocked { get; private set; }
+        public string? EmrSignature { get; private set; }
+        public DateTime? EmrLockedAt { get; private set; }
+        public int? EmrLockedBy { get; private set; }
 
         public virtual BenhNhan BenhNhan { get; set; } = null!;
         public virtual NhanVien BacSi { get; set; } = null!;
@@ -89,11 +93,48 @@ namespace ClinicManagement.Domain.Examination
 
         public void CompleteExam()
         {
-            if (TrangThai != TrangThaiLuotKham.DANG_KHAM) 
-                throw new InvalidOperationException("Chỉ có thể hoàn thành lượt khám khi đang trong tiến trình khám.");
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thay đổi.");
+            if (TrangThai != TrangThaiLuotKham.DANG_KHAM && TrangThai != TrangThaiLuotKham.CHO_CLS && TrangThai != TrangThaiLuotKham.KET_LUAN) 
+                throw new InvalidOperationException("Chỉ có thể hoàn thành lượt khám khi đang trong tiến trình khám hoặc chờ kết quả.");
 
             TrangThai = TrangThaiLuotKham.HOAN_THANH; 
             ThoiGianKetThucKham = DateTime.UtcNow;
+        }
+
+        public void SendToParaclinical()
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thay đổi.");
+            if (TrangThai != TrangThaiLuotKham.DANG_KHAM)
+                throw new InvalidOperationException("Chỉ có thể chuyển sang chờ cận lâm sàng khi lượt khám đang khám.");
+
+            TrangThai = TrangThaiLuotKham.CHO_CLS;
+        }
+
+        public void ResumeExam()
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thay đổi.");
+            if (TrangThai != TrangThaiLuotKham.CHO_CLS)
+                throw new InvalidOperationException("Chỉ có thể tiếp tục khám khi lượt khám đang ở trạng thái chờ cận lâm sàng.");
+
+            TrangThai = TrangThaiLuotKham.DANG_KHAM;
+        }
+
+        public void LockEmr(string signature, int userId)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+                throw new ArgumentException("Chữ ký EMR không được để trống.", nameof(signature));
+            if (userId <= 0)
+                throw new ArgumentOutOfRangeException(nameof(userId));
+            if (EmrLocked && !string.Equals(EmrSignature, signature, StringComparison.Ordinal))
+                throw new InvalidOperationException("Hồ sơ EMR đã được khóa trước đó.");
+
+            EmrLocked = true;
+            EmrSignature = signature;
+            EmrLockedAt = DateTime.UtcNow;
+            EmrLockedBy = userId;
         }
 
         public void CancelExam()
@@ -106,6 +147,8 @@ namespace ClinicManagement.Domain.Examination
 
         public void AddChanDoan(string maICD, string tenChanDoan, bool laChinh, string ghiChu, int createdBy)
         {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thêm chẩn đoán.");
             ChanDoans ??= new List<ChanDoan>();
 
             var chanDoan = new ChanDoan
@@ -124,6 +167,8 @@ namespace ClinicManagement.Domain.Examination
                                decimal? nhietDo, decimal? canNang, decimal? chieuCao, decimal? spO2,
                                int createdBy = 0)
         {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể cập nhật sinh hiệu.");
             SinhHieus ??= new List<SinhHieu>();
 
             var sinhHieu = new SinhHieu
@@ -154,6 +199,8 @@ namespace ClinicManagement.Domain.Examination
             DateTime? ngayCoKetQua = null,
             int createdBy = 0)
         {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể chỉ định dịch vụ.");
             if (TrangThai != TrangThaiLuotKham.DANG_KHAM)
                 throw new InvalidOperationException("Chỉ được chỉ định dịch vụ khi lượt khám đang ở trạng thái đang khám.");
 

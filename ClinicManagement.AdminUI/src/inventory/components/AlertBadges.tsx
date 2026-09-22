@@ -4,30 +4,36 @@ import {
   WarningOutlined,
   ClockCircleOutlined,
   FallOutlined,
-  AlertOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 
 interface AlertBadgesProps {
   totalItems: number;
+  inStockCount?: number;
   lowStockCount: number;
   expiringCount: number; // hết hạn trong 60 ngày
   expiredCount: number;  // đã hết hạn còn tồn
+  onFilterChange?: (status: 'ALL' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK') => void;
 }
 
 const AlertBadges: React.FC<AlertBadgesProps> = ({
   totalItems,
+  inStockCount,
   lowStockCount,
   expiringCount,
   expiredCount,
+  onFilterChange,
 }) => {
   const cards = [
     {
-      title: 'Tổng mặt hàng',
-      value: totalItems,
-      prefix: <AlertOutlined style={{ color: '#1677ff' }} />,
-      valueStyles: { color: '#1677ff' },
-      bgColor: '#e6f4ff',
-      borderColor: '#91caff',
+      key: 'IN_STOCK',
+      title: 'Đang có tồn kho',
+      value: inStockCount ?? totalItems,
+      prefix: <DatabaseOutlined style={{ color: '#08979c' }} />,
+      valueStyles: { color: '#08979c' },
+      bgColor: '#e6fffb',
+      borderColor: '#87e8de',
+      suffix: inStockCount !== undefined ? `/ ${totalItems} danh mục` : undefined,
     },
     {
       title: 'Tồn kho thấp',

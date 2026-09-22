@@ -12,7 +12,7 @@ namespace ClinicManagement.Domain.Identity
         public int MaCaTruc { get; set; }
         public int? MaPhongKham { get; set; }
         public int? MaLichLamViecCoDinh { get; set; }
-        public string NguonLich { get; set; } = "PHAT_SINH";
+        public NguonLich NguonLich { get; set; } = NguonLich.PHAT_SINH_THU_CONG;
         public TrangThaiLichLamViec TrangThai { get; set; } = TrangThaiLichLamViec.LAM_VIEC;
         public DateTime NgayLam { get; set; }
         public string GhiChu { get; set; } = string.Empty;

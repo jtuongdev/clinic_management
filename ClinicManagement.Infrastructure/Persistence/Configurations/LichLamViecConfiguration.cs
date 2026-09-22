@@ -42,14 +42,19 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(llv => llv.MaLichLamViecCoDinh)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(llv => llv.NguonLich).HasMaxLength(20).IsRequired();
+            builder.Property(llv => llv.NguonLich)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
             builder.Property(llv => llv.TrangThai)
                 .HasConversion<string>()
                 .HasMaxLength(20)
                 .IsRequired();
 
             builder.HasIndex(llv => new { llv.MaNhanVien, llv.MaCaTruc, llv.NgayLam })
-                .IsUnique();
+                .HasDatabaseName("IX_LichLamViec_MaNhanVien_MaCaTruc_NgayLam")
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0");
             builder.HasIndex(llv => new { llv.MaKhoa, llv.NgayLam });
 
             builder.HasQueryFilter(llv => !llv.IsDeleted);

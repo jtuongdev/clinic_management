@@ -123,12 +123,40 @@ export const useFixedScheduleManagement = ({
     }
   };
 
+  const setFixedSchedule = async (data: Parameters<typeof scheduleApi.setFixedSchedule>[0]): Promise<void> => {
+    try {
+      await scheduleApi.setFixedSchedule(data);
+      message.success('Đã cập nhật lịch làm việc cố định cho nhân viên.');
+      await loadFixedSchedules();
+    } catch (error) {
+      message.error(apiError(error));
+      throw error;
+    }
+  };
+
+  const generateMonthlySchedule = async (data: Parameters<typeof scheduleApi.generateMonthlySchedule>[0]) => {
+    try {
+      const response = await scheduleApi.generateMonthlySchedule(data);
+      const res = response.data.data;
+      if (res) {
+        message.success(`Tháng ${res.thang}/${res.nam}: Đã sinh thành công ${res.totalSchedulesGenerated} ca làm việc cho ${res.totalEmployeesScheduled} nhân viên (${res.totalSchedulesSkipped} ca đã tồn tại).`);
+      }
+      await onReload();
+      return res;
+    } catch (error) {
+      message.error(apiError(error));
+      throw error;
+    }
+  };
+
   return {
     fixedSchedules,
     fixedLoading,
     loadFixedSchedules,
     createFixed,
     bulkCreateFixed,
+    setFixedSchedule,
+    generateMonthlySchedule,
     previewGenerate,
     updateFixed,
     removeFixed,

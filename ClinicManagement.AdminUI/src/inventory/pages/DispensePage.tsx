@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs, Button, Card, Form, InputNumber, Input, Space, App } from 'antd';
-import { MedicineBoxOutlined, ShopOutlined, ExperimentOutlined, RollbackOutlined, HistoryOutlined } from '@ant-design/icons';
+import { MedicineBoxOutlined, ExperimentOutlined, RollbackOutlined, HistoryOutlined } from '@ant-design/icons';
 import DispensePanel from '../components/DispensePanel';
 import DispensedPanel from '../components/DispensedPanel';
 import ExportRetailForm from '../components/ExportRetailForm';
@@ -9,25 +9,9 @@ import { ExportRequest, StockMutationRequest } from '../types/inventory.types';
 
 const DispensePage: React.FC = () => {
   const { message } = App.useApp();
-  const [exportRetailOpen, setExportRetailOpen] = useState(false);
   const [exportInternalOpen, setExportInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mutationForm] = Form.useForm();
-
-  const handleExportRetail = async (data: ExportRequest) => {
-    setLoading(true);
-    try {
-      const res = await inventoryApi.exportRetail(data);
-      if (res.data.success) {
-        message.success('Xuất bán lẻ thành công');
-        setExportRetailOpen(false);
-      }
-    } catch {
-      message.error('Lỗi khi xuất bán lẻ');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleExportInternal = async (data: ExportRequest) => {
     setLoading(true);
@@ -83,21 +67,10 @@ const DispensePage: React.FC = () => {
             children: <DispensedPanel />
           },
           {
-            key: 'retail',
-            label: <Space><ShopOutlined />Bán lẻ</Space>,
-            children: (
-              <Card title="Xuất bán lẻ tại quầy">
-                <Button type="primary" onClick={() => setExportRetailOpen(true)}>
-                  Tạo đơn bán lẻ mới
-                </Button>
-              </Card>
-            )
-          },
-          {
             key: 'internal',
-            label: <Space><ExperimentOutlined />Xuất thủ thuật</Space>,
+            label: <Space><ExperimentOutlined />Xuất vật tư thủ thuật</Space>,
             children: (
-              <Card title="Xuất dùng phòng thủ thuật">
+              <Card title="Xuất vật tư tiêu hao phòng thủ thuật">
                 <Button type="primary" onClick={() => setExportInternalOpen(true)}>
                   Tạo đơn xuất tiêu hao
                 </Button>
@@ -132,14 +105,6 @@ const DispensePage: React.FC = () => {
             )
           }
         ]}
-      />
-
-      <ExportRetailForm
-        open={exportRetailOpen}
-        mode="retail"
-        loading={loading}
-        onSubmit={handleExportRetail}
-        onCancel={() => setExportRetailOpen(false)}
       />
 
       <ExportRetailForm

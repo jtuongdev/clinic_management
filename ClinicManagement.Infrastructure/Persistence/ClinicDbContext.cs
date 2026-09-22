@@ -26,8 +26,6 @@ namespace ClinicManagement.Infrastructure.Persistence
         public DbSet<NhanVien> NhanViens { get; set; }
         public DbSet<ChucVu> ChucVus { get; set; }
         public DbSet<VaiTro> VaiTros { get; set; }
-        public DbSet<Quyen> Quyens { get; set; }
-        public DbSet<VaiTroQuyen> VaiTroQuyens { get; set; }
         public DbSet<NhanVienVaiTro> NhanVienVaiTros { get; set; }
         public DbSet<PhanQuyenCoSo> PhanQuyenCoSos { get; set; }
         public DbSet<LoaiCa> LoaiCas { get; set; }
@@ -63,12 +61,15 @@ namespace ClinicManagement.Infrastructure.Persistence
         public DbSet<DanhMucDichVu> DanhMucDichVus { get; set; }
         public DbSet<ChiDinhDichVu> ChiDinhDichVus { get; set; }
         public DbSet<ChiTietKetQuaXetNghiem> ChiTietKetQuaXetNghiems { get; set; }
+        public DbSet<DinhMucVatTuDichVu> DinhMucVatTuDichVus { get; set; }
 
         // Phân hệ Kho & Dược phẩm
         public DbSet<NhaCungCap> NhaCungCaps { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<DonViTinhQuyDoi> DonViTinhQuyDois { get; set; }
         public DbSet<Kho> Khos { get; set; }
+        public DbSet<DonDatHang> DonDatHangs { get; set; }
+        public DbSet<ChiTietDonDatHang> ChiTietDonDatHangs { get; set; }
         public DbSet<PhieuNhapKho> PhieuNhapKhos { get; set; }
         public DbSet<ChiTietNhapKho> ChiTietNhapKhos { get; set; }
         public DbSet<TonKho> TonKhos { get; set; }
@@ -94,8 +95,10 @@ namespace ClinicManagement.Infrastructure.Persistence
 
         // Phân hệ Hệ thống
         public DbSet<ThamSoHeThong> ThamSoHeThongs { get; set; }
-        public DbSet<AuditLog> AuditLogs { get; set; }
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<NhatKyHeThong> NhatKyHeThongs { get; set; }
+        public DbSet<NhatKyHoSoBenhAn> NhatKyHoSoBenhAns { get; set; }
+        public DbSet<CauHinhTichHop> CauHinhTichHops { get; set; }
+        public DbSet<TokenLamMoi> TokenLamMois { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

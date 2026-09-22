@@ -20,6 +20,36 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         public Task<LichLamViec?> GetScheduleAsync(int scheduleId, CancellationToken cancellationToken = default)
             => context.LichLamViecs.Include(x => x.NhanVien).Include(x => x.CaTruc)
                 .FirstOrDefaultAsync(x => x.Id == scheduleId, cancellationToken);
+
+        public async Task<IReadOnlyList<LichLamViec>> GetCandidateSchedulesAsync(int employeeId, DateTime scanTime, CancellationToken cancellationToken = default)
+        {
+            var date = scanTime.Date;
+            return await context.LichLamViecs
+                .Include(x => x.NhanVien)
+                .Include(x => x.CaTruc)
+                .Where(x => x.MaNhanVien == employeeId &&
+                    x.TrangThai == TrangThaiLichLamViec.LAM_VIEC &&
+                    (x.NgayLam.Date == date || x.NgayLam.Date == date.AddDays(-1)))
+                .OrderBy(x => x.NgayLam)
+                .ThenBy(x => x.CaTruc.ThoiGianBatDau)
+                .ToListAsync(cancellationToken);
+        }
+
+        public Task<ChamCong?> GetOpenAttendanceAsync(int employeeId, DateTime scanTime, CancellationToken cancellationToken = default)
+        {
+            var date = scanTime.Date;
+            return context.ChamCongs
+                .Include(x => x.NhanVien)
+                .Include(x => x.LichLamViec)
+                    .ThenInclude(x => x!.CaTruc)
+                .Where(x => x.MaNhanVien == employeeId &&
+                    x.CheckIn != null &&
+                    x.CheckOut == null &&
+                    x.TrangThai == TrangThaiChamCong.THIEU_CHECK_OUT &&
+                    (x.NgayChamCong.Date == date || x.NgayChamCong.Date == date.AddDays(-1)))
+                .OrderByDescending(x => x.CheckIn)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
         public Task<bool> HasApprovedLeaveAsync(int employeeId, DateTime date, CancellationToken cancellationToken = default)
             => context.NghiPheps.AnyAsync(x => x.MaNhanVien == employeeId &&
                 x.TrangThai == TrangThaiNghiPhep.DA_DUYET && x.TuNgay.Date <= date.Date && x.DenNgay.Date >= date.Date, cancellationToken);
@@ -90,11 +120,15 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             }
             return schedules.Count;
         }
-        public async Task<IReadOnlyList<ChamCong>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, int? employeeId = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<ChamCong>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, int? employeeId = null, int? maKhoa = null, CancellationToken cancellationToken = default)
         {
-            var query = context.ChamCongs.AsNoTracking().Include(x => x.NhanVien).Include(x => x.LichLamViec).ThenInclude(x => x!.CaTruc)
+            var query = context.ChamCongs.AsNoTracking()
+                .Include(x => x.NhanVien).ThenInclude(x => x!.ChucVu)
+                .Include(x => x.LichLamViec).ThenInclude(x => x!.CaTruc)
+                .Include(x => x.LichLamViec).ThenInclude(x => x!.Khoa)
                 .Where(x => x.NgayChamCong >= fromDate.Date && x.NgayChamCong < toDate.Date.AddDays(1));
             if (employeeId.HasValue) query = query.Where(x => x.MaNhanVien == employeeId.Value);
+            if (maKhoa.HasValue) query = query.Where(x => x.LichLamViec != null && x.LichLamViec.MaKhoa == maKhoa.Value);
             return await query.OrderByDescending(x => x.NgayChamCong).ToListAsync(cancellationToken);
         }
         public Task<int> CountEmployeesInPeriodAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default) =>
@@ -121,6 +155,6 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         public async Task AddPeriodAsync(KyChamCong entity, CancellationToken cancellationToken = default) => await context.KyChamCongs.AddAsync(entity, cancellationToken);
         public void UpdatePeriod(KyChamCong entity) => context.KyChamCongs.Update(entity);
         public async Task AddAuditAsync(string table, int recordId, string action, string oldData, string newData, int? userId, CancellationToken cancellationToken = default)
-            => await context.AuditLogs.AddAsync(new AuditLog { Bang = table, MaBangGhi = recordId, HanhDong = action, DuLieuCu = oldData, DuLieuMoi = newData, NguoiThucHien = userId, ThoiGian = DateTime.UtcNow }, cancellationToken);
+            => await context.NhatKyHeThongs.AddAsync(new NhatKyHeThong { Bang = table, MaBangGhi = recordId, HanhDong = action, DuLieuCu = oldData, DuLieuMoi = newData, NguoiThucHien = userId, ThoiGian = DateTime.UtcNow }, cancellationToken);
     }
 }

@@ -93,6 +93,7 @@ export interface CancelInvoiceRequest {
 
 export interface GetInvoicesParams {
   facilityId?: number;
+  keyword?: string;
   fromDate?: string;
   toDate?: string;
   status?: TrangThaiHoaDonType | string;

@@ -184,5 +184,54 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 item.TuNgay.Date <= (denNgay ?? DateTime.MaxValue).Date &&
                 (!item.DenNgay.HasValue || item.DenNgay.Value.Date >= tuNgay.Date),
                 cancellationToken);
+
+        public async Task<int?> GetEmployeeDepartmentIdAsync(int maNhanVien, DateTime? date = null, CancellationToken cancellationToken = default)
+        {
+            var checkDate = (date ?? DateTime.Today).Date;
+            var assignment = await context.Set<NhanVienKhoa>()
+                .Where(item => item.MaNhanVien == maNhanVien &&
+                    item.TuNgay.Date <= checkDate &&
+                    (item.DenNgay == null || item.DenNgay.Value.Date >= checkDate))
+                .OrderByDescending(item => item.TuNgay)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (assignment != null) return assignment.MaKhoa;
+
+            var fallback = await context.Set<NhanVienKhoa>()
+                .Where(item => item.MaNhanVien == maNhanVien)
+                .OrderByDescending(item => item.TuNgay)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return fallback?.MaKhoa;
+        }
+
+        public async Task<IReadOnlyList<LichLamViecCoDinh>> GetActiveFixedSchedulesAsync(int? maNhanVien = null, int? maKhoa = null, CancellationToken cancellationToken = default)
+        {
+            IQueryable<LichLamViecCoDinh> query = context.LichLamViecCoDinhs.AsNoTracking()
+                .Include(item => item.NhanVien)
+                .Include(item => item.Khoa)
+                .Include(item => item.CaTruc)
+                .Include(item => item.PhongKham)
+                .Where(item => item.IsActive && !item.IsDeleted);
+
+            if (maNhanVien.HasValue) query = query.Where(item => item.MaNhanVien == maNhanVien.Value);
+            if (maKhoa.HasValue) query = query.Where(item => item.MaKhoa == maKhoa.Value);
+
+            return await query.OrderBy(item => item.ThuTrongTuan).ThenBy(item => item.TuNgay).ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<LichLamViecCoDinh>> GetFixedSchedulesByEmployeeAsync(int maNhanVien, bool track = false, CancellationToken cancellationToken = default)
+        {
+            IQueryable<LichLamViecCoDinh> query = context.LichLamViecCoDinhs;
+            if (!track) query = query.AsNoTracking();
+
+            return await query
+                .Include(item => item.NhanVien)
+                .Include(item => item.CaTruc)
+                .Include(item => item.PhongKham)
+                .Where(item => item.MaNhanVien == maNhanVien && !item.IsDeleted)
+                .OrderBy(item => item.ThuTrongTuan)
+                .ToListAsync(cancellationToken);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using ClinicManagement.Domain.Identity;
+using ClinicManagement.Domain.System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -37,9 +38,10 @@ namespace ClinicManagement.Domain.Repositories
         Task<List<VaiTro>> GetRolesByIdsAsync(IEnumerable<int> roleIds, CancellationToken cancellationToken = default);
         Task<NhanVien?> GetDetailForUpdateAsync(int id, CancellationToken cancellationToken = default);
 
-        Task<List<Quyen>> GetPermissionsByUserIdAsync(int userId);
+        Task<List<MaTranPhanQuyen>> GetPermissionsByUserIdAsync(int userId);
 
-        Task<List<NhanVien>> GetBacSiByKhoaAsync(
+        Task<List<ChucVu>> GetAllChucVusAsync(CancellationToken cancellationToken = default);
+        Task<List<BacSiKhoaModel>> GetBacSiByKhoaAsync(
             int maKhoa,
             int maCoSo,
             CancellationToken cancellationToken = default);

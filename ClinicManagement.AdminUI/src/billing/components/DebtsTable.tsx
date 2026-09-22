@@ -50,7 +50,7 @@ export const DebtsTable: React.FC = () => {
     setLoading(true);
     try {
       if (viewMode === 'overdue') {
-        const res = await billingApi.getOverdueDebts(1);
+        const res = await billingApi.getOverdueDebts(0);
         if (res.data.success && res.data.data) {
           setDebts(toDebtRows(res.data.data));
         } else {

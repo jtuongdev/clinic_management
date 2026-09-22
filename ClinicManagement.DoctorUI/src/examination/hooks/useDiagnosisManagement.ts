@@ -30,9 +30,13 @@ export const useDiagnosisManagement = ({ luotKhamId }: UseDiagnosisManagementOpt
   const {
     icdOptions,
     icdKeyword,
+    selectedIndex,
+    isSearching: isSearchingIcd,
     setIcdKeyword,
     searchICD,
     selectICD,
+    handleKeyDown: handleKeyDownIcd,
+    clearIcdOptions,
   } = useIcdSearch({ setFormState });
 
   // 4. Loading state cho mutations
@@ -56,6 +60,10 @@ export const useDiagnosisManagement = ({ luotKhamId }: UseDiagnosisManagementOpt
     formState,
     icdOptions,
     icdKeyword,
+    selectedIndex,
+    handleKeyDownIcd,
+    isSearchingIcd,
+    clearIcdOptions,
     isEditing,
     isLoading,
     setIcdKeyword,

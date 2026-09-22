@@ -1,13 +1,15 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.API.Common;
 using ClinicManagement.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers;
 
-[ApiController, Authorize]
+[ApiController]
 [Route("api/inventory")]
+[ClinicalAuthorize("inventory", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
 public sealed partial class InventoryController(
     IMediator mediator,
     ILogger<InventoryController> logger) : BaseController

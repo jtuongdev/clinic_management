@@ -16,6 +16,8 @@ import { recordsRoutes } from '../records/routes';
 import { catalogRoutes } from '../catalog/routes';
 import { reportsRoutes } from '../reports/routes';
 import { systemRoutes } from '../system/routes';
+import { scheduleRoutes } from '../schedule/routes';
+import { payrollRoutes } from '../payroll/routes';
 
 // Hàm hợp nhất routes
 const mergeRoutes = (...routesArrays: any[]) =>
@@ -36,7 +38,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: (
-      <ProtectedRoute roles={['BacSi']}>
+      <ProtectedRoute roles={['BacSi', 'BAC_SI', 'BAC_SI_KHAM_BENH', 'QUAN_TRI_HE_THONG', 'ADMIN']}>
         <MainLayout />
       </ProtectedRoute>
     ),
@@ -50,6 +52,12 @@ export const router = createBrowserRouter([
       // Dashboard
       ...mergeRoutes(
         dashboardRoutes,
+
+        // Lịch làm việc & Chấm công
+        scheduleRoutes,
+
+        // Bảng lương & Thu nhập
+        payrollRoutes,
 
         // Hàng đợi
         queueRoutes,

@@ -15,6 +15,6 @@ public sealed class GetPayrollPeriodHandler(IPayrollRepository repository)
             query.Id, true, cancellationToken)
             ?? throw new KeyNotFoundException("Không tìm thấy kỳ lương.");
 
-        return PayrollMapper.Detail(payroll);
+        return AnhXaBangLuong.Detail(payroll);
     }
 }

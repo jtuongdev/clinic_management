@@ -6,6 +6,11 @@ export interface LoginRequest {
   rememberMe?: boolean;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export interface UserInfo {
   id: number;
   username: string;

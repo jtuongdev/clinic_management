@@ -1,3 +1,5 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using System.Threading.Tasks;
 using ClinicManagement.Application.DTOs.LuotKham.Examination;
 using ClinicManagement.Application.Features.LuotKham.Commands;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public partial class LuotKhamController : BaseController
     {
         /// <summary>
@@ -23,7 +26,7 @@ namespace ClinicManagement.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var command = new SaveExaminationCommand
+            var command = new LuuKetQuaKhamCommand
             {
                 LuotKhamId = luotKhamId,
                 CreatedBy = CurrentUserId,
@@ -39,7 +42,7 @@ namespace ClinicManagement.API.Controllers
         {
             try
             {
-                var result = await _mediator.Send(new GetExaminationDetailQuery { LuotKhamId = id });
+                var result = await _mediator.Send(new LayChiTietKhamQuery { LuotKhamId = id });
                 return Success(result);
             }
             catch (KeyNotFoundException ex)

@@ -16,7 +16,7 @@ export const billingApi = {
   getInvoices: (params?: GetInvoicesParams) =>
     api.get<ApiResponse<PagedResult<HoaDonListItemDto>>>('/billing/invoices', {
       params: {
-        facilityId: params?.facilityId ?? 1,
+        facilityId: params?.facilityId ?? 0,
         ...params,
       },
     }),
@@ -50,7 +50,7 @@ export const billingApi = {
     api.get<ApiResponse<CongNoDto[]>>(`/billing/debts/by-patient/${patientId}`),
 
   /** Danh sách công nợ quá hạn */
-  getOverdueDebts: (facilityId: number = 1) =>
+  getOverdueDebts: (facilityId: number = 0) =>
     api.get<ApiResponse<CongNoDto[]>>('/billing/debts/overdue', {
       params: { facilityId },
     }),

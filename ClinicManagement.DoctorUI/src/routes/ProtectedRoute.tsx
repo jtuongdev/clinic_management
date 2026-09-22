@@ -10,7 +10,7 @@ export default function ProtectedRoute({
   children,
   roles,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, hasAnyRole } = useAuth();
 
   // Chưa đăng nhập
   if (!isAuthenticated) {
@@ -23,9 +23,7 @@ export default function ProtectedRoute({
   }
 
   // Kiểm tra role
-  const hasPermission = user?.roles?.some(
-    (userRole) => roles.includes(userRole)
-  );
+  const hasPermission = hasAnyRole(roles);
 
   // Không có quyền
   if (!hasPermission) {

@@ -15,9 +15,11 @@ export const usePhongKhamOptions = (maKhoa?: number) => {
       setLoading(true);
       try {
         const res = await clinicApi.getDropdownPhongKhamByKhoa(maKhoa);
-        setPhongKhams(res.data.data);
+        const data = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        setPhongKhams(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Load phòng khám thất bại:', error);
+        setPhongKhams([]);
       } finally {
         setLoading(false);
       }

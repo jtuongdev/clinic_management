@@ -58,8 +58,12 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       } else {
         message.error(res.data.message || 'Không thể ghi nhận thanh toán');
       }
-    } catch {
-      // Form validation error
+    } catch (err: any) {
+      if (err?.response?.data?.message) {
+        message.error(err.response.data.message);
+      } else if (err?.message && !err?.errorFields) {
+        message.error(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -110,7 +114,10 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
             {
               type: 'number',
               min: 1000,
-              message: 'Số tiền tối thiểu 1.000 ₫',
+              max: conNo > 0 ? conNo : undefined,
+              message: conNo > 0
+                ? `Số tiền thu tối đa ${conNo.toLocaleString('vi-VN')} ₫`
+                : 'Số tiền tối thiểu 1.000 ₫',
             },
           ]}
         >

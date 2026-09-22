@@ -10,7 +10,8 @@ namespace ClinicManagement.Domain.Identity
         public int MaCaTruc { get; set; }
         public int? MaPhongKham { get; set; }
         public DayOfWeek ThuTrongTuan { get; set; }
-        public DateTime TuNgay { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime TuNgay { get; set; } = DateTime.Today;
         public DateTime? DenNgay { get; set; }
         public string GhiChu { get; set; } = string.Empty;
 
@@ -20,6 +21,24 @@ namespace ClinicManagement.Domain.Identity
         public virtual PhongKham? PhongKham { get; set; }
         public virtual ICollection<LichLamViec> LichLamViecs { get; set; } = new List<LichLamViec>();
 
+        public void Activate()
+        {
+            IsActive = true;
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+        }
+
+        public void UpdateInfo(int maCaTruc, int? maPhongKham)
+        {
+            if (maCaTruc <= 0)
+                throw new ArgumentException("Ca trực không hợp lệ.", nameof(maCaTruc));
+            MaCaTruc = maCaTruc;
+            MaPhongKham = maPhongKham;
+        }
+
         public void Normalize()
         {
             if (MaNhanVien <= 0 || MaKhoa <= 0 || MaCaTruc <= 0)
@@ -28,7 +47,7 @@ namespace ClinicManagement.Domain.Identity
                 throw new ArgumentException("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.");
             TuNgay = TuNgay.Date;
             DenNgay = DenNgay?.Date;
-            GhiChu = GhiChu.Trim();
+            GhiChu = GhiChu?.Trim() ?? string.Empty;
         }
     }
 }

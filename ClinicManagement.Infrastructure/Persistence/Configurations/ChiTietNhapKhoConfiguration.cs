@@ -38,8 +38,14 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(ct => ct.MaQuyDoi)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            builder.HasOne(ct => ct.ChiTietDonDatHang)
+                .WithMany(poLine => poLine.ChiTietNhapKhos)
+                .HasForeignKey(ct => ct.MaChiTietDonDatHang)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasIndex(ct => ct.MaPhieuNhap);
             builder.HasIndex(ct => ct.MaItem);
+            builder.HasIndex(ct => ct.MaChiTietDonDatHang);
         }
     }
 }

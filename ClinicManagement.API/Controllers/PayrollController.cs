@@ -1,3 +1,5 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.API.Common;
 using ClinicManagement.Application.DTOs.Payroll;
 using ClinicManagement.Application.Features.Payroll;
@@ -9,11 +11,16 @@ namespace ClinicManagement.API.Controllers;
 
 [ApiController]
 [Route("api/payroll")]
-[Authorize(Roles = "Admin")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.XEM, PhamViDuLieu.TOAN_HE_THONG)]
 public sealed class PayrollController(IMediator mediator) : BaseController
 {
     [HttpGet("periods")]
     public async Task<IActionResult> List(CancellationToken ct) => Success(await mediator.Send(new GetPayrollPeriodsQuery(), ct));
+
+    [HttpGet("my-payslips")]
+    [AllowSelf]
+    public async Task<IActionResult> MyPayslips(CancellationToken ct) =>
+        Success(await mediator.Send(new LayBangLuongCaNhanQuery(CurrentUserId), ct));
 
     [HttpPost("periods")]
     public async Task<IActionResult> Create([FromBody] CreatePayrollPeriodRequest request, CancellationToken ct) =>
@@ -38,4 +45,20 @@ public sealed class PayrollController(IMediator mediator) : BaseController
     [HttpPost("periods/{id:int}/pay")]
     public async Task<IActionResult> Pay(int id, CancellationToken ct) =>
         Success(await mediator.Send(new PayPayrollCommand(id), ct), "Đã đánh dấu thanh toán kỳ lương.");
+
+    [HttpPost("bang-luong/{bangLuongId:int}/items")]
+    public async Task<IActionResult> AddItem(int bangLuongId, [FromBody] AddItemRequest request, CancellationToken ct) =>
+        Success(await mediator.Send(new ThemKhoanBangLuongCommand(bangLuongId, request), ct), "Đã thêm khoản điều chỉnh.");
+
+    [HttpDelete("bang-luong/{bangLuongId:int}/items/{itemId:int}")]
+    public async Task<IActionResult> RemoveItem(int bangLuongId, int itemId, CancellationToken ct) =>
+        Success(await mediator.Send(new XoaKhoanBangLuongCommand(bangLuongId, itemId), ct), "Đã xóa khoản điều chỉnh.");
+
+    [HttpPost("bang-luong/{bangLuongId:int}/recalculate")]
+    public async Task<IActionResult> Recalculate(int bangLuongId, CancellationToken ct) =>
+        Success(await mediator.Send(new TinhLaiBangLuongNhanVienCommand(bangLuongId), ct), "Đã tính lại lương nhân viên.");
+
+    [HttpGet("bang-luong/{bangLuongId:int}/attendance-drilldown")]
+    public async Task<IActionResult> AttendanceDrilldown(int bangLuongId, CancellationToken ct) =>
+        Success(await mediator.Send(new LayChiTietChamCongBangLuongQuery(bangLuongId), ct));
 }

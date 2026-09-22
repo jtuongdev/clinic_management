@@ -1,3 +1,5 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +9,7 @@ using System;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public partial class LuotKhamController : BaseController
     {
         [HttpGet("danh-sach-donthuoc")]
@@ -20,7 +23,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
-            var query = new GetDonThuocListQuery
+            var query = new LayDanhSachDonThuocQuery
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize > 100 ? 100 : pageSize,
@@ -37,7 +40,7 @@ namespace ClinicManagement.API.Controllers
         }
 
         [HttpGet("thong-ke-donthuoc")]
-        public async Task<IActionResult> GetThongKeDonThuoc([FromQuery] GetThongKeDonThuocQuery query)
+        public async Task<IActionResult> GetThongKeDonThuoc([FromQuery] LayThongKeDonThuocQuery query)
         {
             var result = await _mediator.Send(query);
             

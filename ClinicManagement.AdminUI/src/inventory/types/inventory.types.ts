@@ -29,8 +29,9 @@ export interface BatchDto {
 }
 export interface StockDto {
   itemId: number; itemCode: string; itemName: string;
+  itemType?: 'THUOC' | 'VA_TU';
   baseUnit: string; totalStock: number; minimumStock: number;
-  isLowStock: boolean; batches: BatchDto[];
+  isLowStock: boolean; isOutOfStock?: boolean; batches: BatchDto[];
 }
 export interface StockAlertDto {
   stockId: number; itemId: number; itemCode: string;
@@ -40,8 +41,20 @@ export interface StockAlertDto {
 export interface GetStockParams {
   keyword?: string;
   lowStockOnly?: boolean;
+  stockStatus?: 'ALL' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+  warehouseId?: number;
   pageIndex?: number;
   pageSize?: number;
+}
+export interface GetStockResponseData {
+  items: StockDto[];
+  total: number;
+  totalCatalog?: number;
+  inStockCount?: number;
+  lowStockCount?: number;
+  outOfStockCount?: number;
+  pageIndex: number;
+  pageSize: number;
 }
 
 // Import
@@ -52,6 +65,10 @@ export interface ImportLineRequest {
 export interface ImportReceiptRequest {
   supplierId: number; receivedAt: string; note?: string;
   saveDraft: boolean; idempotencyKey: string; items: ImportLineRequest[];
+  warehouseId?: number;
+}
+export interface CancelImportRequest {
+  reason?: string;
 }
 export interface ImportReceiptResult {
   id: number; referenceCode: string; status: string;
@@ -91,11 +108,54 @@ export interface PendingPrescriptionDto {
   maBacSi: number;
   doctorName?: string;
   patientName?: string;
+  patientCode?: string;
   ngayKe: string;
   prescribedAt?: string;
   trangThai: string;
   status?: string;
+  isPaid?: boolean;
+  canDispense?: boolean;
+  invoiceNumber?: string;
+  invoiceStatus?: string;
+  invoiceAmount?: number;
+  lineCount?: number;
   ghiChu?: string;
+}
+
+export interface FefoBatchAllocation {
+  stockId: number;
+  batchNumber: string;
+  expiryDate?: string;
+  quantityToTake: number;
+  availableBefore: number;
+  availableAfter: number;
+}
+
+export interface FefoItemPreview {
+  itemId: number;
+  itemCode: string;
+  itemName: string;
+  baseUnit: string;
+  prescribedQuantity: number;
+  dispensedQuantity: number;
+  remainingQuantity: number;
+  totalAvailableStock: number;
+  isSufficient: boolean;
+  allocations: FefoBatchAllocation[];
+}
+
+export interface FefoPreviewResult {
+  prescriptionId: number;
+  prescriptionCode: string;
+  patientName: string;
+  patientCode?: string;
+  doctorName: string;
+  isPaid: boolean;
+  canDispense: boolean;
+  invoiceNumber?: string;
+  requirePayment?: boolean;
+  allAvailable: boolean;
+  items: FefoItemPreview[];
 }
 
 export interface DispenseRequest {
@@ -290,3 +350,83 @@ export interface SupplierRequest {
   email?: string;
   maSoThue?: string;
 }
+
+// Purchase Order (Đơn đặt hàng)
+export type PurchaseOrderStatus = 'CHO_DUYET' | 'DA_DAT' | 'GIAO_MOT_PHAN' | 'HOAN_THANH' | 'DA_HUY';
+
+export interface PurchaseOrderPendingDto {
+  id: number;
+  poCode: string;
+  supplierId: number;
+  supplierCode: string;
+  supplierName: string;
+  warehouseId: number;
+  warehouseName: string;
+  orderDate: string;
+  expectedDeliveryDate: string | null;
+  totalAmount: number;
+  status: PurchaseOrderStatus;
+  itemCount: number;
+  note?: string;
+}
+
+export interface PurchaseOrderForImportLineDto {
+  poDetailId: number;
+  itemId: number;
+  itemCode: string;
+  itemName: string;
+  itemType: 'THUOC' | 'VA_TU';
+  unit: string;
+  quantityOrdered: number;
+  quantityReceived: number;
+  quantityRemaining: number;
+  unitPrice: number;
+  defaultBatchNumber: string;
+}
+
+export interface PurchaseOrderForImportDto {
+  id: number;
+  poCode: string;
+  supplierId: number;
+  supplierCode: string;
+  supplierName: string;
+  warehouseId: number;
+  warehouseName: string;
+  orderDate: string;
+  expectedDeliveryDate: string | null;
+  totalAmount: number;
+  status: PurchaseOrderStatus;
+  note?: string;
+  lines: PurchaseOrderForImportLineDto[];
+}
+
+export interface ImportFromPoLineItem {
+  poDetailId: number;
+  itemId: number;
+  quantity: number;
+  purchasePrice: number;
+  batchNumber: string;
+  expiryDate?: string | null;
+  unit?: string;
+}
+
+export interface CreateImportFromPoRequest {
+  purchaseOrderId: number;
+  supplierId: number;
+  warehouseId?: number;
+  receivedAt: string;
+  referenceCode?: string;
+  note?: string;
+  saveDraft: boolean;
+  idempotencyKey: string;
+  lines: ImportFromPoLineItem[];
+}
+
+export interface ImportFromPoResult {
+  id: number;
+  referenceCode: string;
+  status: string;
+  purchaseOrderId: number;
+  purchaseOrderStatus: string;
+}
+

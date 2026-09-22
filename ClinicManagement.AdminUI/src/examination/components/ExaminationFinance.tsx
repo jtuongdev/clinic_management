@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Tag, Typography, Button, Space, Tooltip, Modal } from 'antd';
 import {
   DollarCircleOutlined,
@@ -8,8 +8,10 @@ import {
   FileTextOutlined,
   EyeOutlined,
   SafetyCertificateOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { dashboardApi, ExaminationFinanceDto } from '../../dashboard/api/dashboard.api';
 
 const { Text } = Typography;
 
@@ -21,25 +23,52 @@ interface InvoiceItem {
   status: 'unpaid' | 'partial' | 'paid';
 }
 
-const mockFinance = {
-  kpis: [
-    { label: 'Doanh thu tháng', value: '128,5 tr', color: '#0b4f6c', bgColor: '#e8f4f7', icon: <DollarCircleOutlined style={{ fontSize: 20, color: '#0b4f6c' }} /> },
-    { label: 'Chưa thanh toán', value: '23,2 tr', color: '#f59e0b', bgColor: '#fffbeb', icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
-    { label: 'Đã thanh toán', value: '105,3 tr', color: '#10b981', bgColor: '#ecfdf5', icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
-    { label: 'BHYT chi trả', value: '42,1 tr', color: '#0284c7', bgColor: '#e0f2fe', icon: <SafetyCertificateOutlined style={{ fontSize: 20, color: '#0284c7' }} /> },
-    { label: 'Công nợ quá hạn', value: '8,7 tr', color: '#ef4444', bgColor: '#fef2f2', icon: <WarningOutlined style={{ fontSize: 20, color: '#ef4444' }} /> },
-    { label: 'Số hóa đơn viện phí', value: '56', color: '#8b5cf6', bgColor: '#f3e8ff', icon: <FileTextOutlined style={{ fontSize: 20, color: '#8b5cf6' }} /> },
-  ],
-  invoices: [
-    { code: 'HD-001', patient: 'Nguyễn Văn An', total: '850.000 đ', remaining: '850.000 đ', status: 'unpaid' as const },
-    { code: 'HD-002', patient: 'Trần Thị Mai', total: '2.400.000 đ', remaining: '0 đ', status: 'paid' as const },
-    { code: 'HD-003', patient: 'Lê Văn Cường', total: '1.200.000 đ', remaining: '600.000 đ', status: 'partial' as const },
-    { code: 'HD-004', patient: 'Phạm Hồng Ánh', total: '450.000 đ', remaining: '450.000 đ', status: 'unpaid' as const },
-  ],
-};
-
 const ExaminationFinance: React.FC = () => {
-  const [data] = useState(mockFinance);
+  const [financeData, setFinanceData] = useState<ExaminationFinanceDto | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Tích hợp API Backend: GET /api/admin/dashboard/finance
+  const fetchFinance = async () => {
+    setLoading(true);
+    try {
+      const res = await dashboardApi.getFinance({ facilityId: 1 });
+      if (res.data?.success && res.data.data) {
+        setFinanceData(res.data.data);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFinance();
+  }, []);
+
+  const formatMillions = (val?: number) => {
+    if (!val) return '0 tr';
+    return (val / 1000000).toFixed(1) + ' tr';
+  };
+
+  const kpiList = financeData ? [
+    { label: 'Doanh thu tháng', value: formatMillions(financeData.kpis.revenue), color: '#0b4f6c', bgColor: '#e8f4f7', icon: <DollarCircleOutlined style={{ fontSize: 20, color: '#0b4f6c' }} /> },
+    { label: 'Chưa thanh toán', value: formatMillions(financeData.kpis.unpaid), color: '#f59e0b', bgColor: '#fffbeb', icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
+    { label: 'Đã thanh toán', value: formatMillions(financeData.kpis.paid), color: '#10b981', bgColor: '#ecfdf5', icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
+    { label: 'BHYT chi trả', value: formatMillions(financeData.kpis.insurance), color: '#0284c7', bgColor: '#e0f2fe', icon: <SafetyCertificateOutlined style={{ fontSize: 20, color: '#0284c7' }} /> },
+    { label: 'Công nợ quá hạn', value: formatMillions(financeData.kpis.overdue), color: '#ef4444', bgColor: '#fef2f2', icon: <WarningOutlined style={{ fontSize: 20, color: '#ef4444' }} /> },
+    { label: 'Số hóa đơn viện phí', value: String(financeData.kpis.invoiceCount), color: '#8b5cf6', bgColor: '#f3e8ff', icon: <FileTextOutlined style={{ fontSize: 20, color: '#8b5cf6' }} /> },
+  ] : [];
+
+  const invoiceList: InvoiceItem[] = financeData?.invoices
+    ? financeData.invoices.map(inv => ({
+        code: inv.code,
+        patient: inv.patient,
+        total: typeof inv.total === 'number' ? inv.total.toLocaleString('vi-VN') + ' đ' : inv.total,
+        remaining: typeof inv.remaining === 'number' ? inv.remaining.toLocaleString('vi-VN') + ' đ' : inv.remaining,
+        status: inv.status,
+      }))
+    : [];
 
   const columns: ColumnsType<InvoiceItem> = [
     {
@@ -60,124 +89,118 @@ const ExaminationFinance: React.FC = () => {
       dataIndex: 'total',
       key: 'total',
       align: 'right',
-      render: (val) => <Text strong>{val}</Text>,
+      render: (text) => <Text strong>{text}</Text>,
     },
     {
       title: 'Còn lại',
       dataIndex: 'remaining',
       key: 'remaining',
       align: 'right',
-      render: (val) => <Text style={{ color: val !== '0 đ' ? '#ef4444' : '#10b981' }}>{val}</Text>,
+      render: (text, record) => (
+        <Text type={record.remaining !== '0 đ' && record.remaining !== '0' ? 'danger' : 'secondary'}>
+          {text}
+        </Text>
+      ),
     },
     {
-      title: 'Trạng thái thanh toán',
+      title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 170,
-      render: (status) => {
-        if (status === 'unpaid') return <Tag color="error">Chưa thanh toán</Tag>;
+      width: 140,
+      render: (status: string) => {
+        if (status === 'paid') return <Tag color="success">Đã thanh toán</Tag>;
         if (status === 'partial') return <Tag color="warning">Thanh toán 1 phần</Tag>;
-        return <Tag color="success">Đã tất toán</Tag>;
+        return <Tag color="error">Chưa thanh toán</Tag>;
       },
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 90,
-      align: 'center',
+      width: 100,
       render: (_, record) => (
-        <Tooltip title="Xem chi tiết hóa đơn">
-          <Button
-            type="text"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() =>
-              Modal.info({
-                title: `Chi tiết hóa đơn: ${record.code}`,
-                content: `Bệnh nhân: ${record.patient} | Tổng tiền: ${record.total} | Còn nợ: ${record.remaining}`,
-              })
-            }
-          />
-        </Tooltip>
+        <Space size="small">
+          <Tooltip title="Xem chi tiết hóa đơn">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                Modal.info({
+                  title: `Chi tiết hóa đơn ${record.code}`,
+                  content: (
+                    <div>
+                      <p><strong>Bệnh nhân:</strong> {record.patient}</p>
+                      <p><strong>Tổng tiền:</strong> {record.total}</p>
+                      <p><strong>Còn lại:</strong> {record.remaining}</p>
+                    </div>
+                  ),
+                });
+              }}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        background: '#ffffff',
-      }}
-    >
-      {/* Metric Ribbon / Stat Bar */}
-      <div
-        style={{
-          height: 42,
-          minHeight: 42,
-          background: '#f8fafc',
-          borderBottom: '1px solid #e2e8f0',
-          padding: '0 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          overflowX: 'auto',
-          flexShrink: 0,
-        }}
-      >
-        {data.kpis.map((kpi, idx) => (
-          <React.Fragment key={idx}>
-            {idx > 0 && <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}>{kpi.icon}</span>
-              <span style={{ fontSize: 12, color: '#64748b' }}>{kpi.label}:</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: kpi.color }}>
-                {kpi.value}
-              </span>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#0b2a3c', margin: 0 }}>
+          Tài chính & Doanh thu Khám bệnh
+        </h3>
+        <Button
+          icon={<ReloadOutlined />}
+          loading={loading}
+          onClick={fetchFinance}
+        >
+          Làm mới
+        </Button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
+        {kpiList.map((kpi, idx) => (
+          <div
+            key={idx}
+            style={{
+              background: '#fff',
+              borderRadius: 8,
+              padding: '14px 16px',
+              border: '1px solid #e9edf4',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 8,
+                background: kpi.bgColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {kpi.icon}
             </div>
-          </React.Fragment>
+            <div>
+              <div style={{ fontSize: 12, color: '#6a7f96' }}>{kpi.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: kpi.color, marginTop: 2 }}>{kpi.value}</div>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Control Toolbar */}
-      <div
-        style={{
-          minHeight: 46,
-          padding: '6px 16px',
-          borderBottom: '1px solid #e2e8f0',
-          background: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 10,
-          flexShrink: 0,
-        }}
-      >
-        <Space size="middle">
-          <Space size="small">
-            <FileTextOutlined style={{ color: '#0b4f6c', fontSize: 16 }} />
-            <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
-              Hóa đơn viện phí khám bệnh
-            </Text>
-          </Space>
-          <Tag color="blue" style={{ borderRadius: 4, margin: 0 }}>
-            {data.invoices.length} hóa đơn
-          </Tag>
-        </Space>
-      </div>
-
-      {/* Edge-to-Edge Data Grid */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        <Table<InvoiceItem>
-          rowKey="code"
+      <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e9edf4', padding: '16px' }}>
+        <Table
           columns={columns}
-          dataSource={data.invoices}
+          dataSource={invoiceList}
+          rowKey="code"
+          loading={loading}
+          pagination={{ pageSize: 10 }}
           size="middle"
-          pagination={{ pageSize: 10, style: { padding: '8px 16px', margin: 0 } }}
         />
       </div>
     </div>

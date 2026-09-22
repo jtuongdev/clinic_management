@@ -1,4 +1,4 @@
-// ClinicManagement.AdminUl › src › routes › AppRoutes.tsx
+// ClinicManagement.AdminUI › src › routes › AppRoutes.tsx
 import {
   createBrowserRouter,
   RouterProvider,
@@ -16,6 +16,7 @@ import { examinationRoutes } from '../examination/routes';
 import { employeeRoutes } from '../employee/routes';
 import { inventoryRoutes } from '../inventory/routes';
 import { billingRoutes } from '../billing/routes';
+import { settingsRoutes } from '../settings/routes';
 
 const protectedRoutes = [
   {
@@ -29,8 +30,8 @@ const protectedRoutes = [
   ...employeeRoutes,
   ...inventoryRoutes,
   ...billingRoutes,
+  ...settingsRoutes,
 ];
-
 
 const router = createBrowserRouter([
   {
@@ -49,7 +50,7 @@ const router = createBrowserRouter([
 
   {
     element: (
-      <ProtectedRoute roles={['Admin']}>
+      <ProtectedRoute>
         <MainLayout />
       </ProtectedRoute>
     ),

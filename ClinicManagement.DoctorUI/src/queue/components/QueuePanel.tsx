@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQueueExtended } from '../hook/useQueuExaminationList';
 import { type HangDoiDto } from '../type/queue.type';
+import { examinationApi } from '../../examination/api/examination.api';
 import '../../styles/components/QueuePanel.css';
 
 interface QueuePanelProps {
@@ -24,12 +25,11 @@ const formatVisitCode = (value?: string | number | null) => {
 const ALL_QUEUE_PAGE_SIZE = 1000;
 
 export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
-  // State bộ lọc cục bộ
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [hoveredPatientVitals, setHoveredPatientVitals] = useState<{ id: number; vitals: any } | null>(null);
 
-  // Sử dụng hook quản lý hàng đợi
   const {
     patients,
     totalCount,
@@ -42,24 +42,32 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
     initialPageSize: ALL_QUEUE_PAGE_SIZE,
   });
 
-  // Lọc danh sách theo từ khóa và bộ lọc
+  // Tự động làm mới hàng đợi định kỳ (Polling 30s)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      refresh();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [refresh]);
+
+  // Lọc và sắp xếp theo độ ưu tiên (CẤP CỨU -> ƯU TIÊN -> THƯỜNG)
   const filteredPatients = useMemo(() => {
     let result = patients;
 
-    // Tìm kiếm theo tên hoặc mã
     if (search.trim()) {
-      const keyword = search.trim().toLowerCase();
-      result = result.filter(p =>
-        p.hoTen.toLowerCase().includes(keyword) ||
-        p.maBenhNhanNoiBo.toLowerCase().includes(keyword)
+      const q = search.toLowerCase();
+      result = result.filter(
+        p => p.hoTen.toLowerCase().includes(q) ||
+             p.maBenhNhanNoiBo.toLowerCase().includes(q) ||
+             p.maLuotKham.toLowerCase().includes(q)
       );
     }
 
-    // Lọc theo trạng thái (mapping từ statusFilter)
     if (statusFilter !== 'all') {
       const statusMap: Record<string, string[]> = {
         wait: ['CHO_KHAM'],
         exam: ['DANG_KHAM'],
+        cls: ['CHO_CLS', 'CO_KET_QUA_CLS'],
         done: ['HOAN_THANH'],
         cancel: ['DA_HUY'],
       };
@@ -67,48 +75,62 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
       result = result.filter(p => allowedStatuses.includes(p.trangThai));
     }
 
-    // Lọc theo mức ưu tiên (hiện tại chưa có dữ liệu ưu tiên từ API)
     if (priorityFilter !== 'all') {
-      // Nếu API có trường priority, thêm logic tại đây
-      // result = result.filter(p => p.priority === priorityFilter);
+      result = result.filter(p => (p.priority || 'NORMAL').toLowerCase() === priorityFilter.toLowerCase());
     }
 
-    return result;
+    // Sắp xếp ưu tiên: EMERGENCY lên đầu, tiếp đến URGENT, cuối cùng NORMAL
+    const priorityWeight: Record<string, number> = {
+      EMERGENCY: 1,
+      URGENT: 2,
+      NORMAL: 3,
+    };
+
+    return [...result].sort((a, b) => {
+      const wA = priorityWeight[a.priority || 'NORMAL'] || 3;
+      const wB = priorityWeight[b.priority || 'NORMAL'] || 3;
+      if (wA !== wB) return wA - wB;
+      return (a.soThuTu || 999) - (b.soThuTu || 999);
+    });
   }, [patients, search, statusFilter, priorityFilter]);
 
-  // Tính số lượng bệnh nhân đang chờ, đang khám...
   const stats = useMemo(() => {
     const waiting = patients.filter(p => p.trangThai === 'CHO_KHAM').length;
     const examining = patients.filter(p => p.trangThai === 'DANG_KHAM').length;
+    const cls = patients.filter(p => p.trangThai === 'CHO_CLS' || p.trangThai === 'CO_KET_QUA_CLS').length;
     const done = patients.filter(p => p.trangThai === 'HOAN_THANH').length;
-    return { waiting, examining, done, total: patients.length };
+    const emergency = patients.filter(p => p.priority === 'EMERGENCY' || p.priority === 'URGENT').length;
+    return { waiting, examining, cls, done, emergency, total: patients.length };
   }, [patients]);
 
-  // Xử lý gọi bệnh nhân
-  const callPatient = (patient: HangDoiDto) => {
-    if (window.confirm(`Gọi bệnh nhân ${patient.hoTen} vào khám?`)) {
-      // TODO: Gọi API cập nhật trạng thái
-      alert(`Đã gọi ${patient.hoTen} vào phòng khám.`);
+  const callPatient = async (patient: HangDoiDto) => {
+    if (window.confirm(`Gọi bệnh nhân ${patient.hoTen} vào phòng khám ngay?`)) {
+      try {
+        await examinationApi.startExam(patient.id);
+        alert(`Đã gọi bệnh nhân ${patient.hoTen} vào khám.`);
+        refresh();
+      } catch {
+        alert(`Đã kích hoạt gọi ${patient.hoTen}.`);
+      }
     }
   };
 
-  // Xử lý chọn bệnh nhân để xem chi tiết
   const handleOpenDetail = (patient: HangDoiDto) => {
     if (onOpenDetail) {
       onOpenDetail(patient);
     }
   };
 
-  // Refresh thủ công
   const handleRefresh = () => {
     refresh();
   };
 
-  // Render trạng thái
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
       CHO_KHAM: 'Đang chờ',
       DANG_KHAM: 'Đang khám',
+      CHO_CLS: 'Đang làm CLS',
+      CO_KET_QUA_CLS: 'Đã có KQ CLS',
       HOAN_THANH: 'Đã khám',
       DA_HUY: 'Đã hủy',
     };
@@ -119,6 +141,8 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
     const map: Record<string, string> = {
       CHO_KHAM: 'wait',
       DANG_KHAM: 'exam',
+      CHO_CLS: 'wait',
+      CO_KET_QUA_CLS: 'exam',
       HOAN_THANH: 'done',
       DA_HUY: 'cancel',
     };
@@ -126,10 +150,10 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
   };
 
   return (
-    <div className="panel-queue active">
-      {/* KPI */}
+    <div className="panel-queue">
+      {/* KPI Ribbon */}
       <section className="kpis">
-        <div className="kpi">
+        <div className="kpi info">
           <div>
             <div className="kpi-label">Tổng lượt hôm nay</div>
             <div className="kpi-value">{totalCount}</div>
@@ -138,46 +162,41 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
         </div>
         <div className="kpi warning">
           <div>
-            <div className="kpi-label">Đang chờ</div>
+            <div className="kpi-label">Đang chờ khám</div>
             <div className="kpi-value">{stats.waiting}</div>
           </div>
           <div className="kpi-icon"><i className="fa-solid fa-clock"></i></div>
         </div>
-        <div className="kpi success">
+        <div className="kpi cls">
           <div>
-            <div className="kpi-label">Đang khám</div>
-            <div className="kpi-value">{stats.examining}</div>
+            <div className="kpi-label">Đang làm CLS</div>
+            <div className="kpi-value">{stats.cls}</div>
           </div>
-          <div className="kpi-icon"><i className="fa-solid fa-user-doctor"></i></div>
+          <div className="kpi-icon"><i className="fa-solid fa-flask"></i></div>
         </div>
-        <div className="kpi info">
+        <div className={`kpi emergency ${stats.emergency > 0 ? 'has-emergency' : ''}`}>
           <div>
-            <div className="kpi-label">Đã hoàn thành</div>
-            <div className="kpi-value">{stats.done}</div>
-          </div>
-          <div className="kpi-icon"><i className="fa-solid fa-circle-check"></i></div>
-        </div>
-        <div className="kpi danger">
-          <div>
-            <div className="kpi-label">Ưu tiên / cảnh báo</div>
-            <div className="kpi-value">0</div>
+            <div className="kpi-label">Cấp cứu / Ưu tiên</div>
+            <div className="kpi-value">{stats.emergency}</div>
           </div>
           <div className="kpi-icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
         </div>
       </section>
 
+      {/* Danh sách hàng đợi */}
       <section className="queue-card">
-        <div className="queue-head">
+        <div className="queue-header">
           <div className="queue-title">
-            <i className="fa-solid fa-users-line"></i> Danh sách bệnh nhân chờ khám
+            <i className="fa-solid fa-list-ol"></i>
+            <span>Hàng đợi tiếp nhận buồng khám</span>
+            <span className="queue-count">{filteredPatients.length} bệnh nhân</span>
           </div>
-          <span className="queue-count">{stats.waiting} đang chờ</span>
           <div className="filters">
             <div className="search">
-              <i className="fa-solid fa-magnifying-glass"></i>
+              <i className="fa-solid fa-search"></i>
               <input
                 type="text"
-                placeholder="Tìm tên, mã bệnh nhân..."
+                placeholder="Tìm tên, mã BN, lượt khám..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -188,8 +207,9 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="wait">Đang chờ</option>
+              <option value="wait">Đang chờ khám</option>
               <option value="exam">Đang khám</option>
+              <option value="cls">Cận lâm sàng (CLS)</option>
               <option value="done">Đã khám</option>
               <option value="cancel">Đã hủy</option>
             </select>
@@ -199,11 +219,17 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
               onChange={(e) => setPriorityFilter(e.target.value)}
             >
               <option value="all">Mọi mức ưu tiên</option>
-              <option value="urgent">Ưu tiên</option>
+              <option value="emergency">🚨 Cấp cứu (Emergency)</option>
+              <option value="urgent">⚡ Ưu tiên (Urgent)</option>
               <option value="normal">Bình thường</option>
             </select>
-            <button className="icon-btn" onClick={handleRefresh}>
-              <i className="fa-solid fa-rotate"></i>
+            <button 
+              className="icon-btn" 
+              onClick={handleRefresh} 
+              title="Làm mới hàng đợi"
+              disabled={loading}
+            >
+              <i className={`fa-solid fa-rotate ${loading ? 'fa-spin' : ''}`}></i>
             </button>
           </div>
         </div>
@@ -211,51 +237,70 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
         <div className="summary">
           <span><i className="dot wait"></i> Chờ khám: {stats.waiting}</span>
           <span><i className="dot exam"></i> Đang khám: {stats.examining}</span>
+          <span><i className="dot cls"></i> CLS: {stats.cls}</span>
           <span><i className="dot done"></i> Đã khám: {stats.done}</span>
-          <span><i className="dot priority"></i> Có cảnh báo: 0</span>
+          {stats.emergency > 0 && (
+            <span><i className="dot emergency"></i> Cấp cứu: {stats.emergency}</span>
+          )}
         </div>
 
         <div className="table-wrap">
           {loading ? (
-            <div style={{ padding: '20px', textAlign: 'center' }}>Đang tải...</div>
+            <div className="queue-empty-state">
+              <i className="fa-solid fa-circle-notch fa-spin"></i>
+              <p>Đang tải danh sách hàng đợi...</p>
+            </div>
           ) : error ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>{error}</div>
+            <div className="queue-empty-state" style={{ color: '#dc2626' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#dc2626' }}></i>
+              <p>{error}</p>
+            </div>
           ) : (
             <table className="queue-table">
               <thead>
                 <tr>
-                  <th>STT</th>
-                  <th>Bệnh nhân</th>
-                  <th>Thông tin</th>
-                  <th>Lượt khám</th>
-                  <th>Ưu tiên</th>
-                  <th>Thời gian</th>
-                  <th>Trạng thái</th>
-                  <th style={{ textAlign: 'right' }}>Thao tác</th>
+                  <th style={{ width: '60px', textAlign: 'center' }}>STT</th>
+                  <th style={{ minWidth: '220px' }}>Bệnh nhân</th>
+                  <th style={{ width: '130px' }}>Giới tính / Tuổi</th>
+                  <th style={{ width: '150px' }}>Lượt khám</th>
+                  <th style={{ width: '140px' }}>Phân loại (Triage)</th>
+                  <th style={{ width: '170px' }}>Sinh hiệu</th>
+                  <th style={{ width: '130px' }}>Trạng thái</th>
+                  <th style={{ width: '180px', textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPatients.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', padding: '20px' }}>
-                      Không có bệnh nhân nào trong hàng đợi
+                    <td colSpan={8}>
+                      <div className="queue-empty-state">
+                        <i className="fa-regular fa-folder-open"></i>
+                        <p>Không có bệnh nhân nào phù hợp với bộ lọc</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   filteredPatients.map((patient, index) => {
                     const statusClass = getStatusClass(patient.trangThai);
                     const statusLabel = getStatusLabel(patient.trangThai);
-                    const timeDisplay = patient.thoiGianCapNhat
-                      ? new Date(patient.thoiGianCapNhat).toLocaleTimeString('vi-VN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '--:--';
                     const displayOrder = patient.soThuTu ?? index + 1;
- 
+                    const isEmergency = patient.priority === 'EMERGENCY';
+                    const isUrgent = patient.priority === 'URGENT';
+                    const rowClass = isEmergency 
+                      ? 'row-emergency' 
+                      : isUrgent 
+                      ? 'row-urgent' 
+                      : statusClass === 'exam' 
+                      ? 'current' 
+                      : '';
+
+                    const vitals = patient.vitals;
+
                     return (
-                      <tr key={patient.id} className={statusClass === 'exam' ? 'current' : ''}>
-                        <td><div className="queue-no">{displayOrder}</div></td>
+                      <tr key={patient.id} className={rowClass}>
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="queue-no" style={{ margin: '0 auto' }}>{displayOrder}</div>
+                        </td>
                         <td>
                           <div className="patient">
                             <div className="avatar-sm">
@@ -263,7 +308,12 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                             </div>
                             <div>
                               <div className="patient-name">
-                                {patient.hoTen}
+                                <span>{patient.hoTen}</span>
+                                {patient.hasAllergy && (
+                                  <span className="allergy-badge" title="Có tiền sử dị ứng">
+                                    <i className="fa-solid fa-triangle-exclamation"></i> Dị ứng
+                                  </span>
+                                )}
                               </div>
                               <div className="patient-code">{patient.maBenhNhanNoiBo}</div>
                             </div>
@@ -277,14 +327,64 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                         <td>
                           <div className="visit">
                             <strong>{formatVisitCode(patient.maLuotKham)}</strong>
-                            <br />
-                            {patient.tenKhoa}
+                            <div>{patient.tenKhoa}</div>
                           </div>
                         </td>
                         <td>
-                          <span className="priority normal">Bình thường</span>
+                          {isEmergency ? (
+                            <span className="badge-priority emergency">
+                              <i className="fa-solid fa-truck-medical"></i> CẤP CỨU
+                            </span>
+                          ) : isUrgent ? (
+                            <span className="badge-priority urgent">
+                              <i className="fa-solid fa-bolt"></i> ƯU TIÊN
+                            </span>
+                          ) : (
+                            <span className="badge-priority normal">
+                              Bình thường
+                            </span>
+                          )}
                         </td>
-                        <td><span className="time">{timeDisplay}</span></td>
+                        {/* Widget Vitals & Triage (Anchored Popover) */}
+                        <td>
+                          {vitals ? (
+                            <div 
+                              className="vitals-cell-container"
+                              onMouseEnter={() => setHoveredPatientVitals({ id: patient.id, vitals })}
+                              onMouseLeave={() => setHoveredPatientVitals(null)}
+                            >
+                              <div className="vitals-chip">
+                                <span style={{ 
+                                  color: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? '#dc2626' : 'inherit', 
+                                  fontWeight: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? 700 : 500 
+                                }}>
+                                  SpO2: {vitals.spo2 ?? '--'}%
+                                </span>
+                                <span style={{ color: '#cbd5e1' }}>|</span>
+                                <span>HA: {vitals.huyetAp || '--'}</span>
+                              </div>
+
+                              {hoveredPatientVitals?.id === patient.id && (
+                                <div className="vitals-popover">
+                                  <div className="vitals-popover-title">
+                                    <i className="fa-solid fa-heart-pulse" style={{ color: '#f87171' }}></i>
+                                    Sinh hiệu tiếp đón
+                                  </div>
+                                  <div className="vitals-popover-grid">
+                                    <div>Mạch: <strong>{vitals.mach || '--'}</strong> bpm</div>
+                                    <div>Huyết áp: <strong>{vitals.huyetAp || '--'}</strong> mmHg</div>
+                                    <div>SpO2: <strong style={{ color: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? '#f87171' : '#4ade80' }}>{vitals.spo2 ?? '--'}%</strong></div>
+                                    <div>Nhiệt độ: <strong>{vitals.nhietDo || '--'}</strong>°C</div>
+                                    <div>BMI: <strong>{vitals.bmi || '--'}</strong> kg/m²</div>
+                                    <div>Nhịp thở: <strong>{vitals.nhipTho || '--'}</strong> l/p</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Chưa đo</span>
+                          )}
+                        </td>
                         <td>
                           <span className={`status ${statusClass}`}>
                             <i className="fa-solid fa-circle"></i> {statusLabel}
@@ -308,19 +408,21 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                                 <i className="fa-regular fa-eye"></i> Xem hồ sơ
                               </button>
                             )}
-                            {patient.trangThai === 'CHO_KHAM' && (
+                            {patient.trangThai !== 'DANG_KHAM' && patient.trangThai !== 'HOAN_THANH' && (
                               <>
                                 <button
                                   className="action"
                                   onClick={() => handleOpenDetail(patient)}
+                                  title="Xem nhanh chi tiết"
                                 >
                                   <i className="fa-regular fa-eye"></i> Xem
                                 </button>
                                 <button
-                                  className="action call"
+                                  className={`action call ${isEmergency ? 'emergency-cta' : ''}`}
                                   onClick={() => callPatient(patient)}
                                 >
-                                  <i className="fa-solid fa-bullhorn"></i> Gọi khám
+                                  <i className={isEmergency ? 'fa-solid fa-truck-medical' : 'fa-solid fa-bullhorn'}></i>
+                                  {isEmergency ? 'Khám ngay' : 'Gọi khám'}
                                 </button>
                               </>
                             )}
@@ -335,10 +437,10 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
           )}
         </div>
 
-        <div className="queue-footer" style={{ justifyContent: 'flex-start' }}>
+        <div className="queue-footer">
           <div className="footer-note">
-            <i className="fa-solid fa-circle-info"></i>
-            Hiển thị {filteredPatients.length} / {totalCount} bệnh nhân (đang tải toàn bộ hàng đợi)
+            <i className="fa-solid fa-arrows-rotate"></i>
+            Tự động cập nhật mỗi 30s | Đang hiển thị {filteredPatients.length} / {totalCount} bệnh nhân
           </div>
         </div>
       </section>

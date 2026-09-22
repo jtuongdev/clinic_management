@@ -245,8 +245,10 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<string>("GhiChu")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(500)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -328,8 +330,10 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<string>("GhiChu")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(500)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -463,7 +467,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -518,6 +522,18 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
+
+                    b.Property<bool>("EmrLocked")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("EmrLockedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("EmrLockedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmrSignature")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("HinhThucDieuTri")
                         .IsRequired()
@@ -673,7 +689,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -745,7 +761,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -800,7 +816,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -857,7 +873,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -922,7 +938,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -975,7 +991,8 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasIndex("MaLichLamViec")
                         .IsUnique()
-                        .HasFilter("[MaLichLamViec] IS NOT NULL");
+                        .HasDatabaseName("IX_ChamCong_MaLichLamViec")
+                        .HasFilter("[IsDeleted] = 0 AND [MaLichLamViec] IS NOT NULL");
 
                     b.HasIndex("MaNhanVien");
 
@@ -993,7 +1010,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1052,7 +1069,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1117,7 +1134,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<bool>("DaKhoa")
@@ -1174,7 +1191,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1211,8 +1228,8 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<string>("NguonLich")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("TrangThai")
                         .IsRequired()
@@ -1236,7 +1253,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.HasIndex("MaKhoa", "NgayLam");
 
                     b.HasIndex("MaNhanVien", "MaCaTruc", "NgayLam")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_LichLamViec_MaNhanVien_MaCaTruc_NgayLam")
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("LichLamViec", (string)null);
                 });
@@ -1252,7 +1271,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1268,6 +1287,11 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -1304,7 +1328,10 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasIndex("MaPhongKham");
 
-                    b.HasIndex("MaNhanVien", "MaKhoa", "MaCaTruc", "ThuTrongTuan", "TuNgay");
+                    b.HasIndex("MaNhanVien", "ThuTrongTuan", "MaCaTruc")
+                        .IsUnique()
+                        .HasDatabaseName("IX_LichCoDinh_NhanVien_Thu_Ca")
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("LichLamViecCoDinh", (string)null);
                 });
@@ -1326,7 +1353,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1392,7 +1419,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1444,7 +1471,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1524,7 +1551,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1633,7 +1660,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1686,7 +1713,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1736,7 +1763,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1780,53 +1807,6 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("PhanQuyenCoSo", (string)null);
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.Quyen", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MoTa")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("TenQuyen")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedBy")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenQuyen")
-                        .IsUnique();
-
-                    b.ToTable("Quyen", (string)null);
-                });
-
             modelBuilder.Entity("ClinicManagement.Domain.Identity.VaiTro", b =>
                 {
                     b.Property<int>("Id")
@@ -1838,7 +1818,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1874,7 +1854,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("VaiTro", (string)null);
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.VaiTroQuyen", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.ChiTietDonDatHang", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1885,7 +1865,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -1894,14 +1874,36 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("DonGiaDat")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("DonViTinh")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<int>("MaQuyen")
+                    b.Property<int>("MaDonDatHang")
                         .HasColumnType("int");
 
-                    b.Property<int>("MaVaiTro")
+                    b.Property<int>("MaItem")
                         .HasColumnType("int");
+
+                    b.Property<int?>("MaQuyDoi")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SoLuongDaNhap")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<decimal>("SoLuongDat")
+                        .HasColumnType("decimal(12,3)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1911,12 +1913,13 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaQuyen");
+                    b.HasIndex("MaDonDatHang");
 
-                    b.HasIndex("MaVaiTro", "MaQuyen")
-                        .IsUnique();
+                    b.HasIndex("MaItem");
 
-                    b.ToTable("VaiTroQuyen", (string)null);
+                    b.HasIndex("MaQuyDoi");
+
+                    b.ToTable("ChiTietDonDatHang", (string)null);
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.ChiTietNhapKho", b =>
@@ -1948,6 +1951,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MaChiTietDonDatHang")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaItem")
                         .HasColumnType("int");
 
@@ -1977,6 +1983,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MaChiTietDonDatHang");
 
                     b.HasIndex("MaItem");
 
@@ -2037,6 +2045,91 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("ChiTietXuatKho", (string)null);
                 });
 
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.DonDatHang", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaCoSo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MaDonDatHang")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("MaKho")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaNguoiDat")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaNhaCungCap")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("NgayDat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayDuKienGiao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TongTien")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaCoSo");
+
+                    b.HasIndex("MaDonDatHang")
+                        .IsUnique();
+
+                    b.HasIndex("MaKho");
+
+                    b.HasIndex("MaNguoiDat");
+
+                    b.HasIndex("MaNhaCungCap");
+
+                    b.HasIndex("NgayDat");
+
+                    b.HasIndex("TrangThai");
+
+                    b.ToTable("DonDatHang", (string)null);
+                });
+
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.DonViTinhQuyDoi", b =>
                 {
                     b.Property<int>("Id")
@@ -2048,7 +2141,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2099,7 +2192,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2153,7 +2246,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2240,7 +2333,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<string>("DangBaoChe")
@@ -2259,6 +2352,11 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("DuongDung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<decimal>("GiaBanLe")
                         .HasColumnType("decimal(18,2)");
 
@@ -2266,6 +2364,11 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HoatChat")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -2283,6 +2386,16 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("MaBHYT")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SoDangKy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Ten")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -2295,6 +2408,9 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<decimal>("TonToiThieu")
                         .HasColumnType("decimal(12,3)");
+
+                    b.Property<decimal>("TyLeBHYT")
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -2323,7 +2439,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2394,7 +2510,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2488,6 +2604,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int>("MaCoSo")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MaDonDatHang")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaKho")
                         .HasColumnType("int");
 
@@ -2522,6 +2641,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MaCoSo");
+
+                    b.HasIndex("MaDonDatHang");
 
                     b.HasIndex("MaKho");
 
@@ -2635,7 +2756,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<int?>("CreatedByUserId")
@@ -2699,7 +2820,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2752,7 +2873,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -2812,7 +2933,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3094,7 +3215,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3143,6 +3264,10 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<decimal>("TienBaoHiem")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("TienNoKyNay")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("TienTangCa")
                         .HasColumnType("decimal(18,2)");
 
@@ -3181,7 +3306,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3239,7 +3364,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3529,7 +3654,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3588,7 +3713,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3639,7 +3764,185 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.ToTable("DanhMucDichVu", (string)null);
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.System.AuditLog", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.Service.DinhMucVatTuDichVu", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DonViTinh")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaDanhMucDichVu")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaItem")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SoLuong")
+                        .HasColumnType("decimal(12,3)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaItem");
+
+                    b.HasIndex("MaDanhMucDichVu", "MaItem")
+                        .IsUnique();
+
+                    b.ToTable("DinhMucVatTuDichVu", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.CauHinhTichHop", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DaMaHoa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("DanhMuc")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GiaTri")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MaCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MoTa")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("NguoiCapNhat")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ThoiGianCapNhat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CauHinhTichHops");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.MaTranPhanQuyen", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DuocPhep")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HanhDong")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaVaiTro")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PhamViDuLieu")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("PhanHe")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaVaiTro", "PhanHe", "HanhDong")
+                        .IsUnique();
+
+                    b.ToTable("MaTranPhanQuyen", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.NhatKyHeThong", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -3655,7 +3958,7 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -3663,6 +3966,11 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
+
+                    b.Property<string>("DiaChiIp")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
 
                     b.Property<string>("DuLieuCu")
                         .IsRequired()
@@ -3676,11 +3984,6 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("IpAddress")
-                        .IsRequired()
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -3708,16 +4011,20 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasIndex("Bang", "MaBangGhi");
 
-                    b.ToTable("AuditLog", (string)null);
+                    b.ToTable("NhatKyHeThong", (string)null);
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.System.RefreshToken", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.System.NhatKyHoSoBenhAn", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChiTiet")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -3731,25 +4038,36 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("DiaChiIp")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HanhDong")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("MaBenhNhan")
+                    b.Property<int>("MaBenhNhan")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MaNhanVien")
+                    b.Property<int>("MaHoSo")
                         .HasColumnType("int");
 
-                    b.Property<string>("Token")
+                    b.Property<int>("MaNguoiDung")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PhanHe")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ThoiGian")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -3759,14 +4077,7 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaBenhNhan");
-
-                    b.HasIndex("MaNhanVien");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.ToTable("RefreshToken", (string)null);
+                    b.ToTable("NhatKyHoSoBenhAns");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.System.ThamSoHeThong", b =>
@@ -3827,6 +4138,64 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasFilter("[MaCoSo] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.ToTable("ThamSoHeThong", (string)null);
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.TokenLamMoi", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DaHuyBo")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaBenhNhan")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaNhanVien")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MaToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NgayHetHan")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaBenhNhan");
+
+                    b.HasIndex("MaNhanVien");
+
+                    b.HasIndex("MaToken")
+                        .IsUnique();
+
+                    b.ToTable("TokenLamMoi", (string)null);
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Appointment.LichHen", b =>
@@ -4293,27 +4662,39 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("VaiTro");
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.VaiTroQuyen", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.ChiTietDonDatHang", b =>
                 {
-                    b.HasOne("ClinicManagement.Domain.Identity.Quyen", "Quyen")
-                        .WithMany("VaiTroQuyens")
-                        .HasForeignKey("MaQuyen")
+                    b.HasOne("ClinicManagement.Domain.Inventory.DonDatHang", "DonDatHang")
+                        .WithMany("ChiTietDonDatHangs")
+                        .HasForeignKey("MaDonDatHang")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ClinicManagement.Domain.Identity.VaiTro", "VaiTro")
-                        .WithMany("VaiTroQuyens")
-                        .HasForeignKey("MaVaiTro")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("ClinicManagement.Domain.Inventory.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("MaItem")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Quyen");
+                    b.HasOne("ClinicManagement.Domain.Inventory.DonViTinhQuyDoi", "DonViTinhQuyDoi")
+                        .WithMany()
+                        .HasForeignKey("MaQuyDoi")
+                        .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("VaiTro");
+                    b.Navigation("DonDatHang");
+
+                    b.Navigation("DonViTinhQuyDoi");
+
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.ChiTietNhapKho", b =>
                 {
+                    b.HasOne("ClinicManagement.Domain.Inventory.ChiTietDonDatHang", "ChiTietDonDatHang")
+                        .WithMany("ChiTietNhapKhos")
+                        .HasForeignKey("MaChiTietDonDatHang")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ClinicManagement.Domain.Inventory.Item", "Item")
                         .WithMany("ChiTietNhapKhos")
                         .HasForeignKey("MaItem")
@@ -4330,6 +4711,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("MaQuyDoi")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ChiTietDonDatHang");
 
                     b.Navigation("DonViTinhQuyDoi");
 
@@ -4355,6 +4738,41 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("ChiTietNhapKho");
 
                     b.Navigation("PhieuXuatKho");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.DonDatHang", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Facility.CoSo", "CoSo")
+                        .WithMany()
+                        .HasForeignKey("MaCoSo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Inventory.Kho", "Kho")
+                        .WithMany()
+                        .HasForeignKey("MaKho")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NguoiDat")
+                        .WithMany()
+                        .HasForeignKey("MaNguoiDat")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Inventory.NhaCungCap", "NhaCungCap")
+                        .WithMany()
+                        .HasForeignKey("MaNhaCungCap")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CoSo");
+
+                    b.Navigation("Kho");
+
+                    b.Navigation("NguoiDat");
+
+                    b.Navigation("NhaCungCap");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.DonViTinhQuyDoi", b =>
@@ -4419,6 +4837,11 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Inventory.DonDatHang", "DonDatHang")
+                        .WithMany("PhieuNhapKhos")
+                        .HasForeignKey("MaDonDatHang")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ClinicManagement.Domain.Inventory.Kho", "Kho")
                         .WithMany("PhieuNhapKhos")
                         .HasForeignKey("MaKho")
@@ -4438,6 +4861,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CoSo");
+
+                    b.Navigation("DonDatHang");
 
                     b.Navigation("Kho");
 
@@ -4702,7 +5127,35 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("ChiDinhDichVu");
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.System.AuditLog", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.Service.DinhMucVatTuDichVu", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Service.DanhMucDichVu", "DanhMucDichVu")
+                        .WithMany("DinhMucVatTus")
+                        .HasForeignKey("MaDanhMucDichVu")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClinicManagement.Domain.Inventory.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("MaItem")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DanhMucDichVu");
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.MaTranPhanQuyen", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Identity.VaiTro", null)
+                        .WithMany()
+                        .HasForeignKey("MaVaiTro")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.NhatKyHeThong", b =>
                 {
                     b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NguoiThucHienNavigation")
                         .WithMany()
@@ -4712,7 +5165,17 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("NguoiThucHienNavigation");
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.System.RefreshToken", b =>
+            modelBuilder.Entity("ClinicManagement.Domain.System.ThamSoHeThong", b =>
+                {
+                    b.HasOne("ClinicManagement.Domain.Facility.CoSo", "CoSo")
+                        .WithMany()
+                        .HasForeignKey("MaCoSo")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CoSo");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.System.TokenLamMoi", b =>
                 {
                     b.HasOne("ClinicManagement.Domain.Patient.BenhNhan", "BenhNhan")
                         .WithMany()
@@ -4727,16 +5190,6 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("BenhNhan");
 
                     b.Navigation("NhanVien");
-                });
-
-            modelBuilder.Entity("ClinicManagement.Domain.System.ThamSoHeThong", b =>
-                {
-                    b.HasOne("ClinicManagement.Domain.Facility.CoSo", "CoSo")
-                        .WithMany()
-                        .HasForeignKey("MaCoSo")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CoSo");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Billing.HoaDon", b =>
@@ -4821,23 +5274,28 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Navigation("PhanQuyenCoSo");
                 });
 
-            modelBuilder.Entity("ClinicManagement.Domain.Identity.Quyen", b =>
-                {
-                    b.Navigation("VaiTroQuyens");
-                });
-
             modelBuilder.Entity("ClinicManagement.Domain.Identity.VaiTro", b =>
                 {
                     b.Navigation("NhanVienVaiTro");
 
                     b.Navigation("PhanQuyenCoSo");
+                });
 
-                    b.Navigation("VaiTroQuyens");
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.ChiTietDonDatHang", b =>
+                {
+                    b.Navigation("ChiTietNhapKhos");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.ChiTietNhapKho", b =>
                 {
                     b.Navigation("TonKho");
+                });
+
+            modelBuilder.Entity("ClinicManagement.Domain.Inventory.DonDatHang", b =>
+                {
+                    b.Navigation("ChiTietDonDatHangs");
+
+                    b.Navigation("PhieuNhapKhos");
                 });
 
             modelBuilder.Entity("ClinicManagement.Domain.Inventory.Item", b =>
@@ -4916,6 +5374,8 @@ namespace ClinicManagement.Infrastructure.Migrations
             modelBuilder.Entity("ClinicManagement.Domain.Service.DanhMucDichVu", b =>
                 {
                     b.Navigation("ChiDinhDichVus");
+
+                    b.Navigation("DinhMucVatTus");
                 });
 #pragma warning restore 612, 618
         }

@@ -42,8 +42,12 @@ export const CancelInvoiceModal: React.FC<CancelInvoiceModalProps> = ({
       } else {
         message.error(res.data.message || 'Không thể hủy hóa đơn');
       }
-    } catch {
-      // Validation error
+    } catch (err: any) {
+      if (err?.response?.data?.message) {
+        message.error(err.response.data.message);
+      } else if (err?.message && !err?.errorFields) {
+        message.error(err.message);
+      }
     } finally {
       setLoading(false);
     }

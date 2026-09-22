@@ -19,6 +19,10 @@ namespace ClinicManagement.Application.Features.LichLamViec
         : IRequest<GenerateSchedulePreview>;
     public record BulkCreateLichLamViecCoDinhCommand(BulkFixedScheduleRequest Request)
         : IRequest<BulkFixedScheduleResult>;
+    public record SetFixedScheduleCommand(int MaNhanVien, List<FixedShiftItemDto> Shifts)
+        : IRequest<IReadOnlyList<LichLamViecCoDinhDto>>;
+    public record GenerateMonthlyScheduleCommand(int Thang, int Nam, int? MaKhoa = null, int? MaNhanVien = null)
+        : IRequest<GenerateMonthlyScheduleResult>;
 
     public class LichLamViecCoDinhHandler :
         IRequestHandler<GetLichLamViecCoDinhQuery, IReadOnlyList<LichLamViecCoDinhDto>>,
@@ -27,7 +31,9 @@ namespace ClinicManagement.Application.Features.LichLamViec
         IRequestHandler<DeleteLichLamViecCoDinhCommand>,
         IRequestHandler<GenerateLichLamViecCommand, int>,
         IRequestHandler<PreviewGenerateLichLamViecCommand, GenerateSchedulePreview>,
-        IRequestHandler<BulkCreateLichLamViecCoDinhCommand, BulkFixedScheduleResult>
+        IRequestHandler<BulkCreateLichLamViecCoDinhCommand, BulkFixedScheduleResult>,
+        IRequestHandler<SetFixedScheduleCommand, IReadOnlyList<LichLamViecCoDinhDto>>,
+        IRequestHandler<GenerateMonthlyScheduleCommand, GenerateMonthlyScheduleResult>
     {
         private readonly ILichLamViecRepository repository;
         public LichLamViecCoDinhHandler(ILichLamViecRepository repository) => this.repository = repository;
@@ -53,8 +59,6 @@ namespace ClinicManagement.Application.Features.LichLamViec
                 throw new InvalidOperationException("Lịch cố định bị trùng nhân viên, thứ, ca và khoảng hiệu lực.");
             await repository.AddFixedScheduleAsync(entity, cancellationToken);
             await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
-            if (entity.DenNgay.HasValue)
-                await GenerateForFixedSchedule(entity, entity.TuNgay, entity.DenNgay.Value, cancellationToken);
             return Map(await repository.GetFixedScheduleByIdAsync(entity.Id, cancellationToken) ?? entity);
         }
 
@@ -79,6 +83,7 @@ namespace ClinicManagement.Application.Features.LichLamViec
             entity.MaCaTruc = request.MaCaTruc;
             entity.MaPhongKham = request.MaPhongKham;
             entity.ThuTrongTuan = request.ThuTrongTuan;
+            entity.IsActive = request.IsActive;
             entity.TuNgay = request.TuNgay;
             entity.DenNgay = request.DenNgay;
             entity.GhiChu = request.GhiChu;
@@ -88,8 +93,6 @@ namespace ClinicManagement.Application.Features.LichLamViec
                 throw new InvalidOperationException("Lịch cố định bị trùng nhân viên, thứ, ca và khoảng hiệu lực.");
             repository.UpdateFixedSchedule(entity);
             await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
-            if (entity.DenNgay.HasValue)
-                await GenerateForFixedSchedule(entity, entity.TuNgay, entity.DenNgay.Value, cancellationToken);
             return Map(await repository.GetFixedScheduleByIdAsync(entity.Id, cancellationToken) ?? entity);
         }
 
@@ -113,7 +116,7 @@ namespace ClinicManagement.Application.Features.LichLamViec
                     {
                         MaNhanVien = item.MaNhanVien, MaKhoa = item.MaKhoa, MaCaTruc = item.MaCaTruc,
                         MaPhongKham = item.MaPhongKham, MaLichLamViecCoDinh = item.Id,
-                        NguonLich = "CO_DINH", TrangThai = TrangThaiLichLamViec.LAM_VIEC, NgayLam = date, GhiChu = item.GhiChu
+                        NguonLich = NguonLich.TU_DONG_THEO_LICH_MAU, TrangThai = TrangThaiLichLamViec.LAM_VIEC, NgayLam = date, GhiChu = item.GhiChu
                     }, cancellationToken);
                     created++;
                 }
@@ -232,7 +235,7 @@ namespace ClinicManagement.Application.Features.LichLamViec
                     MaCaTruc = fixedSchedule.MaCaTruc,
                     MaPhongKham = fixedSchedule.MaPhongKham,
                     MaLichLamViecCoDinh = fixedSchedule.Id,
-                    NguonLich = "CO_DINH",
+                    NguonLich = NguonLich.TU_DONG_THEO_LICH_MAU,
                     TrangThai = TrangThaiLichLamViec.LAM_VIEC,
                     NgayLam = date,
                     GhiChu = fixedSchedule.GhiChu
@@ -241,12 +244,141 @@ namespace ClinicManagement.Application.Features.LichLamViec
             await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        public async Task<IReadOnlyList<LichLamViecCoDinhDto>> Handle(SetFixedScheduleCommand command, CancellationToken cancellationToken)
+        {
+            if (command.MaNhanVien <= 0)
+                throw new ArgumentException("Mã nhân viên không hợp lệ.", nameof(command.MaNhanVien));
+
+            var shifts = command.Shifts ?? new List<FixedShiftItemDto>();
+
+            var hasDuplicates = shifts
+                .GroupBy(s => new { s.ThuTrongTuan, s.MaCaTruc })
+                .Any(g => g.Count() > 1);
+            if (hasDuplicates)
+                throw new ArgumentException("Không thể cấu hình trùng ca trực trong cùng một thứ.");
+
+            var deptId = await repository.GetEmployeeDepartmentIdAsync(command.MaNhanVien, cancellationToken: cancellationToken) ?? 1;
+
+            var currentTemplates = await repository.GetFixedSchedulesByEmployeeAsync(command.MaNhanVien, track: true, cancellationToken);
+
+            // 1. Soft-delete templates no longer present in incoming list
+            foreach (var existing in currentTemplates)
+            {
+                var matched = shifts.FirstOrDefault(s => s.ThuTrongTuan == existing.ThuTrongTuan && s.MaCaTruc == existing.MaCaTruc);
+                if (matched == null)
+                {
+                    repository.SoftDeleteFixedSchedule(existing, 0);
+                }
+                else
+                {
+                    existing.UpdateInfo(matched.MaCaTruc, matched.MaPhongKham);
+                    existing.Activate();
+                    existing.Normalize();
+                }
+            }
+
+            // 2. Add new templates that do not exist yet
+            foreach (var shift in shifts)
+            {
+                var existing = currentTemplates.FirstOrDefault(e => e.ThuTrongTuan == shift.ThuTrongTuan && e.MaCaTruc == shift.MaCaTruc);
+                if (existing == null)
+                {
+                    var newEntity = new LichLamViecCoDinh
+                    {
+                        MaNhanVien = command.MaNhanVien,
+                        MaKhoa = deptId,
+                        MaCaTruc = shift.MaCaTruc,
+                        MaPhongKham = shift.MaPhongKham,
+                        ThuTrongTuan = shift.ThuTrongTuan,
+                        IsActive = true,
+                        TuNgay = DateTime.Today,
+                        GhiChu = "Cấu hình lịch mẫu cố định"
+                    };
+                    newEntity.Normalize();
+                    await repository.AddFixedScheduleAsync(newEntity, cancellationToken);
+                }
+            }
+
+            await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+            var updatedList = await repository.GetFixedSchedulesByEmployeeAsync(command.MaNhanVien, track: false, cancellationToken);
+            return updatedList.Select(Map).ToList();
+        }
+
+        public async Task<GenerateMonthlyScheduleResult> Handle(GenerateMonthlyScheduleCommand command, CancellationToken cancellationToken)
+        {
+            if (command.Thang < 1 || command.Thang > 12)
+                throw new ArgumentException("Tháng phải từ 1 đến 12.");
+            if (command.Nam < 2000 || command.Nam > 2100)
+                throw new ArgumentException("Năm không hợp lệ.");
+
+            var startDate = new DateTime(command.Nam, command.Thang, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+            var totalDays = endDate.Day;
+
+            var activeTemplates = await repository.GetActiveFixedSchedulesAsync(command.MaNhanVien, command.MaKhoa, cancellationToken);
+            if (!activeTemplates.Any())
+                throw new InvalidOperationException("Không tìm thấy lịch làm việc cố định nào đang hoạt động.");
+
+            int createdCount = 0;
+            int skippedCount = 0;
+            var scheduledEmployees = new HashSet<int>();
+
+            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+            {
+                var dayOfWeek = date.DayOfWeek;
+                var matching = activeTemplates.Where(t => t.ThuTrongTuan == dayOfWeek).ToList();
+
+                foreach (var template in matching)
+                {
+                    if (template.TuNgay.Date > date || (template.DenNgay.HasValue && template.DenNgay.Value.Date < date))
+                        continue;
+
+                    if (await repository.DailyScheduleExistsAsync(template.MaNhanVien, template.MaCaTruc, date, cancellationToken))
+                    {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    var newSchedule = new Domain.Identity.LichLamViec
+                    {
+                        MaNhanVien = template.MaNhanVien,
+                        MaKhoa = template.MaKhoa,
+                        MaCaTruc = template.MaCaTruc,
+                        MaPhongKham = template.MaPhongKham,
+                        MaLichLamViecCoDinh = template.Id,
+                        NgayLam = date,
+                        NguonLich = NguonLich.TU_DONG_THEO_LICH_MAU,
+                        TrangThai = TrangThaiLichLamViec.LAM_VIEC,
+                        GhiChu = "Sinh tự động theo lịch mẫu"
+                    };
+                    newSchedule.Normalize();
+                    await repository.AddAsync(newSchedule, cancellationToken);
+
+                    createdCount++;
+                    scheduledEmployees.Add(template.MaNhanVien);
+                }
+            }
+
+            await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new GenerateMonthlyScheduleResult(
+                command.Thang,
+                command.Nam,
+                totalDays,
+                createdCount,
+                skippedCount,
+                scheduledEmployees.Count
+            );
+        }
+
         private static LichLamViecCoDinhDto Map(LichLamViecCoDinh item) => new()
         {
             Id = item.Id, MaNhanVien = item.MaNhanVien, TenNhanVien = item.NhanVien?.HoTen ?? string.Empty,
             MaKhoa = item.MaKhoa, TenKhoa = item.Khoa?.Ten ?? string.Empty, MaCaTruc = item.MaCaTruc,
             TenCa = item.CaTruc?.TenCa ?? string.Empty, MaPhongKham = item.MaPhongKham,
             TenPhongKham = item.PhongKham?.Ten ?? string.Empty, ThuTrongTuan = item.ThuTrongTuan,
+            IsActive = item.IsActive,
             TuNgay = item.TuNgay, DenNgay = item.DenNgay, GhiChu = item.GhiChu
         };
 

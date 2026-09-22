@@ -1,0 +1,94 @@
+### 1) Get examination list
+GET https://localhost:7081/api/luotkham?pageIndex=1&pageSize=10
+Authorization: Bearer <token>
+
+### 2) Get one encounter
+GET https://localhost:7081/api/luotkham/1
+Authorization: Bearer <token>
+
+### 3) Complete encounter and create invoice if applicable
+POST https://localhost:7081/api/luotkham/1/complete
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{}
+
+### 4) Lock EMR
+POST https://localhost:7081/api/luotkham/1/emr/lock
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "lyDo": "Khám bệnh đã hoàn tất, cần khóa hồ sơ bệnh án",
+  "chuKySo": "SIG_20260916_11_1"
+}
+
+### 5) Drug interaction check
+POST https://localhost:7081/api/ai/drug-interaction-check
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "patientId": 1001,
+  "medicineIds": [101, 202, 303],
+  "note": "Kiểm tra lại dị ứng thuốc"
+}
+
+### 6) Get role matrix
+GET https://localhost:7081/api/admin/roles
+Authorization: Bearer <token>
+
+### 7) Save role matrix
+POST https://localhost:7081/api/admin/roles
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "id": 4,
+  "code": "NURSE",
+  "name": "Điều dưỡng",
+  "description": "Theo dõi sinh hiệu và hỗ trợ khám",
+  "dataScope": "DEPARTMENT_ONLY",
+  "permissions": {
+    "patient": ["VIEW"],
+    "examination": ["VIEW", "CREATE"]
+  }
+}
+
+### 8) Get EMR audit logs
+GET https://localhost:7081/api/admin/audit-logs?patientId=1001&action=VIEW&pageIndex=1&pageSize=20
+Authorization: Bearer <token>
+
+### 9) Write EMR audit log
+POST https://localhost:7081/api/admin/audit-logs
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "patientId": 1001,
+  "recordId": 9001,
+  "userId": 11,
+  "action": "PRESCRIBE",
+  "module": "EMR",
+  "ipAddress": "192.168.1.44",
+  "details": "Bác sĩ kê đơn thuốc cho bệnh nhân",
+  "status": "SUCCESS"
+}
+
+### 10) Get integration config
+GET https://localhost:7081/api/admin/integration-config?category=LIS
+Authorization: Bearer <token>
+
+### 11) Upsert integration config
+POST https://localhost:7081/api/admin/integration-config
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "category": "LIS",
+  "code": "HL7_PORT",
+  "name": "Cổng HL7",
+  "value": "2575",
+  "description": "Cổng HL7 cho máy xét nghiệm",
+  "isEncrypted": false
+}

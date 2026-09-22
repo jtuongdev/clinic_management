@@ -99,11 +99,24 @@ export const useScheduleData = () => {
     const fetchInitialData = async (): Promise<void> => {
       try {
         const [employeeResponse, shiftResponse] = await Promise.all([
-          scheduleApi.getEmployees(selectedKhoa, weekDays[0].format(dateFormat)),
+          scheduleApi.getEmployees(selectedKhoa),
           scheduleApi.getShifts(),
         ]);
         if (!active) return;
-        setEmployees(employeeResponse.data.data?.items || []);
+        let empList = employeeResponse.data.data?.items || [];
+        if (empList.length === 0 && selectedKhoa) {
+          // Fallback: nếu khoa chưa có nhân viên liên kết qua bảng NhanVienKhoa,
+          // tự động lấy toàn bộ nhân viên hoạt động để người quản lý có thể phân ca
+          try {
+            const allEmpRes = await scheduleApi.getEmployees();
+            if (active && allEmpRes.data.data?.items?.length) {
+              empList = allEmpRes.data.data.items;
+            }
+          } catch {
+            // ignore fallback error
+          }
+        }
+        setEmployees(empList);
         setShifts(shiftResponse.data.data || []);
       } catch (error) {
         if (active) message.error(apiError(error));
@@ -111,7 +124,7 @@ export const useScheduleData = () => {
     };
     fetchInitialData();
     return () => { active = false; };
-  }, [message, selectedKhoa, weekDays]);
+  }, [message, selectedKhoa]);
 
   useEffect(() => {
     let active = true;
@@ -119,7 +132,9 @@ export const useScheduleData = () => {
       if (!active) return;
       const options = response.data?.data || [];
       setCoSos(options);
-      if (options.length === 1) setSelectedCoSo(options[0].id);
+      if (options.length > 0) {
+        setSelectedCoSo((prev) => (prev && options.some((o) => o.id === prev) ? prev : options[0].id));
+      }
     }).catch((error) => {
       if (active) message.error(apiError(error));
     });
@@ -127,12 +142,21 @@ export const useScheduleData = () => {
   }, [message]);
 
   useEffect(() => {
-    if (!selectedCoSo) return undefined;
+    if (!selectedCoSo) {
+      setKhoas([]);
+      setSelectedKhoa(undefined);
+      return undefined;
+    }
     let active = true;
     khoaApi.getDropdown(selectedCoSo).then((response) => {
       if (!active) return;
-      setKhoas(response.data?.data || []);
-      setSelectedKhoa(undefined);
+      const options = response.data?.data || [];
+      setKhoas(options);
+      if (options.length > 0) {
+        setSelectedKhoa((prev) => (prev && options.some((k) => k.id === prev) ? prev : options[0].id));
+      } else {
+        setSelectedKhoa(undefined);
+      }
     }).catch((error) => {
       if (active) message.error(apiError(error));
     });

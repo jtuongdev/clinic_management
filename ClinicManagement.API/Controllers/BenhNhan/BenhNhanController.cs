@@ -1,3 +1,4 @@
+using ClinicManagement.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,7 @@ namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [ClinicalAuthorize("patient", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
     public partial class BenhNhanController : BaseController
     {
         private readonly IMediator _mediator;
@@ -26,7 +27,6 @@ namespace ClinicManagement.API.Controllers
 
         // GET: api/benhnhan/paged?pageIndex=1&pageSize=10&keyword=...&includeDeleted=false
         [HttpGet("paged")]
-        // [Authorize(Roles = "Admin,LeTan")]
         public async Task<IActionResult> GetPaged(
             [FromQuery] int pageIndex = 1,
             [FromQuery] int pageSize = 10,
@@ -37,7 +37,7 @@ namespace ClinicManagement.API.Controllers
             if (pageSize > 100) pageSize = 100;
             if (pageIndex < 1) pageIndex = 1;
 
-            var query = new GetBenhNhansPagedQuery
+            var query = new LayDanhSachBenhNhanPhanTrangQuery
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize,
@@ -53,17 +53,16 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("count/benhnhan/thongke")]
         public async Task<IActionResult> GetThongKeBenhNhan()
         {
-            var query = new GetThongKeBenhNhanQuery();
+            var query = new LayThongKeBenhNhanQuery();
             var result = await _mediator.Send(query);
             return Success(result);
         }
 
         // POST: api/benhnhan
         [HttpPost]
-        [Authorize(Roles = "Admin,LeTan")]
         public async Task<IActionResult> Create([FromBody] CreateBenhNhanRequest request)
         {
-            var command = new CreateBenhNhanCommand
+            var command = new TaoBenhNhanCommand
             {
                 Ho = request.Ho,
                 Ten = request.Ten,
@@ -91,13 +90,12 @@ namespace ClinicManagement.API.Controllers
 
         // PUT: api/benhnhan/{id}
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,LeTan")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateBenhNhanRequest request)
         {
             if (id != request.Id)
                 return Failure("Id không khớp", 400);
 
-            var command = new UpdateBenhNhanCommand
+            var command = new CapNhatBenhNhanCommand
             {
                 Id = request.Id,
                 Ho = request.Ho,
@@ -118,10 +116,9 @@ namespace ClinicManagement.API.Controllers
 
         // DELETE: api/benhnhan/{id}
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var command = new DeleteBenhNhanCommand { Id = id, DeletedBy = CurrentUserId };
+            var command = new XoaBenhNhanCommand { Id = id, DeletedBy = CurrentUserId };
             await _mediator.Send(command);
             return Success(true, "Xóa bệnh nhân thành công");
         }
@@ -130,7 +127,7 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var query = new GetBenhNhanByIdQuery { Id = id };
+            var query = new LayBenhNhanTheoIdQuery { Id = id };
             var result = await _mediator.Send(query);
             return Success(result);
         }
@@ -139,7 +136,7 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string keyword = "")
         {
-            var query = new SearchBenhNhanQuery { Keyword = keyword };
+            var query = new TimKiemBenhNhanQuery { Keyword = keyword };
             var result = await _mediator.Send(query);
             return Success(result);
         }
@@ -148,17 +145,16 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("filter-by-date")]
         public async Task<IActionResult> GetByDateRange([FromQuery] DateTime fromDate, [FromQuery] DateTime toDate)
         {
-            var query = new GetBenhNhanByDateRangeQuery { FromDate = fromDate, ToDate = toDate };
+            var query = new LayBenhNhanTheoKhoangNgayQuery { FromDate = fromDate, ToDate = toDate };
             var result = await _mediator.Send(query);
             return Success(result);
         }
 
         // GET: api/benhnhan/deleted
         [HttpGet("deleted")]
-        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetDeleted()
         {
-            var query = new GetDeletedBenhNhansQuery();
+            var query = new LayDanhSachBenhNhanDaXoaQuery();
             var result = await _mediator.Send(query);
             return Success(result);
         }
@@ -167,7 +163,7 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("{id}/tiensu")]
         public async Task<IActionResult> GetTienSu(int id)
         {
-            var query = new GetTienSuByBenhNhanIdQuery { BenhNhanId = id };
+            var query = new LayTienSuTheoBenhNhanIdQuery { BenhNhanId = id };
             var result = await _mediator.Send(query);
             return Success(result);
         }
@@ -176,7 +172,7 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("{id}/tiensu/latest")]
         public async Task<IActionResult> GetLatestTienSu(int id)
         {
-            var query = new GetLatestTienSuQuery { BenhNhanId = id };
+            var query = new LayTienSuMoiNhatQuery { BenhNhanId = id };
             var result = await _mediator.Send(query);
             return Success(result);
         }
@@ -185,7 +181,7 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("loai-tien-su")]
         public async Task<IActionResult> GetLoaiTienSu()
         {
-            var query = new GetLoaiTienSuOptionsQuery();
+            var query = new LayTuyChonLoaiTienSuQuery();
             var result = await _mediator.Send(query);
             return Success(result);
         }

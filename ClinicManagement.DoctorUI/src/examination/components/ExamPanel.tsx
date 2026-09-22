@@ -23,7 +23,7 @@ const workflowItems = [
 ];
 
 const ExamPage: React.FC = () => {
-  const { patients, loading, error } = useQueue(1, 50);
+  const { patients, loading, error, fetchQueue } = useQueue(1, 50);
 
   const {
     activeWorkspace,
@@ -32,27 +32,43 @@ const ExamPage: React.FC = () => {
     setSearchQueue,
     examData,
     handleSave,
-    handleFinish,
   } = useExam();
+
+  const handleExamFinished = () => {
+    void fetchQueue();
+    setSelectedPatient((prev) => (prev ? { ...prev, trangThaiLuotKham: 'HOAN_THANH' } : null));
+    setIsExamStarted(false);
+  };
 
   const [selectedPatient, setSelectedPatient] = useState<BenhNhanListDto | null>(null);
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [isStartingExam, setIsStartingExam] = useState(false);
+  const [isSendingCls, setIsSendingCls] = useState(false);
+  const [isResumingExam, setIsResumingExam] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const isSelectedPatientAlreadyExamining =
-    !!selectedPatient &&
-    ['DANG_KHAM', 'DangKham', 'exam'].includes(String(selectedPatient.trangThaiLuotKham ?? '').trim());
+  const patientStatus = String(selectedPatient?.trangThaiLuotKham ?? '').trim();
+  const isAlreadyExamining = ['DANG_KHAM', 'DangKham', 'exam', 'Dang_Kham'].includes(patientStatus);
+  const isWaitingCls = ['CHO_CLS', 'ChoCls', 'Cho_Cls', 'CHO_CAN_LAM_SANG'].includes(patientStatus);
+  const isCompleted = ['HOAN_THANH', 'HoanThanh', 'done', 'HUY_KHAM', 'HuyKham', 'cancel'].includes(patientStatus);
+  const isExamActive = isExamStarted || isAlreadyExamining;
 
   const handleSelectPatient = (patient: BenhNhanListDto) => {
     setSelectedPatient(patient);
-    setIsExamStarted(false);
-    setActiveWorkspace('patient');
-    // TODO: Gọi API lấy chi tiết bệnh án
+    const status = String(patient.trangThaiLuotKham ?? '').trim();
+    const isExamining = ['DANG_KHAM', 'DangKham', 'exam', 'Dang_Kham'].includes(status);
+    const isWaiting = ['CHO_CLS', 'ChoCls', 'Cho_Cls', 'CHO_CAN_LAM_SANG'].includes(status);
+    
+    setIsExamStarted(isExamining);
+    if (isExamining || isWaiting) {
+      setActiveWorkspace('examination');
+    } else {
+      setActiveWorkspace('patient');
+    }
   };
 
   const handleStartExam = async () => {
-    if (!selectedPatient || !selectedPatient.id || isSelectedPatientAlreadyExamining) {
+    if (!selectedPatient || !selectedPatient.id || isExamActive) {
       alert('Bệnh nhân đang được khám. Không thể bắt đầu khám lại.');
       return;
     }
@@ -67,6 +83,7 @@ const ExamPage: React.FC = () => {
       }
 
       setIsExamStarted(true);
+      setSelectedPatient((prev) => (prev ? { ...prev, trangThaiLuotKham: 'DANG_KHAM' } : null));
       setActiveWorkspace('examination');
     } catch (error) {
       console.error('Start exam failed:', error);
@@ -74,6 +91,49 @@ const ExamPage: React.FC = () => {
       alert(message.includes('đang được khám') || message.includes('đang được khám lại') ? 'Bệnh nhân đang được khám. Không thể bắt đầu khám lại.' : message);
     } finally {
       setIsStartingExam(false);
+    }
+  };
+
+  const handleSendToParaclinical = async () => {
+    if (!selectedPatient || !selectedPatient.id) return;
+
+    try {
+      setIsSendingCls(true);
+      const response = await examinationApi.sendToParaclinical(selectedPatient.id);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Không thể chuyển trạng thái chờ cận lâm sàng.');
+      }
+      setIsExamStarted(false);
+      setSelectedPatient((prev) => (prev ? { ...prev, trangThaiLuotKham: 'CHO_CLS' } : null));
+      alert('Đã chuyển bệnh nhân sang trạng thái chờ kết quả cận lâm sàng (CHO_CLS). Bác sĩ có thể tiếp tục nhận bệnh nhân khác.');
+    } catch (error) {
+      console.error('Send to paraclinical failed:', error);
+      const message = error instanceof Error ? error.message : 'Không thể chuyển trạng thái chờ CLS.';
+      alert(message);
+    } finally {
+      setIsSendingCls(false);
+    }
+  };
+
+  const handleResumeExam = async () => {
+    if (!selectedPatient || !selectedPatient.id) return;
+
+    try {
+      setIsResumingExam(true);
+      const response = await examinationApi.resumeExam(selectedPatient.id);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Không thể khôi phục trạng thái khám.');
+      }
+      setIsExamStarted(true);
+      setSelectedPatient((prev) => (prev ? { ...prev, trangThaiLuotKham: 'DANG_KHAM' } : null));
+      setActiveWorkspace('treatment');
+      alert('Đã khôi phục trạng thái ĐANG KHÁM cho bệnh nhân.');
+    } catch (error) {
+      console.error('Resume exam failed:', error);
+      const message = error instanceof Error ? error.message : 'Không thể khôi phục khám.';
+      alert(message);
+    } finally {
+      setIsResumingExam(false);
     }
   };
 
@@ -86,19 +146,19 @@ const ExamPage: React.FC = () => {
         setActiveWorkspace('patient');
         break;
       case 'start-exam':
-        if (!selectedPatient) {
-          setActiveWorkspace('patient');
-          break;
+        if (selectedPatient) {
+          void handleStartExam();
         }
-        void handleStartExam();
         break;
-      case 'pause-exam':
-        if (!isExamStarted) {
-          break;
+      case 'send-cls':
+        if (selectedPatient) {
+          void handleSendToParaclinical();
         }
-        setIsExamStarted(false);
-        setActiveWorkspace('patient');
-        alert('Đã tạm ngưng quá trình khám bệnh.');
+        break;
+      case 'resume-exam':
+        if (selectedPatient) {
+          void handleResumeExam();
+        }
         break;
       case 'cancel-exam':
         setSelectedPatient(null);
@@ -114,7 +174,6 @@ const ExamPage: React.FC = () => {
     setIsSidebarCollapsed((prev) => !prev);
   };
 
-  // Định nghĩa kiểu cho context của action
   const examActions: ActionToolbarItem<string>[] = [
     {
       key: 'refresh',
@@ -134,27 +193,39 @@ const ExamPage: React.FC = () => {
       icon: isStartingExam ? 'spinner' : 'play',
       color: 'success',
       payload: 'start-exam',
-      disabled: !selectedPatient || isStartingExam || isSelectedPatientAlreadyExamining,
+      disabled: !selectedPatient || isStartingExam || isExamActive || isWaitingCls || isCompleted,
       onClick: (context: ActionToolbarClickContext<string>) => {
         const actionKey = context.payload ?? context.action.payload ?? 'start-exam';
         handleExamAction(actionKey);
       },
     },
     {
-      key: 'pause-exam',
-      label: 'Tạm ngưng',
-      icon: 'pause',
+      key: 'send-cls',
+      label: isSendingCls ? 'Đang chuyển...' : 'Chờ CLS',
+      icon: isSendingCls ? 'spinner' : 'flask',
       color: 'warning',
-      payload: 'pause-exam',
-      disabled: !selectedPatient || (!isExamStarted && !isSelectedPatientAlreadyExamining),
+      payload: 'send-cls',
+      disabled: !selectedPatient || !isExamActive || isSendingCls || isCompleted,
       onClick: (context: ActionToolbarClickContext<string>) => {
-        const actionKey = context.payload ?? context.action.payload ?? 'pause-exam';
+        const actionKey = context.payload ?? context.action.payload ?? 'send-cls';
+        handleExamAction(actionKey);
+      },
+    },
+    {
+      key: 'resume-exam',
+      label: isResumingExam ? 'Đang mở lại...' : 'Tiếp tục khám',
+      icon: isResumingExam ? 'spinner' : 'stethoscope',
+      color: 'primary',
+      payload: 'resume-exam',
+      disabled: !selectedPatient || !isWaitingCls || isResumingExam,
+      onClick: (context: ActionToolbarClickContext<string>) => {
+        const actionKey = context.payload ?? context.action.payload ?? 'resume-exam';
         handleExamAction(actionKey);
       },
     },
     {
       key: 'cancel-exam',
-      label: 'Huỷ',
+      label: 'Đóng',
       icon: 'xmark',
       color: 'danger',
       payload: 'cancel-exam',
@@ -169,27 +240,12 @@ const ExamPage: React.FC = () => {
   const workflowActions = workflowItems.map((item) => {
     const isLockedTab =
       !selectedPatient ||
-      (!isExamStarted && !isSelectedPatientAlreadyExamining && (item.key === 'examination' || item.key === 'treatment'));
+      (!isExamActive && !isWaitingCls && (item.key === 'examination' || item.key === 'treatment' || item.key === 'electronic-record'));
     return {
       ...item,
       disabled: isLockedTab,
     };
   });
-
-  const renderWorkspace = () => {
-    switch (activeWorkspace) {
-      case 'patient':
-        return selectedPatient ? <PatientWorkspace data={examData} luotKhamId={selectedPatient.id} /> : <PatientWorkspace />;
-      case 'examination':
-        return <ExaminationWorkspace data={examData} luotKhamId={selectedPatient?.id} />;
-      case 'treatment':
-        return <TreatmentWorkspace data={examData} luotKhamId={selectedPatient?.id} onSave={handleSave} onFinish={handleFinish} />;
-      case 'electronic-record':
-        return <ElectronicRecordWorkspace data={examData} onFinish={handleFinish} />;
-      default:
-        return <TreatmentWorkspace data={examData} onSave={handleSave} onFinish={handleFinish} />;
-    }
-  };
 
   return (
     <div className="panel-exam active">
@@ -240,10 +296,58 @@ const ExamPage: React.FC = () => {
             {selectedPatient && <ActionToolbar actions={examActions} align="right" />}
           </div>
 
-          <div className="exam-content">{renderWorkspace()}</div>
+          <div className="exam-content">
+            <div
+              style={{
+                display: activeWorkspace === 'patient' ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                height: '100%',
+                overflow: 'hidden',
+              }}
+            >
+              {selectedPatient ? <PatientWorkspace data={examData} luotKhamId={selectedPatient.id} /> : <PatientWorkspace />}
+            </div>
+            <div
+              style={{
+                display: activeWorkspace === 'examination' ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                height: '100%',
+                overflow: 'hidden',
+              }}
+            >
+              <ExaminationWorkspace data={examData} luotKhamId={selectedPatient?.id} />
+            </div>
+            <div
+              style={{
+                display: activeWorkspace === 'treatment' ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                height: '100%',
+                overflow: 'hidden',
+              }}
+            >
+              <TreatmentWorkspace data={examData} luotKhamId={selectedPatient?.id} onSave={handleSave} onFinish={handleExamFinished} />
+            </div>
+            <div
+              style={{
+                display: activeWorkspace === 'electronic-record' ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                height: '100%',
+                overflow: 'hidden',
+              }}
+            >
+              <ElectronicRecordWorkspace data={examData} luotKhamId={selectedPatient?.id} onFinish={handleExamFinished} />
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
   );
 };

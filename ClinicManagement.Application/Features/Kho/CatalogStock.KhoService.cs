@@ -101,23 +101,48 @@ public sealed partial class KhoService
         return InventoryResult.Ok(new { id, isActive = item.IsActive });
     }
 
-        public async Task<InventoryResult> Stock(string? keyword, bool lowStockOnly = false,
-        int pageIndex = 1, int pageSize = 20)
+    public async Task<InventoryResult> Stock(
+        string? keyword,
+        bool lowStockOnly = false,
+        int pageIndex = 1,
+        int pageSize = 20,
+        int? khoId = null,
+        string? stockStatus = null)
     {
+        var targetWarehouseId = khoId ?? DefaultWarehouseId;
         var today = DateTime.UtcNow;
-        var query = db.Items.AsNoTracking().Where(i => i.IsActive);
-        if (!string.IsNullOrWhiteSpace(keyword)) query = query.Where(i => i.Ma.Contains(keyword) || i.Ten.Contains(keyword));
+
+        // 1. Lấy tất cả Item đang hoạt động HOẶC có tồn kho thực tế trong kho chỉ định
+        var query = db.Items.AsNoTracking().Where(i =>
+            i.IsActive || i.TonKhos.Any(s => s.MaKho == targetWarehouseId && s.SoLuongTon > 0));
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var kw = keyword.Trim();
+            query = query.Where(i => i.Ma.Contains(kw) || i.Ten.Contains(kw));
+        }
+
+        // 2. Select thông tin mặt hàng và danh sách lô (KHÔNG lọc HanSuDung >= today để đảm bảo tồn thực tế trong kho khớp 100% database)
         var rows = await query.Select(i => new
         {
-            itemId = i.Id, itemCode = i.Ma, itemName = i.Ten, baseUnit = i.DonViTinhCoBan,
+            itemId = i.Id,
+            itemCode = i.Ma,
+            itemName = i.Ten,
+            itemType = i.LoaiItem.ToString(),
+            baseUnit = i.DonViTinhCoBan,
             minimumStock = i.TonToiThieu,
-            batches = i.TonKhos.Where(s => s.MaKho == DefaultWarehouseId && s.SoLuongTon > 0 &&
-                (!s.ChiTietNhapKho.HanSuDung.HasValue || s.ChiTietNhapKho.HanSuDung.Value >= today))
+            batches = i.TonKhos.Where(s => s.MaKho == targetWarehouseId && s.SoLuongTon > 0)
                 .OrderBy(s => s.ChiTietNhapKho.HanSuDung)
-                .Select(s => new { stockId = s.Id, batchNumber = s.ChiTietNhapKho.SoLo,
-                    expiryDate = s.ChiTietNhapKho.HanSuDung, quantity = s.SoLuongTon })
+                .Select(s => new
+                {
+                    stockId = s.Id,
+                    batchNumber = s.ChiTietNhapKho.SoLo,
+                    expiryDate = s.ChiTietNhapKho.HanSuDung,
+                    quantity = s.SoLuongTon
+                })
         }).ToListAsync();
 
+        // 3. Tính tổng tồn kho và trạng thái cho từng mặt hàng
         var allItems = rows.Select(x =>
         {
             var batchList = x.batches.Select(b => new
@@ -130,29 +155,73 @@ public sealed partial class KhoService
             }).ToList();
 
             var totalStock = batchList.Sum(b => b.quantity);
+            var isLowStock = totalStock > 0 && totalStock <= x.minimumStock;
+            var isOutOfStock = totalStock <= 0;
+
             return new
             {
                 x.itemId,
                 x.itemCode,
                 x.itemName,
+                x.itemType,
                 x.baseUnit,
                 x.minimumStock,
                 totalStock,
                 batches = batchList,
-                isLowStock = totalStock <= x.minimumStock
+                isLowStock,
+                isOutOfStock
             };
-        }).Where(x => !lowStockOnly || x.isLowStock).ToList();
+        }).ToList();
 
-        var total = allItems.Count;
-        var pagedItems = allItems
+        // 4. Thống kê toàn bộ kho (trước khi phân trang) để hiển thị KPI chính xác
+        var totalCatalog = allItems.Count;
+        var inStockCount = allItems.Count(x => x.totalStock > 0);
+        var lowStockCount = allItems.Count(x => x.isLowStock);
+        var outOfStockCount = allItems.Count(x => x.isOutOfStock);
+
+        // 5. Áp dụng bộ lọc trạng thái tồn kho
+        var filteredItems = allItems.AsEnumerable();
+        if (lowStockOnly || string.Equals(stockStatus, "LOW_STOCK", StringComparison.OrdinalIgnoreCase))
+        {
+            filteredItems = filteredItems.Where(x => x.isLowStock);
+        }
+        else if (string.Equals(stockStatus, "IN_STOCK", StringComparison.OrdinalIgnoreCase))
+        {
+            filteredItems = filteredItems.Where(x => x.totalStock > 0);
+        }
+        else if (string.Equals(stockStatus, "OUT_OF_STOCK", StringComparison.OrdinalIgnoreCase))
+        {
+            filteredItems = filteredItems.Where(x => x.totalStock <= 0);
+        }
+
+        // 6. SẮP XẾP THÔNG MINH: ƯU TIÊN MẶT HÀNG CÒN TỒN KHO LÊN TRÊN ĐẦU
+        var sortedItems = filteredItems
+            .OrderByDescending(x => x.totalStock > 0)
+            .ThenByDescending(x => x.totalStock)
+            .ThenBy(x => x.itemCode)
+            .ToList();
+
+        var total = sortedItems.Count;
+        var pagedItems = sortedItems
             .Skip((Math.Max(1, pageIndex) - 1) * Math.Clamp(pageSize, 1, 100))
             .Take(Math.Clamp(pageSize, 1, 100))
             .ToList();
 
         if (total == 0)
-            logger.LogWarning("Inventory không có dữ liệu tồn kho. Keyword={Keyword}, LowStockOnly={LowStockOnly}",
-                keyword, lowStockOnly);
-        return InventoryResult.Ok(new { items = pagedItems, total });
+            logger.LogWarning("Inventory không có dữ liệu tồn kho. Keyword={Keyword}, LowStockOnly={LowStockOnly}, StockStatus={StockStatus}",
+                keyword, lowStockOnly, stockStatus);
+
+        return InventoryResult.Ok(new
+        {
+            items = pagedItems,
+            total,
+            totalCatalog,
+            inStockCount,
+            lowStockCount,
+            outOfStockCount,
+            pageIndex,
+            pageSize
+        });
     }
 
         public async Task<InventoryResult> Alerts(int expiringWithinDays = 60)

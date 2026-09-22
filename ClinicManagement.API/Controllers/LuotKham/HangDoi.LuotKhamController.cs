@@ -1,12 +1,16 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ClinicManagement.Application.Features.LuotKham.Queries;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public partial class LuotKhamController : BaseController
     {
         [HttpGet("hang-doi")]
@@ -15,16 +19,18 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int pageIndex = 1,
             [FromQuery] int pageSize = 1000)
         {
-            // Nếu không truyền maBacSi, lấy của chính mình
-            int bacSiId = maBacSi ?? CurrentUserId;
+            // Nếu không truyền maBacSi hoặc truyền <= 0, lấy của chính mình (CurrentUserId)
+            int bacSiId = (maBacSi.HasValue && maBacSi.Value > 0) ? maBacSi.Value : CurrentUserId;
+            
+            bool isAdmin = CurrentUserRoles.Any(r => r.Contains("ADMIN", StringComparison.OrdinalIgnoreCase));
 
             // Nếu là admin và có truyền maBacSi khác, cho phép
-            if (maBacSi.HasValue && IsInRole("Admin"))
+            if (maBacSi.HasValue && maBacSi.Value > 0 && isAdmin)
             {
                 bacSiId = maBacSi.Value;
             }
             // Nếu không phải admin, chỉ được xem hàng đợi của mình
-            else if (!IsInRole("Admin") && maBacSi.HasValue && maBacSi.Value != CurrentUserId)
+            else if (!isAdmin && maBacSi.HasValue && maBacSi.Value > 0 && maBacSi.Value != CurrentUserId)
             {
                 return Failure("Bạn không có quyền xem hàng đợi của bác sĩ khác", 403);
             }
@@ -35,7 +41,7 @@ namespace ClinicManagement.API.Controllers
 
             Console.WriteLine($"maBacSi = {maBacSi}, pageIndex = {pageIndex}, pageSize = {pageSize}");
 
-            var query = new GetHangDoiQuery
+            var query = new LayHangDoiQuery
             {
                 MaBacSi = bacSiId,
                 PageIndex = pageIndex,
@@ -53,9 +59,11 @@ namespace ClinicManagement.API.Controllers
         {
             // Xác định maBacSi: nếu không truyền, lấy từ token
             int bacSiId = maBacSi > 0 ? maBacSi : CurrentUserId;
+            
+            bool isAdmin = CurrentUserRoles.Any(r => r.Contains("ADMIN", StringComparison.OrdinalIgnoreCase));
 
             // Nếu không phải admin và yêu cầu xem bác sĩ khác -> 403
-            if (maBacSi > 0 && maBacSi != CurrentUserId && !IsInRole("Admin"))
+            if (maBacSi > 0 && maBacSi != CurrentUserId && !isAdmin)
             {
                 return Failure("Bạn không có quyền xem hàng đợi của bác sĩ khác", 403);
             }
@@ -65,7 +73,7 @@ namespace ClinicManagement.API.Controllers
             if (pageSize < 1) pageSize = 1000;
             if (pageSize > 2000) pageSize = 2000;
 
-            var query = new GetHangDoiExtendedQuery
+            var query = new LayHangDoiMoRongQuery
             {
                 MaBacSi = bacSiId,
                 PageIndex = pageIndex,

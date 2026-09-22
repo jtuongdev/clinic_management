@@ -27,9 +27,12 @@ public interface IKhoService
     Task<InventoryResult> CreateNhaCungCap(NhaCungCapRequest request);
     Task<InventoryResult> UpdateNhaCungCap(int id, NhaCungCapRequest request);
     Task<InventoryResult> ToggleNhaCungCap(int id);
-    Task<InventoryResult> Stock(string? keyword, bool lowStockOnly = false, int pageIndex = 1, int pageSize = 20);
+    Task<InventoryResult> Stock(string? keyword, bool lowStockOnly = false, int pageIndex = 1, int pageSize = 20, int? khoId = null, string? stockStatus = null);
     Task<InventoryResult> Alerts(int expiringWithinDays = 60);
     Task<InventoryResult> Import(ImportRequest request);
+    Task<InventoryResult> GetPendingPurchaseOrders(int? supplierId);
+    Task<InventoryResult> GetPurchaseOrderForImport(int id);
+    Task<InventoryResult> CreateImportFromPo(CreateImportFromPoRequest request);
     Task<InventoryResult> ImportReceipts(
         string? keyword,
         TrangThaiPhieuNhap? status,
@@ -38,11 +41,13 @@ public interface IKhoService
         int pageIndex = 1,
         int pageSize = 20);
     Task<InventoryResult> ApproveImport(int id);
+    Task<InventoryResult> UpdateImport(int id, ImportRequest request);
+    Task<InventoryResult> CancelImport(int id, string? reason);
     Task<InventoryResult> PendingPrescriptions(int pageIndex = 1, int pageSize = 20);
     Task<InventoryResult> DispensedPrescriptions(string? keyword, DateTime? fromDate, DateTime? toDate, int pageIndex = 1, int pageSize = 20);
     Task<InventoryResult> Dispense(int prescriptionId, DispenseRequest request);
     Task<InventoryResult> PrescriptionPrintData(int prescriptionId);
-    Task<InventoryResult> Retail(ExportRequest request);
+    Task<InventoryResult> PreviewFefo(int prescriptionId);
     Task<InventoryResult> InternalUse(ExportRequest request);
     Task<InventoryResult> ReturnToSupplier(StockMutationRequest request);
     Task<InventoryResult> WriteOff(StockMutationRequest request);
@@ -58,4 +63,5 @@ public interface IKhoService
 public interface IInventorySettings
 {
     int DefaultWarehouseId { get; }
+    bool RequirePaymentBeforeDispense { get; }
 }

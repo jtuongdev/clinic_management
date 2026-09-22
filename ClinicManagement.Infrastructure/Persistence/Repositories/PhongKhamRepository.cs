@@ -17,7 +17,9 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         {
             return await _context.PhongKhams
                 .AsNoTracking()
-                .Where(p => p.MaKhoa == maKhoa && p.TrangThai == TrangThaiContract.HoatDong && !p.IsDeleted)
+                .Where(p => p.MaKhoa == maKhoa 
+                    && (p.TrangThai == "HOAT_DONG" || p.TrangThai == "HoatDong" || p.TrangThai == "Hoạt động") 
+                    && !p.IsDeleted)
                 .ToListAsync();
         }
 
@@ -53,7 +55,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         {
             var query = _context.PhongKhams
                 .AsNoTracking()
-                .Where(p => p.TrangThai == "HoatDong" && !p.IsDeleted);
+                .Where(p => (p.TrangThai == "HOAT_DONG" || p.TrangThai == "HoatDong" || p.TrangThai == "Hoạt động") && !p.IsDeleted);
 
             if (maKhoa.HasValue)
                 query = query.Where(p => p.MaKhoa == maKhoa.Value);

@@ -1,3 +1,4 @@
+using ClinicManagement.API.Authorization;
 using ClinicManagement.Application.DTOs.Kho;
 using ClinicManagement.Application.Features.Kho.Queries.DanhSachNhaCungCap;
 using ClinicManagement.Application.Features.Kho.Commands.TaoNhaCungCap;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers;
 
+[ClinicalAuthorize("inventory", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
 public partial class InventoryController
 {
     [HttpGet("suppliers")]

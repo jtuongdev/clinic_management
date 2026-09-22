@@ -38,6 +38,9 @@ namespace ClinicManagement.Domain.Repositories
         Task<int> RestoreCancelledLeaveAsync(int maNhanVien, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
         Task AddAdjustmentAsync(LichLamViecDieuChinh adjustment, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<LichLamViecDieuChinh>> GetAdjustmentsAsync(int scheduleId, CancellationToken cancellationToken = default);
+        Task<int?> GetEmployeeDepartmentIdAsync(int maNhanVien, DateTime? date = null, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<LichLamViecCoDinh>> GetActiveFixedSchedulesAsync(int? maNhanVien = null, int? maKhoa = null, CancellationToken cancellationToken = default);
+        Task<List<LichLamViecCoDinh>> GetFixedSchedulesByEmployeeAsync(int maNhanVien, bool track = false, CancellationToken cancellationToken = default);
         IUnitOfWork UnitOfWork { get; }
     }
 }

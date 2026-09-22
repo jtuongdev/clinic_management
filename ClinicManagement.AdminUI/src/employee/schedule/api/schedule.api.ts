@@ -1,6 +1,15 @@
 import { api } from '../../../shared/api/axios.api';
 import type { ApiResponse } from '../../../shared/types/common.types';
-import type { CreateFixedScheduleRequest, CreateScheduleRequest, FixedSchedule, Schedule, UpdateScheduleRequest } from '../types/schedule.types';
+import type {
+  CreateFixedScheduleRequest,
+  CreateScheduleRequest,
+  FixedSchedule,
+  GenerateMonthlyScheduleRequest,
+  GenerateMonthlyScheduleResult,
+  Schedule,
+  SetFixedScheduleRequest,
+  UpdateScheduleRequest,
+} from '../types/schedule.types';
 
 export const scheduleApi = {
   getStatusCatalog: () => api.get<ApiResponse<StatusCatalog>>('/EnumCatalog/schedule-statuses'),
@@ -26,18 +35,38 @@ export const scheduleApi = {
   updateFixed: (id: number, data: CreateFixedScheduleRequest) =>
     api.put<ApiResponse<FixedSchedule>>(`/LichLamViec/fixed/${id}`, data),
   removeFixed: (id: number) => api.delete<ApiResponse<null>>(`/LichLamViec/fixed/${id}`),
+  setFixedSchedule: (data: SetFixedScheduleRequest) =>
+    api.post<ApiResponse<FixedSchedule[]>>('/LichLamViec/fixed/set', data),
+  generateMonthlySchedule: (data: GenerateMonthlyScheduleRequest) =>
+    api.post<ApiResponse<GenerateMonthlyScheduleResult>>('/LichLamViec/generate-monthly', data),
   generate: (params: { tuNgay: string; denNgay: string; maKhoa?: number }) =>
     api.post<ApiResponse<number>>('/LichLamViec/generate', null, { params }),
   previewGenerate: (params: { tuNgay: string; denNgay: string; maKhoa?: number }) =>
     api.post<ApiResponse<GenerateSchedulePreview>>('/LichLamViec/preview-generate', null, { params }),
-  getAttendance: (params: { fromDate: string; toDate: string; maNhanVien?: number }) =>
+  getAttendance: (params: { fromDate: string; toDate: string; maNhanVien?: number; maKhoa?: number }) =>
     api.get<ApiResponse<Attendance[]>>('/ChamCong', { params }),
   getKpiSummary: (params: { fromDate: string; toDate: string; maKhoa?: number; maNhanVien?: number }) =>
     api.get<ApiResponse<AttendanceKpiSummary>>('/ChamCong/kpi-summary', { params }),
-  checkIn: (maLichLamViec: number) =>
-    api.post<ApiResponse<Attendance>>('/ChamCong/check-in', { maLichLamViec }),
-  checkOut: (maLichLamViec: number) =>
-    api.post<ApiResponse<Attendance>>('/ChamCong/check-out', { maLichLamViec }),
+  checkIn: (data?: { maNhanVien?: number; thoiGianQuet?: string; ghiChu?: string } | number) => {
+    const payload = typeof data === 'number'
+      ? { maNhanVien: data }
+      : {
+          maNhanVien: data?.maNhanVien,
+          thoiGianQuet: data?.thoiGianQuet,
+          ghiChu: data?.ghiChu,
+        };
+    return api.post<ApiResponse<Attendance>>('/ChamCong/check-in', payload);
+  },
+  checkOut: (data?: { maNhanVien?: number; thoiGianQuet?: string; ghiChu?: string } | number) => {
+    const payload = typeof data === 'number'
+      ? { maNhanVien: data }
+      : {
+          maNhanVien: data?.maNhanVien,
+          thoiGianQuet: data?.thoiGianQuet,
+          ghiChu: data?.ghiChu,
+        };
+    return api.post<ApiResponse<Attendance>>('/ChamCong/check-out', payload);
+  },
   finalizeAbsent: () =>
     api.post<ApiResponse<number>>('/ChamCong/finalize-absent'),
   getAttendanceAdjustments: (params?: { fromDate?: string; toDate?: string; status?: string }) =>
@@ -94,11 +123,20 @@ export interface Shift { id: number; tenCa: string; thoiGianBatDau: string; thoi
 export interface Attendance {
   id: number;
   maLichLamViec?: number;
+  maNhanVien?: number;
+  tenNhanVien?: string;
+  tenCa?: string;
+  thoiGianBatDau?: string;
+  thoiGianKetThuc?: string;
   checkIn?: string;
   checkOut?: string;
   gioLamThucTe: number;
   phutDiMuon: number;
   phutVeSom: number;
+  ngayChamCong?: string;
+  maKhoa?: number;
+  tenKhoa?: string;
+  chucDanh?: string;
   trangThai: 'CHUA_CHAM_CONG' | 'DI_DUNG_GIO' | 'DI_MUON' | 'VE_SOM' | 'DI_MUON_VE_SOM' | 'NGHI_PHEP' | 'VANG_MAT' | 'THIEU_CHECK_OUT' | 'CHO_XAC_NHAN';
 }
 export interface AttendanceKpiSummary {

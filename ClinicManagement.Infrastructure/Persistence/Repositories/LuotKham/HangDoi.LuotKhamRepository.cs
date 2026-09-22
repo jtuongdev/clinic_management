@@ -36,7 +36,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             .Include(l => l.BacSi)
             .Where(l => !l.IsDeleted
                 && l.MaBacSi == maBacSi
-                && (l.TrangThai == TrangThaiLuotKham.CHO_KHAM || l.TrangThai == TrangThaiLuotKham.DANG_KHAM))
+                && (l.TrangThai == TrangThaiLuotKham.CHO_KHAM || l.TrangThai == TrangThaiLuotKham.DANG_KHAM || l.TrangThai == TrangThaiLuotKham.CHO_CLS))
             .OrderBy(l => l.SoThuTu ?? int.MaxValue)
             .ThenBy(l => l.NgayKham);
 

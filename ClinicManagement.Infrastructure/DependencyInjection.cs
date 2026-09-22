@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ClinicManagement.Domain.Repositories;
+using ClinicManagement.Domain.Repositories.System;
 using ClinicManagement.Domain.Common;
 using ClinicManagement.Infrastructure.Persistence;
 using ClinicManagement.Infrastructure.Persistence.Repositories;
+using ClinicManagement.Infrastructure.Persistence.Repositories.System;
 using ClinicManagement.Application.Common.Interfaces;
 using ClinicManagement.Application.Features.Kho;
 using ClinicManagement.Infrastructure.Identity.Services;
@@ -25,6 +27,12 @@ namespace ClinicManagement.Infrastructure
             services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ClinicDbContext>());
             services.AddScoped<INhanVienRepository, NhanVienRepository>();
             services.AddScoped<IBenhNhanRepository, BenhNhanRepository>();
+            services.AddScoped<INhatKyHoSoBenhAnRepository, NhatKyHoSoBenhAnRepository>();
+            services.AddScoped<ICauHinhTichHopRepository, CauHinhTichHopRepository>();
+            services.AddScoped<IClinicalAccessRepository, ClinicalAccessRepository>();
+            services.AddScoped<IMaTranPhanQuyenRepository, MaTranPhanQuyenRepository>();
+            services.AddScoped<IClinicalDrugSafetyRepository, ClinicalDrugSafetyRepository>();
+            services.AddScoped<ITokenLamMoiRepository, TokenLamMoiRepository>();
             
             services.AddScoped<ICoSoRepository, CoSoRepository>();
             services.AddScoped<IKhoaRepository, KhoaRepository>();
@@ -51,6 +59,9 @@ namespace ClinicManagement.Infrastructure
         {
             public int DefaultWarehouseId =>
                 int.TryParse(configuration["Inventory:DefaultWarehouseId"], out var id) ? id : 1;
+
+            public bool RequirePaymentBeforeDispense =>
+                !bool.TryParse(configuration["Inventory:RequirePaymentBeforeDispense"], out var req) || req;
         }
     }
 }

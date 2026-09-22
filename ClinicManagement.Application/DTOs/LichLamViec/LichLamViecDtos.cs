@@ -55,10 +55,38 @@ namespace ClinicManagement.Application.DTOs.LichLamViec
         public int? MaPhongKham { get; set; }
         public string TenPhongKham { get; set; } = string.Empty;
         public DayOfWeek ThuTrongTuan { get; set; }
+        public bool IsActive { get; set; } = true;
         public DateTime TuNgay { get; set; }
         public DateTime? DenNgay { get; set; }
         public string GhiChu { get; set; } = string.Empty;
     }
+
+    public sealed record FixedShiftItemDto(
+        DayOfWeek ThuTrongTuan,
+        int MaCaTruc,
+        int? MaPhongKham
+    );
+
+    public sealed record SetFixedScheduleRequest(
+        int MaNhanVien,
+        List<FixedShiftItemDto> Shifts
+    );
+
+    public sealed record GenerateMonthlyScheduleRequest(
+        int Thang,
+        int Nam,
+        int? MaKhoa = null,
+        int? MaNhanVien = null
+    );
+
+    public sealed record GenerateMonthlyScheduleResult(
+        int Thang,
+        int Nam,
+        int TotalDays,
+        int TotalSchedulesGenerated,
+        int TotalSchedulesSkipped,
+        int TotalEmployeesScheduled
+    );
 
     public class CreateLichLamViecCoDinhRequest
     {
@@ -67,6 +95,7 @@ namespace ClinicManagement.Application.DTOs.LichLamViec
         public int MaCaTruc { get; set; }
         public int? MaPhongKham { get; set; }
         public DayOfWeek ThuTrongTuan { get; set; }
+        public bool IsActive { get; set; } = true;
         public DateTime TuNgay { get; set; }
         public DateTime? DenNgay { get; set; }
         public string GhiChu { get; set; } = string.Empty;

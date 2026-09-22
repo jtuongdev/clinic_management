@@ -21,8 +21,10 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             int id, CancellationToken cancellationToken = default)
             => _context.LuotKhams
                 .Include(l => l.HoaDons)
+                .Include(l => l.ChanDoans)
                 .Include(l => l.DonThuocs)
                     .ThenInclude(d => d.ChiTietDonThuocs)
+                        .ThenInclude(ct => ct.Item)
                 .Include(l => l.ChiDinhDichVus)
                     .ThenInclude(c => c.DanhMucDichVu)
                 .SingleOrDefaultAsync(l => l.Id == id && !l.IsDeleted, cancellationToken);
@@ -522,5 +524,22 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             return (items, totalCount);
         }
 
+        public async Task<ClinicManagement.Domain.Service.ChiDinhDichVu?> GetChiDinhDichVuByIdAsync(int chiDinhId, CancellationToken cancellationToken = default)
+        {
+            return await _context.ChiDinhDichVus
+                .Include(cd => cd.LuotKham)
+                    .ThenInclude(lk => lk.BenhNhan)
+                        .ThenInclude(bn => bn.BenhNhanCoSo)
+                .Include(cd => cd.LuotKham)
+                    .ThenInclude(lk => lk.Khoa)
+                .Include(cd => cd.LuotKham)
+                    .ThenInclude(lk => lk.ChanDoans)
+                        .ThenInclude(cd => cd.ICD)
+                .Include(cd => cd.DanhMucDichVu)
+                .Include(cd => cd.BacSiChiDinh)
+                .Include(cd => cd.NguoiThucHien)
+                .Include(cd => cd.ChiTietKetQuaXetNghiems)
+                .FirstOrDefaultAsync(cd => cd.Id == chiDinhId && !cd.IsDeleted, cancellationToken);
+        }
     } 
 }

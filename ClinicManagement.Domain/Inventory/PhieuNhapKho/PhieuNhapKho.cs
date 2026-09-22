@@ -17,6 +17,7 @@ namespace ClinicManagement.Domain.Inventory
         public decimal TongTien { get; set; }
         public TrangThaiPhieuNhap TrangThai { get; set; }
         public int MaNguoiNhap { get; set; }
+        public int? MaDonDatHang { get; set; }
         public string GhiChu { get; set; } = string.Empty;
         public int? CreatedBy { get; set; }
 
@@ -24,6 +25,7 @@ namespace ClinicManagement.Domain.Inventory
         public virtual Kho Kho { get; set; } = null!;
         public virtual NhaCungCap NhaCungCap { get; set; } = null!;
         public virtual NhanVien NguoiNhap { get; set; } = null!;
+        public virtual DonDatHang? DonDatHang { get; set; }
         public virtual ICollection<ChiTietNhapKho> ChiTietNhapKhos { get; set; }
 
         public PhieuNhapKho()

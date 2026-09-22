@@ -9,11 +9,13 @@ namespace ClinicManagement.Domain.Repositories
         Task<ChamCong?> GetByScheduleIdAsync(int scheduleId, CancellationToken cancellationToken = default);
         Task<ChamCong?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<LichLamViec?> GetScheduleAsync(int scheduleId, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<LichLamViec>> GetCandidateSchedulesAsync(int employeeId, DateTime scanTime, CancellationToken cancellationToken = default);
+        Task<ChamCong?> GetOpenAttendanceAsync(int employeeId, DateTime scanTime, CancellationToken cancellationToken = default);
         Task<bool> HasApprovedLeaveAsync(int employeeId, DateTime date, CancellationToken cancellationToken = default);
         Task<int> MarkApprovedLeaveAsync(int employeeId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
         Task<int> RestoreCancelledLeaveAsync(int employeeId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
         Task<int> FinalizeAbsentAsync(DateTime now, CancellationToken cancellationToken = default);
-        Task<IReadOnlyList<ChamCong>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, int? employeeId = null, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<ChamCong>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, int? employeeId = null, int? maKhoa = null, CancellationToken cancellationToken = default);
         Task<int> CountEmployeesInPeriodAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
         Task AddAsync(ChamCong entity, CancellationToken cancellationToken = default);
         void Update(ChamCong entity);

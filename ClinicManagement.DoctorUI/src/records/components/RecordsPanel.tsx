@@ -1,59 +1,152 @@
-import React, { useState } from 'react';
-import'../../styles/components/RecordsPanel.css'
-
-// Dữ liệu mock
-const mockRecords = [
-  { id: 1, name: 'Nguyễn Thị An', code: 'BN-10234', avatar: 'NA', gender: 'Nữ', age: 39, active: true, updated: 'hôm nay' },
-  { id: 2, name: 'Trần Văn Bình', code: 'BN-10789', avatar: 'TB', gender: 'Nam', age: 46, active: false, updated: '2 ngày trước' },
-  { id: 3, name: 'Lê Thị Hoa', code: 'BN-11234', avatar: 'LH', gender: 'Nữ', age: 32, active: false, updated: '1 tuần trước' },
-  { id: 4, name: 'Phạm Văn Hùng', code: 'BN-09876', avatar: 'PH', gender: 'Nam', age: 59, active: false, updated: '2 tuần trước' },
-  { id: 5, name: 'Đỗ Minh Tâm', code: 'BN-12121', avatar: 'DT', gender: 'Nữ', age: 22, active: false, updated: '3 tuần trước' },
-];
+import React, { useState, useEffect, useCallback } from 'react';
+import '../../styles/components/RecordsPanel.css';
+import { 
+  patientRecordsApi, 
+  type BenhNhanRecordDto, 
+  type PatientVisitHistoryDto 
+} from '../api/patientRecords.api';
 
 const RecordsPanel: React.FC = () => {
   const [search, setSearch] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState(mockRecords[0]);
+  const [patients, setPatients] = useState<BenhNhanRecordDto[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [patientDetail, setPatientDetail] = useState<BenhNhanRecordDto | null>(null);
+  const [visits, setVisits] = useState<PatientVisitHistoryDto[]>([]);
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isLoadingList, setIsLoadingList] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
-  // TODO: Gọi API lấy danh sách bệnh nhân
+  // Tải danh sách bệnh nhân từ backend
+  const fetchPatients = useCallback(async (keyword?: string) => {
+    setIsLoadingList(true);
+    try {
+      const res = await patientRecordsApi.getPaged({ keyword, pageSize: 25 });
+      const items = res.data?.data?.items || [];
+      setPatients(items);
+      setTotalCount(res.data?.data?.totalCount || 0);
 
-  const filteredRecords = mockRecords.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.code.toLowerCase().includes(search.toLowerCase())
-  );
+      if (items.length > 0 && !selectedPatientId) {
+        setSelectedPatientId(items[0].id);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách bệnh nhân:', err);
+    } finally {
+      setIsLoadingList(false);
+    }
+  }, [selectedPatientId]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPatients(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, fetchPatients]);
+
+  // Tải chi tiết bệnh nhân, lịch sử khám, đơn thuốc khi chọn bệnh nhân
+  useEffect(() => {
+    if (!selectedPatientId) return;
+
+    let isMounted = true;
+    setIsLoadingDetail(true);
+
+    Promise.allSettled([
+      patientRecordsApi.getProfile(selectedPatientId),
+      patientRecordsApi.getVisits(selectedPatientId, { pageSize: 15 }),
+      patientRecordsApi.getPrescriptions(selectedPatientId, { pageSize: 10 }),
+    ]).then(([profRes, visRes, rxRes]) => {
+      if (!isMounted) return;
+
+      if (profRes.status === 'fulfilled' && profRes.value.data?.data) {
+        setPatientDetail(profRes.value.data.data);
+      }
+      if (visRes.status === 'fulfilled' && visRes.value.data?.data) {
+        setVisits(visRes.value.data.data.items || []);
+      }
+      if (rxRes.status === 'fulfilled' && rxRes.value.data?.data) {
+        setPrescriptions(rxRes.value.data.data.items || rxRes.value.data.data || []);
+      }
+      setIsLoadingDetail(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedPatientId]);
+
+  const selectedPatient = patients.find(p => p.id === selectedPatientId) || patientDetail;
+
+  const calculateAge = (dobString?: string) => {
+    if (!dobString) return '--';
+    const dob = new Date(dobString);
+    if (isNaN(dob.getTime())) return '--';
+    const ageDifMs = Date.now() - dob.getTime();
+    const ageDate = new Date(ageDifMs);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  };
+
+  const getInitials = (fullName?: string) => {
+    if (!fullName) return 'BN';
+    const parts = fullName.trim().split(' ');
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const activeInsurance = patientDetail?.baoHiems?.find(b => b.isValid) || patientDetail?.baoHiems?.[0];
+  const allergies = patientDetail?.tienSuBenhs?.filter(t => t.loaiTienSu?.toLowerCase().includes('dị ứng') || t.loaiTienSu?.toLowerCase().includes('diung')) || [];
+  const latestVisit = visits[0];
 
   return (
     <div className="panel-records active">
       <aside className="records-sidebar">
         <div className="records-sidebar-head">
           <h3><i className="fa-solid fa-users"></i> Hồ sơ bệnh án</h3>
-          <span className="count">12 hồ sơ</span>
+          <span className="count">{totalCount} hồ sơ</span>
         </div>
         <div className="records-sidebar-search">
           <div className="search">
             <i className="fa-solid fa-magnifying-glass"></i>
             <input
-              placeholder="Tìm bệnh nhân..."
+              placeholder="Tìm theo tên, mã BN, CCCD, SĐT..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
         <div className="records-patient-list">
-          {filteredRecords.map(p => (
-            <div
-              key={p.id}
-              className={`records-patient-item ${selectedPatient?.id === p.id ? 'active' : ''}`}
-              onClick={() => setSelectedPatient(p)}
-            >
-              <div className="avatar-sm">{p.avatar}</div>
-              <div className="pbody">
-                <div className="pname">{p.name}</div>
-                <div className="pcode">{p.code} · {p.gender} · {p.age} tuổi</div>
-              </div>
-              {p.active && <span className="ptype">Đang mở</span>}
+          {isLoadingList && patients.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
+              <i className="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
             </div>
-          ))}
+          ) : patients.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+              Không tìm thấy hồ sơ phù hợp.
+            </div>
+          ) : (
+            patients.map(p => {
+              const age = calculateAge(p.ngaySinh);
+              const isSelected = selectedPatientId === p.id;
+              const genderLabel = p.gioiTinh === 'M' ? 'Nam' : p.gioiTinh === 'F' ? 'Nữ' : p.gioiTinh || 'Khác';
+
+              return (
+                <div
+                  key={p.id}
+                  className={`records-patient-item ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedPatientId(p.id)}
+                >
+                  <div className="avatar-sm">{getInitials(p.hoTen)}</div>
+                  <div className="pbody">
+                    <div className="pname">{p.hoTen}</div>
+                    <div className="pcode">{p.maBenhNhanNoiBo || `BN-${p.id}`} · {genderLabel} · {age} tuổi</div>
+                  </div>
+                  {p.trangThaiLuotKham && (
+                    <span className="ptype">{p.trangThaiLuotKham}</span>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </aside>
 
@@ -61,34 +154,33 @@ const RecordsPanel: React.FC = () => {
         <div className="records-content-head">
           <div className="title">
             <i className="fa-solid fa-file-medical"></i>
-            <h2>Bệnh án bệnh nhân</h2>
+            <h2>Hồ sơ bệnh án điện tử</h2>
+            {isLoadingDetail && <span style={{ fontSize: '13px', color: '#64748b', marginLeft: '12px' }}><i className="fa-solid fa-spinner fa-spin"></i> Đang đồng bộ...</span>}
           </div>
           <div className="actions">
-            <button className="btn"><i className="fa-solid fa-clock-rotate-left"></i> Lịch sử</button>
-            <button className="btn"><i className="fa-solid fa-print"></i> In bệnh án</button>
-            <button className="btn primary"><i className="fa-solid fa-download"></i> Xuất hồ sơ</button>
+            <button className="btn" onClick={() => window.print()}><i className="fa-solid fa-print"></i> In bệnh án</button>
+            <button className="btn primary" onClick={() => alert('Xuất tệp hồ sơ PDF chuẩn Bộ Y Tế')}><i className="fa-solid fa-download"></i> Xuất hồ sơ</button>
           </div>
         </div>
 
         <div className="records-tabs">
-          {['overview', 'personal', 'history', 'visits', 'diagnosis', 'documents'].map(tab => (
+          {['overview', 'personal', 'history', 'visits', 'prescriptions'].map(tab => (
             <button
               key={tab}
               className={`tab ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
             >
-              <i className={`fa-solid ${tab === 'overview' ? 'fa-file-lines' :
+              <i className={`fa-solid ${
+                tab === 'overview' ? 'fa-file-lines' :
                 tab === 'personal' ? 'fa-user' :
                 tab === 'history' ? 'fa-notes-medical' :
                 tab === 'visits' ? 'fa-stethoscope' :
-                tab === 'diagnosis' ? 'fa-disease' :
-                'fa-paperclip'}`}></i>
+                'fa-prescription-bottle-medical'}`}></i>
               {tab === 'overview' ? 'Tổng quan' :
                tab === 'personal' ? 'Hành chính' :
-               tab === 'history' ? 'Tiền sử' :
+               tab === 'history' ? 'Tiền sử & Dị ứng' :
                tab === 'visits' ? 'Lịch sử khám' :
-               tab === 'diagnosis' ? 'Chẩn đoán' :
-               'Tài liệu'}
+               'Đơn thuốc'}
             </button>
           ))}
         </div>
@@ -99,54 +191,64 @@ const RecordsPanel: React.FC = () => {
               <div className="grid-2col">
                 <div>
                   <div className="record-card">
-                    <div className="record-card-head"><h3><i className="fa-solid fa-circle-info"></i> Thông tin hồ sơ</h3><span className="badge green">Đang hoạt động</span></div>
+                    <div className="record-card-head">
+                      <h3><i className="fa-solid fa-circle-info"></i> Thông tin hồ sơ</h3>
+                      <span className="badge green">Đang hoạt động</span>
+                    </div>
                     <div className="record-card-body">
                       <div className="form-grid">
-                        <div className="field"><label>Mã bệnh nhân</label><input className="readonly" value={selectedPatient?.code || ''} readOnly /></div>
-                        <div className="field"><label>Họ và tên</label><input className="readonly" value={selectedPatient?.name || ''} readOnly /></div>
-                        <div className="field"><label>Ngày sinh</label><input className="readonly" value="15/08/1985" readOnly /></div>
-                        <div className="field"><label>Giới tính</label><input className="readonly" value={selectedPatient?.gender || ''} readOnly /></div>
-                        <div className="field"><label>Số điện thoại</label><input className="readonly" value="0909 123 456" readOnly /></div>
-                        <div className="field"><label>BHYT</label><input className="readonly" value="HS-1234567890" readOnly /></div>
-                        <div className="field"><label>Ngày cập nhật</label><input className="readonly" value="26/08/2026 20:15" readOnly /></div>
-                        <div className="field"><label>Bác sĩ phụ trách</label><input className="readonly" value="BS. Nguyễn Văn Tuấn" readOnly /></div>
+                        <div className="field"><label>Mã bệnh nhân</label><input className="readonly" value={selectedPatient?.maBenhNhanNoiBo || (selectedPatient ? `BN-${selectedPatient.id}` : '---')} readOnly /></div>
+                        <div className="field"><label>Họ và tên</label><input className="readonly" value={selectedPatient?.hoTen || '---'} readOnly /></div>
+                        <div className="field"><label>Ngày sinh</label><input className="readonly" value={selectedPatient?.ngaySinh ? new Date(selectedPatient.ngaySinh).toLocaleDateString('vi-VN') : '---'} readOnly /></div>
+                        <div className="field"><label>Giới tính</label><input className="readonly" value={selectedPatient?.gioiTinh === 'M' ? 'Nam' : selectedPatient?.gioiTinh === 'F' ? 'Nữ' : 'Khác'} readOnly /></div>
+                        <div className="field"><label>Số điện thoại</label><input className="readonly" value={selectedPatient?.dienThoai || '---'} readOnly /></div>
+                        <div className="field"><label>Số thẻ BHYT</label><input className="readonly" value={activeInsurance?.soThe || 'Không có'} readOnly /></div>
+                        <div className="field"><label>Cơ sở đăng ký</label><input className="readonly" value={selectedPatient?.tenKhoa || 'Bệnh viện Đa khoa'} readOnly /></div>
+                        <div className="field"><label>Số CCCD / CMND</label><input className="readonly" value={selectedPatient?.soCCCD || '---'} readOnly /></div>
                       </div>
                     </div>
                   </div>
 
                   <div className="record-card">
-                    <div className="record-card-head"><h3><i className="fa-solid fa-stethoscope"></i> Tóm tắt bệnh án</h3><span className="badge blue">Nội tổng quát</span></div>
-                    <div className="record-card-body">
-                      <div className="form-grid">
-                        <div className="field wide"><label>Chẩn đoán hiện tại</label><input value="Viêm phổi cộng đồng" /></div>
-                        <div className="field"><label>Mã ICD</label><input value="J18.9" /></div>
-                        <div className="field"><label>Mức độ</label><select><option selected>Trung bình</option><option>Nhẹ</option><option>Nặng</option></select></div>
-                        <div className="field full"><label>Tóm tắt diễn biến</label><textarea>Bệnh nhân ho khan, khó thở, sốt nhẹ. X-quang phổi có hình ảnh tổn thương phù hợp viêm phổi. Đã được chỉ định xét nghiệm và điều trị theo phác đồ.</textarea></div>
-                      </div>
+                    <div className="record-card-head">
+                      <h3><i className="fa-solid fa-stethoscope"></i> Lượt khám gần nhất</h3>
+                      <span className="badge blue">{latestVisit?.khoa || 'Chưa có'}</span>
                     </div>
-                  </div>
-
-                  <div className="record-card">
-                    <div className="record-card-head"><h3><i className="fa-solid fa-table-list"></i> Chẩn đoán đã ghi nhận</h3><span className="badge gray">3 chẩn đoán</span></div>
                     <div className="record-card-body">
-                      <table className="data-table">
-                        <thead><tr><th>Mã ICD</th><th>Chẩn đoán</th><th>Loại</th><th>Ngày ghi nhận</th><th>Bác sĩ</th></tr></thead>
-                        <tbody>
-                          <tr><td>J18.9</td><td>Viêm phổi cộng đồng</td><td><span className="badge green">Chính</span></td><td>26/08/2026</td><td>BS. Nguyễn Văn Tuấn</td></tr>
-                          <tr><td>R06.0</td><td>Khó thở</td><td><span className="badge blue">Phụ</span></td><td>26/08/2026</td><td>BS. Nguyễn Văn Tuấn</td></tr>
-                          <tr><td>R05.9</td><td>Ho, không đặc hiệu</td><td><span className="badge blue">Phụ</span></td><td>26/08/2026</td><td>BS. Nguyễn Văn Tuấn</td></tr>
-                        </tbody>
-                      </table>
+                      {latestVisit ? (
+                        <div className="form-grid">
+                          <div className="field wide"><label>Lý do khám</label><input className="readonly" value={latestVisit.lyDoKham || '---'} readOnly /></div>
+                          <div className="field"><label>Ngày khám</label><input className="readonly" value={new Date(latestVisit.ngayKham).toLocaleDateString('vi-VN')} readOnly /></div>
+                          <div className="field"><label>Bác sĩ điều trị</label><input className="readonly" value={latestVisit.bacSi || '---'} readOnly /></div>
+                          <div className="field full"><label>Phòng khám</label><input className="readonly" value={latestVisit.tenPhongKham || '---'} readOnly /></div>
+                        </div>
+                      ) : (
+                        <div style={{ color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>Chưa ghi nhận lượt khám nào.</div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div>
                   <div className="record-card">
-                    <div className="record-card-head"><h3><i className="fa-solid fa-triangle-exclamation"></i> Cảnh báo an toàn</h3></div>
+                    <div className="record-card-head"><h3><i className="fa-solid fa-triangle-exclamation"></i> Cảnh báo an toàn y tế</h3></div>
                     <div className="record-card-body">
-                      <div className="alert-box"><strong>Dị ứng:</strong> Penicillin. Không sử dụng thuốc thuộc nhóm dị ứng nếu chưa đánh giá lại.</div>
-                      <div className="alert-box" style={{borderColor: '#f2dfbf', background: '#fffaf1', color: '#96621c'}}><strong>BHYT:</strong> Cần kiểm tra thời hạn và quyền lợi trước khi hoàn tất hồ sơ.</div>
+                      {allergies.length > 0 ? (
+                        allergies.map(a => (
+                          <div key={a.id} className="alert-box" style={{ marginBottom: '8px' }}>
+                            <strong>Dị ứng: </strong> {a.ten} {a.ghiChu ? `(${a.ghiChu})` : ''}
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ color: '#16a34a', fontSize: '13px', padding: '8px', background: '#f0fdf4', borderRadius: '4px' }}>
+                          <i className="fa-solid fa-circle-check"></i> Chưa ghi nhận tiền sử dị ứng thuốc hay thực phẩm.
+                        </div>
+                      )}
+                      {activeInsurance && (
+                        <div className="alert-box" style={{ borderColor: '#bfdbfe', background: '#eff6ff', color: '#1e40af', marginTop: '8px' }}>
+                          <strong>BHYT:</strong> {activeInsurance.tenNhaCungCap} (Mức hưởng: {activeInsurance.mucHuong}%)
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -154,21 +256,10 @@ const RecordsPanel: React.FC = () => {
                     <div className="record-card-head"><h3><i className="fa-solid fa-chart-simple"></i> Chỉ số hồ sơ</h3></div>
                     <div className="record-card-body">
                       <div className="info-list">
-                        <div className="info-item"><span>Lần khám gần nhất</span><strong>26/08/2026</strong></div>
-                        <div className="info-item"><span>Tổng lượt khám</span><strong>08 lượt</strong></div>
-                        <div className="info-item"><span>Chẩn đoán hiện tại</span><strong>03</strong></div>
-                        <div className="info-item"><span>Đơn thuốc gần nhất</span><strong>26/08/2026</strong></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="record-card">
-                    <div className="record-card-head"><h3><i className="fa-solid fa-clock-rotate-left"></i> Hoạt động gần đây</h3></div>
-                    <div className="record-card-body">
-                      <div className="timeline">
-                        <div className="event"><div className="event-date">26/08/2026 · 20:15</div><div className="event-title">Cập nhật chẩn đoán</div><div className="event-desc">BS. Nguyễn Văn Tuấn ghi nhận viêm phổi cộng đồng.</div></div>
-                        <div className="event"><div className="event-date">26/08/2026 · 19:48</div><div className="event-title">Hoàn thành lượt khám</div><div className="event-desc">Lượt khám nội tổng quát được cập nhật.</div></div>
-                        <div className="event"><div className="event-date">12/07/2026</div><div className="event-title">Khám ngoại trú</div><div className="event-desc">Theo dõi bệnh hô hấp.</div></div>
+                        <div className="info-item"><span>Lần khám gần nhất</span><strong>{latestVisit ? new Date(latestVisit.ngayKham).toLocaleDateString('vi-VN') : 'Chưa có'}</strong></div>
+                        <div className="info-item"><span>Tổng lượt khám</span><strong>{visits.length} lượt</strong></div>
+                        <div className="info-item"><span>Tiền sử ghi nhận</span><strong>{patientDetail?.tienSuBenhs?.length || 0} mục</strong></div>
+                        <div className="info-item"><span>Đơn thuốc đã kê</span><strong>{prescriptions.length} đơn</strong></div>
                       </div>
                     </div>
                   </div>
@@ -180,19 +271,18 @@ const RecordsPanel: React.FC = () => {
           {activeTab === 'personal' && (
             <div className="tab-content active">
               <div className="record-card">
-                <div className="record-card-head"><h3><i className="fa-solid fa-user"></i> Thông tin hành chính bệnh nhân</h3><span className="badge blue">Chỉ xem</span></div>
+                <div className="record-card-head"><h3><i className="fa-solid fa-user"></i> Thông tin hành chính bệnh nhân</h3><span className="badge blue">Dữ liệu từ CSDL</span></div>
                 <div className="record-card-body">
                   <div className="form-grid">
-                    <div className="field wide"><label>Họ và tên</label><input value={selectedPatient?.name || ''} /></div>
-                    <div className="field"><label>Giới tính</label><select><option selected>Nữ</option><option>Nam</option></select></div>
-                    <div className="field"><label>Ngày sinh</label><input value="15/08/1985" /></div>
-                    <div className="field"><label>Số CCCD</label><input value="079185001234" /></div>
-                    <div className="field"><label>Số điện thoại</label><input value="0909 123 456" /></div>
-                    <div className="field wide"><label>Địa chỉ</label><input value="Ninh Kiều, Cần Thơ" /></div>
-                    <div className="field"><label>Người liên hệ</label><input value="Trần Văn B" /></div>
-                    <div className="field"><label>Quan hệ</label><input value="Chồng" /></div>
-                    <div className="field"><label>Điện thoại liên hệ</label><input value="0918 456 789" /></div>
-                    <div className="field"><label>Nghề nghiệp</label><input value="Nhân viên văn phòng" /></div>
+                    <div className="field wide"><label>Họ và tên</label><input className="readonly" value={selectedPatient?.hoTen || ''} readOnly /></div>
+                    <div className="field"><label>Giới tính</label><input className="readonly" value={selectedPatient?.gioiTinh === 'M' ? 'Nam' : selectedPatient?.gioiTinh === 'F' ? 'Nữ' : 'Khác'} readOnly /></div>
+                    <div className="field"><label>Ngày sinh</label><input className="readonly" value={selectedPatient?.ngaySinh ? new Date(selectedPatient.ngaySinh).toLocaleDateString('vi-VN') : ''} readOnly /></div>
+                    <div className="field"><label>Số CCCD / Định danh</label><input className="readonly" value={selectedPatient?.soCCCD || ''} readOnly /></div>
+                    <div className="field"><label>Số điện thoại</label><input className="readonly" value={selectedPatient?.dienThoai || ''} readOnly /></div>
+                    <div className="field"><label>Email</label><input className="readonly" value={selectedPatient?.email || '---'} readOnly /></div>
+                    <div className="field wide"><label>Địa chỉ thường trú</label><input className="readonly" value={selectedPatient?.diaChi || '---'} readOnly /></div>
+                    <div className="field"><label>Người liên hệ khẩn cấp</label><input className="readonly" value={selectedPatient?.nguoiLienHeTen || '---'} readOnly /></div>
+                    <div className="field"><label>Điện thoại người liên hệ</label><input className="readonly" value={selectedPatient?.nguoiLienHeDienThoai || '---'} readOnly /></div>
                   </div>
                 </div>
               </div>
@@ -203,23 +293,46 @@ const RecordsPanel: React.FC = () => {
             <div className="tab-content active">
               <div className="grid-2col">
                 <div className="record-card">
-                  <div className="record-card-head"><h3><i className="fa-solid fa-notes-medical"></i> Tiền sử bệnh</h3><span className="badge blue">Đã khai thác</span></div>
+                  <div className="record-card-head"><h3><i className="fa-solid fa-notes-medical"></i> Tiền sử bệnh & Dị ứng</h3><span className="badge blue">{patientDetail?.tienSuBenhs?.length || 0} mục</span></div>
                   <div className="record-card-body">
-                    <table className="data-table">
-                      <thead><tr><th>Nhóm</th><th>Nội dung</th><th>Ghi chú</th></tr></thead>
-                      <tbody>
-                        <tr><td>Bản thân</td><td>Viêm dạ dày</td><td>Điều trị năm 2024</td></tr>
-                        <tr><td>Dị ứng</td><td>Penicillin</td><td><span className="badge red">Cảnh báo</span></td></tr>
-                        <tr><td>Phẫu thuật</td><td>Chưa ghi nhận</td><td>—</td></tr>
-                        <tr><td>Thuốc đang dùng</td><td>Không thường xuyên</td><td>—</td></tr>
-                      </tbody>
-                    </table>
+                    {(!patientDetail?.tienSuBenhs || patientDetail.tienSuBenhs.length === 0) ? (
+                      <div style={{ color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>Chưa ghi nhận tiền sử bệnh.</div>
+                    ) : (
+                      <table className="data-table">
+                        <thead><tr><th>Phân loại</th><th>Tên bệnh / Tác nhân</th><th>Ghi chú</th><th>Ngày ghi</th></tr></thead>
+                        <tbody>
+                          {patientDetail.tienSuBenhs.map(t => (
+                            <tr key={t.id}>
+                              <td><span className="badge gray">{t.loaiTienSu}</span></td>
+                              <td><strong>{t.ten}</strong></td>
+                              <td>{t.ghiChu || '—'}</td>
+                              <td>{t.ngayGhiNhan ? new Date(t.ngayGhiNhan).toLocaleDateString('vi-VN') : '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
                 <div className="record-card">
-                  <div className="record-card-head"><h3><i className="fa-solid fa-people-group"></i> Tiền sử gia đình</h3></div>
+                  <div className="record-card-head"><h3><i className="fa-solid fa-shield-halved"></i> Thông tin Bảo hiểm Y tế</h3></div>
                   <div className="record-card-body">
-                    <textarea style={{width: '100%', border: '1px solid #d9e2e8', borderRadius: '7px', padding: '9px 10px', minHeight: '76px', resize: 'vertical', fontSize: '12px'}}>Chưa ghi nhận bệnh lý di truyền hoặc bệnh mạn tính đáng chú ý trong gia đình.</textarea>
+                    {(!patientDetail?.baoHiems || patientDetail.baoHiems.length === 0) ? (
+                      <div style={{ color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>Không có thông tin bảo hiểm y tế.</div>
+                    ) : (
+                      patientDetail.baoHiems.map(b => (
+                        <div key={b.id} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <strong>{b.tenNhaCungCap} ({b.loaiBaoHiem})</strong>
+                            <span className={`badge ${b.isValid ? 'green' : 'red'}`}>{b.isValid ? 'Còn hạn' : 'Hết hạn'}</span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>Số thẻ: <code>{b.soThe}</code> · Mức hưởng: {b.mucHuong}%</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                            Hiệu lực: {b.ngayBatDau ? new Date(b.ngayBatDau).toLocaleDateString('vi-VN') : '--'} – {b.ngayKetThuc ? new Date(b.ngayKetThuc).toLocaleDateString('vi-VN') : '--'}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -229,53 +342,59 @@ const RecordsPanel: React.FC = () => {
           {activeTab === 'visits' && (
             <div className="tab-content active">
               <div className="record-card">
-                <div className="record-card-head"><h3><i className="fa-solid fa-calendar-check"></i> Lịch sử các lượt khám</h3><button className="btn">Lọc thời gian</button></div>
+                <div className="record-card-head"><h3><i className="fa-solid fa-calendar-check"></i> Lịch sử các lượt khám</h3><span className="badge blue">{visits.length} lượt</span></div>
                 <div className="record-card-body">
-                  <table className="data-table">
-                    <thead><tr><th>Ngày khám</th><th>Khoa / Phòng</th><th>Chẩn đoán</th><th>Bác sĩ</th><th>Trạng thái</th><th></th></tr></thead>
-                    <tbody>
-                      <tr><td>26/08/2026</td><td>Nội / P03</td><td>Viêm phổi cộng đồng</td><td>Nguyễn Văn Tuấn</td><td><span className="badge green">Hoàn thành</span></td><td><button className="btn">Xem</button></td></tr>
-                      <tr><td>12/07/2026</td><td>Nội / P02</td><td>Ho</td><td>Trần Minh A</td><td><span className="badge green">Hoàn thành</span></td><td><button className="btn">Xem</button></td></tr>
-                      <tr><td>20/03/2026</td><td>Nội / P01</td><td>Viêm họng</td><td>Lê Văn B</td><td><span className="badge green">Hoàn thành</span></td><td><button className="btn">Xem</button></td></tr>
-                    </tbody>
-                  </table>
+                  {visits.length === 0 ? (
+                    <div style={{ color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>Bệnh nhân chưa có lượt khám nào được lưu trữ.</div>
+                  ) : (
+                    <table className="data-table">
+                      <thead><tr><th>Ngày khám</th><th>Khoa / Phòng</th><th>Lý do khám</th><th>Bác sĩ</th><th>Trạng thái</th></tr></thead>
+                      <tbody>
+                        {visits.map(v => (
+                          <tr key={v.id}>
+                            <td>{new Date(v.ngayKham).toLocaleDateString('vi-VN')}</td>
+                            <td><strong>{v.khoa}</strong> · {v.tenPhongKham}</td>
+                            <td>{v.lyDoKham || '---'}</td>
+                            <td>{v.bacSi} ({v.chuyenKhoaBacSi})</td>
+                            <td><span className={`badge ${v.trangThai === 'HOAN_THANH' ? 'green' : 'blue'}`}>{v.trangThai}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'diagnosis' && (
+          {activeTab === 'prescriptions' && (
             <div className="tab-content active">
               <div className="record-card">
-                <div className="record-card-head"><h3><i className="fa-solid fa-disease"></i> Lịch sử chẩn đoán</h3></div>
+                <div className="record-card-head"><h3><i className="fa-solid fa-prescription-bottle-medical"></i> Lịch sử đơn thuốc đã kê</h3></div>
                 <div className="record-card-body">
-                  <table className="data-table">
-                    <thead><tr><th>Mã ICD</th><th>Tên bệnh</th><th>Lần đầu ghi nhận</th><th>Lần gần nhất</th><th>Số lần</th><th>Trạng thái</th></tr></thead>
-                    <tbody>
-                      <tr><td>J18.9</td><td>Viêm phổi</td><td>26/08/2026</td><td>26/08/2026</td><td>1</td><td><span className="badge orange">Đang theo dõi</span></td></tr>
-                      <tr><td>R06.0</td><td>Khó thở</td><td>26/08/2026</td><td>26/08/2026</td><td>1</td><td><span className="badge gray">Triệu chứng</span></td></tr>
-                      <tr><td>K29.7</td><td>Viêm dạ dày</td><td>20/03/2024</td><td>20/03/2024</td><td>1</td><td><span className="badge blue">Tiền sử</span></td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'documents' && (
-            <div className="tab-content active">
-              <div className="record-card">
-                <div className="record-card-head"><h3><i className="fa-solid fa-paperclip"></i> Tài liệu bệnh án</h3><button className="btn primary"><i className="fa-solid fa-upload"></i> Thêm tài liệu</button></div>
-                <div className="record-card-body">
-                  <table className="data-table">
-                    <thead><tr><th>Tài liệu</th><th>Loại</th><th>Ngày tạo</th><th>Người cập nhật</th><th>Trạng thái</th><th></th></tr></thead>
-                    <tbody>
-                      <tr><td>Phiếu khám bệnh 26-08-2026</td><td>Phiếu khám</td><td>26/08/2026</td><td>BS. Nguyễn Văn Tuấn</td><td><span className="badge green">Hợp lệ</span></td><td><button className="btn"><i className="fa-solid fa-eye"></i> Xem</button></td></tr>
-                      <tr><td>Kết quả X-quang phổi</td><td>Chẩn đoán hình ảnh</td><td>26/08/2026</td><td>KLS</td><td><span className="badge green">Hợp lệ</span></td><td><button className="btn"><i className="fa-solid fa-eye"></i> Xem</button></td></tr>
-                      <tr><td>Đơn thuốc ngoại trú</td><td>Đơn thuốc</td><td>26/08/2026</td><td>BS. Nguyễn Văn Tuấn</td><td><span className="badge green">Hợp lệ</span></td><td><button className="btn"><i className="fa-solid fa-eye"></i> Xem</button></td></tr>
-                    </tbody>
-                  </table>
-                  <p className="note-text"><i className="fa-solid fa-circle-info"></i> Tài liệu được liên kết với bệnh án và lượt khám tương ứng.</p>
+                  {prescriptions.length === 0 ? (
+                    <div style={{ color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>Chưa có đơn thuốc nào được ghi nhận.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {prescriptions.map((rx: any, i: number) => (
+                        <div key={rx.id || i} style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <strong>Đơn thuốc #{rx.id || i + 1} ({rx.ngayKe ? new Date(rx.ngayKe).toLocaleDateString('vi-VN') : 'Lượt khám'})</strong>
+                            <span className="tag primary">{rx.bacSiKe || 'Bác sĩ điều trị'}</span>
+                          </div>
+                          {rx.chiTietDonThuocs ? (
+                            rx.chiTietDonThuocs.map((d: any, di: number) => (
+                              <div key={di} style={{ fontSize: '12px', padding: '4px 0', borderBottom: '1px dashed #f1f5f9' }}>
+                                • <strong>{d.tenThuoc}</strong>: {d.soLuong} {d.donViTinh} ({d.cachDung})
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>Chi tiết đơn thuốc lưu trong bệnh án điện tử.</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

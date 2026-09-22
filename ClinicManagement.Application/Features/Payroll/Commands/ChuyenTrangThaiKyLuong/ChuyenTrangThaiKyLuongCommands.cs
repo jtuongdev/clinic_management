@@ -23,7 +23,7 @@ public abstract class PayrollTransitionHandler(
         action(payroll);
         repository.Update(payroll);
         await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
-        return PayrollMapper.Map(payroll);
+        return AnhXaBangLuong.Map(payroll);
     }
 }
 

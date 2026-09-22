@@ -12,6 +12,11 @@ namespace ClinicManagement.Domain.Inventory
         public string TenGoc { get; set; } = string.Empty;
         public string DangBaoChe { get; set; } = string.Empty;
         public string HamLuong { get; set; } = string.Empty;
+        public string HoatChat { get; set; } = string.Empty;
+        public string SoDangKy { get; set; } = string.Empty;
+        public string DuongDung { get; set; } = string.Empty;
+        public string MaBHYT { get; set; } = string.Empty;
+        public decimal TyLeBHYT { get; set; }
         public string DonViTinhCoBan { get; set; } = string.Empty;
         public decimal GiaBanLe { get; set; }
         public bool CanKeDon { get; set; }

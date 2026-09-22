@@ -45,6 +45,6 @@ public sealed class CreatePayrollPeriodHandler(IPayrollRepository repository)
 
         await repository.AddPeriodAsync(payroll, cancellationToken);
         await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
-        return PayrollMapper.Map(payroll);
+        return AnhXaBangLuong.Map(payroll);
     }
 }

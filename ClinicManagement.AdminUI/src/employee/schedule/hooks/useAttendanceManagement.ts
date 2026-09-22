@@ -148,23 +148,31 @@ export const useAttendanceManagement = ({
   const getAttendance = (scheduleId: number): Attendance | undefined =>
     attendance.find(item => item.maLichLamViec === scheduleId);
 
-  const checkIn = async (scheduleId: number): Promise<void> => {
+  const checkIn = async (data?: { maNhanVien?: number; thoiGianQuet?: string; ghiChu?: string } | number): Promise<Attendance | undefined> => {
     try {
-      await scheduleApi.checkIn(scheduleId);
-      message.success('Check-in thành công.');
+      const response = await scheduleApi.checkIn(data);
+      const resData = response.data.data;
+      const shiftDesc = resData?.tenCa ? ` vào ${resData.tenCa}` : '';
+      message.success(`Check-in${shiftDesc} thành công.`);
       await onReload();
+      return resData;
     } catch (error) {
       message.error(apiError(error));
+      throw error;
     }
   };
 
-  const checkOut = async (scheduleId: number): Promise<void> => {
+  const checkOut = async (data?: { maNhanVien?: number; thoiGianQuet?: string; ghiChu?: string } | number): Promise<Attendance | undefined> => {
     try {
-      await scheduleApi.checkOut(scheduleId);
-      message.success('Check-out thành công.');
+      const response = await scheduleApi.checkOut(data);
+      const resData = response.data.data;
+      const shiftDesc = resData?.tenCa ? ` từ ${resData.tenCa}` : '';
+      message.success(`Check-out${shiftDesc} thành công.`);
       await onReload();
+      return resData;
     } catch (error) {
       message.error(apiError(error));
+      throw error;
     }
   };
 

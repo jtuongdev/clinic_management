@@ -12,7 +12,7 @@ public sealed class GetPayrollPeriodsHandler(IPayrollRepository repository)
         CancellationToken cancellationToken)
     {
         return (await repository.GetPeriodsAsync(cancellationToken))
-            .Select(PayrollMapper.Map)
+            .Select(AnhXaBangLuong.Map)
             .ToList();
     }
 }

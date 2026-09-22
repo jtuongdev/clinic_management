@@ -1,12 +1,11 @@
 import { api } from '../../../shared/api/axios.api';
-import { BacSiDto } from '../type/docter.type';
+import { BacSiDto, BacSiTrucDto } from '../type/docter.type';
 import { type ApiResponse } from '../../../shared/types/common.types';
-import { type BacSiTrucDto } from '../type/docter.type';
 
 export const BacSiApi = {
-  getBacSiByKhoa: (maKhoa: number) => {
+  getBacSiByKhoa: (maKhoa: number, maCoSo?: number) => {
     return api.get<ApiResponse<BacSiDto[]>>('/NhanVien/bac-si', {
-      params: { maKhoa },
+      params: { maKhoa, maCoSo },
     });
   },
   getBacSiTruc: (params?: { maCoSo?: number; maKhoa?: number }) => {

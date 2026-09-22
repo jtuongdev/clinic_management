@@ -60,3 +60,10 @@ export type {
 export type {
   UsePatientWorkspaceOptions,
 } from './patient-workspace.types';
+export type {
+  DrugSearchResult,
+  PrescriptionItemRequest,
+  CreatePrescriptionRequest,
+  DrugInteractionCheckRequest,
+  DrugInteractionAlert,
+} from './exam.types';

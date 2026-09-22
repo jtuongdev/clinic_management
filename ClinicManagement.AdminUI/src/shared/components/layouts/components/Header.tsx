@@ -1,20 +1,34 @@
 import { Bell, Mail } from 'lucide-react';
 import { Dropdown, Avatar } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../../../../Auth/context/AuthProvider';
+import { useState } from 'react';
+import { ChangePasswordModal } from '../../../../Auth/components/ChangePasswordModal';
 
 export const Header = () => {
+  const { user, logout } = useAuth();
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+
+  const handleMenuClick: MenuProps['onClick'] = (e) => {
+    if (e.key === 'logout') {
+      logout();
+    } else if (e.key === 'changePassword') {
+      setIsPasswordModalVisible(true);
+    }
+  };
+
   const menuItems: MenuProps['items'] = [
     { key: 'profile', label: 'Thông tin cá nhân', icon: <UserOutlined /> },
+    { key: 'changePassword', label: 'Đổi mật khẩu', icon: <LockOutlined /> },
     { type: 'divider' },
     { key: 'logout', label: 'Đăng xuất', danger: true },
   ];
-  const { user } = useAuth();
+
   return (
     <div
       style={{
-        padding: '8px 24px',
+        padding: '8px 16px',
         background: '#ffffff',
         borderBottom: '1px solid #e9edf4',
         display: 'flex',
@@ -103,7 +117,7 @@ export const Header = () => {
           }}
         >
           <span style={{ fontWeight: 500, fontSize: 13 }}>{user?.fullName || 'Bác sĩ'}</span>
-          <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+          <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} placement="bottomRight">
             <Avatar
               size={32}
               style={{
@@ -118,6 +132,10 @@ export const Header = () => {
           </Dropdown>
         </div>
       </div>
+      <ChangePasswordModal
+        visible={isPasswordModalVisible}
+        onClose={() => setIsPasswordModalVisible(false)}
+      />
     </div>
   );
 };

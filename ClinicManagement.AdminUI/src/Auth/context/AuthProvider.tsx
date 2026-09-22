@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // KIỂM TRA QUYỀN
   // =========================
   const hasRole = (role: string) => {
-    return user?.roles?.includes(role) ?? false;
+    return user?.roles?.some(r => r.toUpperCase().includes(role.toUpperCase())) ?? false;
   };
 
   const value = useMemo(

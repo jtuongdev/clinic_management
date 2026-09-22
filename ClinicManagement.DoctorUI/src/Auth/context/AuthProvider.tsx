@@ -17,6 +17,8 @@ interface AuthContextType {
 
   isAuthenticated: boolean;
 
+  isDoctor: boolean;
+
   login: (
     accessToken: string,
     refreshToken: string,
@@ -26,6 +28,8 @@ interface AuthContextType {
   logout: () => void;
 
   hasRole: (role: string) => boolean;
+
+  hasAnyRole: (roles: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,9 +73,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const normalizeRole = (r: string) => r.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
   const hasRole = (role: string) => {
-    return user?.roles?.includes(role) ?? false;
+    if (!user?.roles || user.roles.length === 0) return false;
+    const targetNorm = normalizeRole(role);
+    return user.roles.some(r => {
+      const uNorm = normalizeRole(r);
+      return uNorm === targetNorm || uNorm.includes(targetNorm) || targetNorm.includes(uNorm);
+    });
   };
+
+  const hasAnyRole = (roles: string[]) => {
+    if (!user?.roles || user.roles.length === 0) return false;
+    return roles.some(role => hasRole(role));
+  };
+
+  const isDoctor = useMemo(() => {
+    return hasAnyRole(['BAC_SI', 'BacSi', 'BAC_SI_KHAM_BENH', 'QUAN_TRI_HE_THONG', 'ADMIN']);
+  }, [user]);
 
   const value = useMemo(
     () => ({
@@ -79,11 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken,
       refreshToken,
       isAuthenticated: !!accessToken,
+      isDoctor,
       login,
       logout,
       hasRole,
+      hasAnyRole,
     }),
-    [user, accessToken, refreshToken]
+    [user, accessToken, refreshToken, isDoctor]
   );
 
   return (

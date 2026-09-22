@@ -35,14 +35,7 @@ public sealed class GetChamCongKpiSummaryHandler
         var schedules = await scheduleRepository.GetByDateRangeAsync(
             request.FromDate, request.ToDate, request.MaNhanVien, request.MaKhoa, cancellationToken);
         var attendances = await attendanceRepository.GetByDateRangeAsync(
-            request.FromDate, request.ToDate, request.MaNhanVien, cancellationToken);
-        if (request.MaKhoa.HasValue)
-        {
-            var scheduleIds = schedules.Select(x => x.Id).ToHashSet();
-            attendances = attendances
-                .Where(x => x.MaLichLamViec.HasValue && scheduleIds.Contains(x.MaLichLamViec.Value))
-                .ToList();
-        }
+            request.FromDate, request.ToDate, request.MaNhanVien, request.MaKhoa, cancellationToken);
 
         return new ChamCongKpiSummaryDto
         {

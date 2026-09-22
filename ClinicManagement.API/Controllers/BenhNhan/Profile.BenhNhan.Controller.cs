@@ -1,3 +1,5 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +12,14 @@ using System.Threading.Tasks;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("patient", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
     public partial class BenhNhanController : BaseController
     {
         // GET: api/benhnhan/{id}/profile
         [HttpGet("{id}/profile")]
         public async Task<IActionResult> GetProfile(int id)
         {
-            var query = new GetBenhNhanProfileQuery { Id = id };
+            var query = new LayHoSoBenhNhanQuery { Id = id };
             var result = await _mediator.Send(query);
             return Success(result);
         }
@@ -31,7 +34,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
-            var query = new GetBenhNhanVisitsQuery
+            var query = new LayLichSuKhamBenhNhanQuery
             {
                 PatientId = id,
                 PageIndex = pageIndex,
@@ -51,7 +54,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int pageIndex = 1,
             [FromQuery] int pageSize = 10)
         {
-            var query = new GetBenhNhanPrescriptionsQuery
+            var query = new LayDonThuocBenhNhanQuery
             {
                 PatientId = id,
                 PageIndex = pageIndex,
@@ -68,7 +71,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int pageIndex = 1,
             [FromQuery] int pageSize = 10)
         {
-            var query = new GetBenhNhanLabResultsQuery
+            var query = new LayKetQuaXetNghiemBenhNhanQuery
             {
                 PatientId = id,
                 PageIndex = pageIndex,
@@ -86,7 +89,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? status = null)
         {
-            var query = new GetBenhNhanInvoicesQuery
+            var query = new LayHoaDonBenhNhanQuery
             {
                 PatientId = id,
                 PageIndex = pageIndex,

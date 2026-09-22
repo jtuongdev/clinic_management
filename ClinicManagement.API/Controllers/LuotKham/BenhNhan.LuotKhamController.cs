@@ -1,3 +1,5 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ClinicManagement.Application.Features.LuotKham.Queries;
@@ -5,12 +7,13 @@ using System.Threading.Tasks;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("patient", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
     public partial class LuotKhamController : BaseController
     {
         [HttpGet("benh-nhan/{luotKhamId}/ho-so-dieu-tri")]
         public async Task<IActionResult> GetHoSoDieuTri(int luotKhamId)
         {
-            var query = new GetChiTietHoSoDieuTriQuery
+            var query = new LayChiTietHoSoDieuTriQuery
             {
                 LuotKhamId = luotKhamId
             };
@@ -24,7 +27,7 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("benh-nhan/{luotKhamId}/thong-tin-benh-nhan")]
         public async Task<IActionResult> GetThongTinBenhNhanTrongLuotKham(int luotKhamId)
         {
-            var query = new GetThongTinBenhNhanTrongLuotKhamQuery
+            var query = new LayThongTinBenhNhanTrongLuotKhamQuery
             {
                 LuotKhamId = luotKhamId
             };

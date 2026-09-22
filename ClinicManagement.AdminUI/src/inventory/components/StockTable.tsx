@@ -66,7 +66,7 @@ const BatchSubTable: React.FC<{ batches: BatchDto[] }> = ({ batches }) => {
       key: 'quantity',
       width: 100,
       align: 'right',
-      render: (val: number) => val.toLocaleString('vi-VN'),
+      render: (val: number | string | null | undefined) => Number(val ?? 0).toLocaleString('vi-VN'),
     },
     {
       title: 'Ngày còn lại',
@@ -113,7 +113,7 @@ const BatchSubTable: React.FC<{ batches: BatchDto[] }> = ({ batches }) => {
   return (
     <div style={{ padding: '8px 16px', background: '#fafafa' }}>
       <Table<BatchDto>
-        rowKey="id"
+        rowKey="stockId"
         columns={batchColumns}
         dataSource={batches}
         pagination={false}
@@ -196,8 +196,10 @@ const StockTable: React.FC<StockTableProps> = ({
       key: 'totalStock',
       width: 110,
       align: 'right',
-      render: (val: number) => (
-        <Text strong>{val.toLocaleString('vi-VN')}</Text>
+      render: (val: number | string | null | undefined) => (
+        <Text strong style={{ color: Number(val ?? 0) > 0 ? '#0b2a3c' : '#8c8c8c' }}>
+          {Number(val ?? 0).toLocaleString('vi-VN')}
+        </Text>
       ),
     },
     {
@@ -206,7 +208,7 @@ const StockTable: React.FC<StockTableProps> = ({
       key: 'minimumStock',
       width: 120,
       align: 'right',
-      render: (val: number) => val.toLocaleString('vi-VN'),
+      render: (val: number | string | null | undefined) => Number(val ?? 0).toLocaleString('vi-VN'),
     },
     {
       title: 'Trạng thái tồn',

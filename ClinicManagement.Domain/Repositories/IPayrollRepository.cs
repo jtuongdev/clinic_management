@@ -14,5 +14,9 @@ public interface IPayrollRepository
     Task<IReadOnlyList<ChamCong>> GetAttendanceAsync(DateTime from, DateTime to, CancellationToken ct = default);
     Task<KyChamCong?> GetAttendancePeriodAsync(int id, CancellationToken ct = default);
     Task<bool> PayrollPeriodExistsAsync(int thang, int nam, CancellationToken ct = default);
+    Task<IReadOnlyList<BangLuong>> GetEmployeePayslipsAsync(int employeeId, CancellationToken ct = default);
+    Task<BangLuong?> GetBangLuongAsync(int id, bool includeDetails = false, CancellationToken ct = default);
+    Task<IReadOnlyList<ChamCong>> GetAttendanceForEmployeeAsync(int employeeId, DateTime from, DateTime to, CancellationToken ct = default);
+    void RemoveBangLuongDetail(ChiTietBangLuong item);
     void Update(KyLuong period);
 }

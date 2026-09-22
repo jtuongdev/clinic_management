@@ -1,3 +1,5 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -8,12 +10,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers
 {
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public partial class LuotKhamController : BaseController
     {
         [HttpGet("icd")]
         public async Task<IActionResult> SearchICD([FromQuery] string? keyword = null)
         {
-            var result = await _mediator.Send(new SearchICDQuery { Keyword = keyword });
+            var result = await _mediator.Send(new TimKiemICDQuery { Keyword = keyword });
             return Success(result);
         }
         
@@ -22,7 +25,7 @@ namespace ClinicManagement.API.Controllers
         {
             try
             {
-                var query = new GetChuanDoanListQuery
+                var query = new LayDanhSachChanDoanQuery
                 {
                     LuotKhamId = id
                 };
@@ -46,7 +49,7 @@ namespace ClinicManagement.API.Controllers
         {
             try
             {
-                var result = await _mediator.Send(new CreateChanDoanCommand
+                var result = await _mediator.Send(new TaoChanDoanCommand
                 {
                     LuotKhamId = id,
                     CreatedBy = CurrentUserId,
@@ -73,7 +76,7 @@ namespace ClinicManagement.API.Controllers
         {
             try
             {
-                var result = await _mediator.Send(new UpdateChanDoanCommand
+                var result = await _mediator.Send(new CapNhatChanDoanCommand
                 {
                     LuotKhamId = id,
                     ChanDoanId = diagnosisId,
@@ -101,7 +104,7 @@ namespace ClinicManagement.API.Controllers
         {
             try
             {
-                await _mediator.Send(new DeleteChanDoanCommand
+                await _mediator.Send(new XoaChanDoanCommand
                 {
                     LuotKhamId = id,
                     ChanDoanId = diagnosisId,

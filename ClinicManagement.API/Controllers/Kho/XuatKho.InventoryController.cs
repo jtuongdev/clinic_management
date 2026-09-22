@@ -1,15 +1,14 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Application.DTOs.Kho;
 using ClinicManagement.Application.Features.Kho.Lenh;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManagement.API.Controllers;
 
+[ClinicalAuthorize("inventory", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
 public sealed partial class InventoryController
 {
-    [HttpPost("exports/retail")]
-    public Task<IActionResult> Retail(ExportRequest request) =>
-        Send(new BanLeCommand(request, CurrentUserId));
-
     [HttpPost("exports/internal-use")]
     public Task<IActionResult> InternalUse(ExportRequest request) =>
         Send(new XuatNoiBoCommand(request, CurrentUserId));

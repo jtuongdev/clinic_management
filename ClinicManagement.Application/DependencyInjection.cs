@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using ClinicManagement.Application.Services;
+using ClinicManagement.Application.Services.Interfaces;
 
 namespace ClinicManagement.Application
 {
@@ -24,6 +26,8 @@ namespace ClinicManagement.Application
             {
                 cfg.AddMaps(currentAssembly);
             });
+
+            services.AddScoped<IClinicalGovernanceService, ClinicalGovernanceService>();
 
             return services;
         }

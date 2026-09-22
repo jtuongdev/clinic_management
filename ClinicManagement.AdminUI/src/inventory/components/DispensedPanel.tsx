@@ -25,6 +25,7 @@ import {
 } from '../types/inventory.types';
 import { inventoryApi } from '../api/inventory.api';
 import PrescriptionPrintModal from './PrescriptionPrintModal';
+import { dateRangePresets } from '../../shared/utils/datePresets';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -273,6 +274,7 @@ const DispensedPanel: React.FC = () => {
             onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
             format="DD/MM/YYYY"
             placeholder={['Từ ngày cấp', 'Đến ngày cấp']}
+            presets={dateRangePresets}
           />
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
             Tìm kiếm

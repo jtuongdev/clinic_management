@@ -1,3 +1,5 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.API.Common;
 using ClinicManagement.Application.DTOs.LichLamViec;
 using ClinicManagement.Application.Features.LichLamViec;
@@ -9,7 +11,7 @@ namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [ClinicalAuthorize("hr", HanhDongQuyen.XEM, PhamViDuLieu.TOAN_HE_THONG)]
     public class NghiPhepController : BaseController
     {
         private readonly IMediator mediator;
@@ -24,7 +26,6 @@ namespace ClinicManagement.API.Controllers
             => Success(await mediator.Send(new CreateNghiPhepCommand(request), cancellationToken), "Tạo đơn nghỉ phép thành công.");
 
         [HttpPost("{id:int}/review")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Review(int id, [FromBody] ReviewNghiPhepRequest request, [FromQuery] bool approved, CancellationToken cancellationToken)
             => Success(await mediator.Send(new ReviewNghiPhepCommand(id, CurrentUserId, approved, request.GhiChu), cancellationToken), "Đã xử lý đơn nghỉ phép.");
 

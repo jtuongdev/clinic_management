@@ -2,10 +2,11 @@ using ClinicManagement.Application.DTOs.Payroll;
 using ClinicManagement.Domain.Payroll;
 using ClinicManagement.Domain.Repositories;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ClinicManagement.Application.Features.Payroll;
 
-public sealed class GeneratePayrollHandler(IPayrollRepository repository)
+public sealed class GeneratePayrollHandler(IPayrollRepository repository, ILogger<GeneratePayrollHandler>? logger = null)
     : IRequestHandler<GeneratePayrollCommand, PayrollDetailDto>
 {
     public async Task<PayrollDetailDto> Handle(
@@ -70,9 +71,15 @@ public sealed class GeneratePayrollHandler(IPayrollRepository repository)
                 insurance);
             if (employee.PhuCapCoDinh > 0)
                 line.AddItem("PHU_CAP", "Phụ cấp cố định", employee.PhuCapCoDinh);
+
+            if (line.TienNoKyNay > 0)
+            {
+                logger?.LogWarning("Nhân viên {HoTen} (ID: {MaNhanVien}) phát sinh dư nợ khấu trừ kỳ này: {TienNoKyNay:N0} đ",
+                    employee.HoTen, employee.Id, line.TienNoKyNay);
+            }
         }
 
         await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
-        return PayrollMapper.Detail(payroll);
+        return AnhXaBangLuong.Detail(payroll);
     }
 }

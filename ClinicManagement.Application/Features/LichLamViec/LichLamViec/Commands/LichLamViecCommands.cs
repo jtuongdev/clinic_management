@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ClinicManagement.Application.Features.LichLamViec
 {
-    public record GetLichLamViecAdjustmentsQuery(int ScheduleId) : IRequest<IReadOnlyList<LichLamViecDieuChinhDto>>;
+    public record LayDieuChinhLichLamViecQuery(int ScheduleId) : IRequest<IReadOnlyList<LichLamViecDieuChinhDto>>;
     public record CreateLichLamViecCommand(CreateLichLamViecRequest Request) : IRequest<LichLamViecDto>;
     public record UpdateLichLamViecCommand(int Id, UpdateLichLamViecRequest Request, int UpdatedBy = 0) : IRequest<LichLamViecDto>;
     public record DeleteLichLamViecCommand(int Id, int DeletedBy) : IRequest;
@@ -52,7 +52,7 @@ namespace ClinicManagement.Application.Features.LichLamViec
             Id = item.Id, MaNhanVien = item.MaNhanVien, MaKhoa = item.MaKhoa, TenKhoa = item.Khoa?.Ten ?? string.Empty, TenNhanVien = item.NhanVien?.HoTen ?? string.Empty,
             MaCaTruc = item.MaCaTruc, TenCa = item.CaTruc?.TenCa ?? string.Empty, NgayLam = item.NgayLam,
             MaPhongKham = item.MaPhongKham, TenPhongKham = item.PhongKham?.Ten ?? string.Empty,
-            MaLichLamViecCoDinh = item.MaLichLamViecCoDinh, NguonLich = item.NguonLich,
+            MaLichLamViecCoDinh = item.MaLichLamViecCoDinh, NguonLich = item.NguonLich.ToString(),
             TrangThai = item.TrangThai.ToString(),
             LaNghiTheoNgay = item.TrangThai == TrangThaiLichLamViec.NGHI,
             ThoiGianBatDau = item.CaTruc?.ThoiGianBatDau ?? TimeSpan.Zero,

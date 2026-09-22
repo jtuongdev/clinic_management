@@ -22,7 +22,7 @@ namespace ClinicManagement.API.Controllers
             CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(
-                new GetCoSoDropdownQuery(),
+                new LayDanhSachCoSoDropdownQuery(),
                 cancellationToken);
 
             return Success(result, "Lấy danh sách cơ sở thành công");

@@ -1,22 +1,30 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ClinicManagement.Application.Features.LuotKham.Queries;
 using ClinicManagement.Application.Features.LuotKham.Commands.CompleteExam;
+using ClinicManagement.Application.Features.LuotKham.Commands.HoanThanhVaKhoaKham;
+using ClinicManagement.Application.Features.LuotKham.Commands.ChuyenTrangThaiChoCls;
+using ClinicManagement.Application.DTOs.Medical;
+using ClinicManagement.Application.Services.Interfaces;
 using System.Threading.Tasks;
 
 namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public partial class LuotKhamController : BaseController
     {
         private readonly IMediator _mediator;
+        private readonly IClinicalGovernanceService _clinicalGovernanceService;
 
-        public LuotKhamController(IMediator mediator)
+        public LuotKhamController(IMediator mediator, IClinicalGovernanceService clinicalGovernanceService)
         {
             _mediator = mediator;
+            _clinicalGovernanceService = clinicalGovernanceService;
         }
         
         [HttpGet]
@@ -30,7 +38,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
-            var query = new GetLuotKhamListQuery
+            var query = new LayDanhSachLuotKhamQuery
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize > 100 ? 100 : pageSize,
@@ -52,23 +60,149 @@ namespace ClinicManagement.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var query = new GetLuotKhamByIdQuery { Id = id };
+            var query = new LayLuotKhamTheoIdQuery { Id = id };
             var result = await _mediator.Send(query);
             return Success(result);
+        }
+
+        [HttpPost("{id}/validate")]
+        public async Task<IActionResult> ValidateCompletion(int id, CancellationToken cancellationToken)
+        {
+            var validation = await _clinicalGovernanceService.ValidateClinicalRecordCompletionAsync(id, cancellationToken);
+            if (!validation.IsValid)
+            {
+                return Failure(string.Join("; ", validation.Errors), 400);
+            }
+
+            return Success(validation, "Lượt khám đạt điều kiện hoàn tất.");
         }
 
         [HttpPost("{id}/complete")]
         public async Task<IActionResult> Complete(int id, CancellationToken cancellationToken)
         {
+            var validation = await _clinicalGovernanceService.ValidateClinicalRecordCompletionAsync(id, cancellationToken);
+            if (!validation.IsValid)
+            {
+                return Failure(string.Join("; ", validation.Errors), 400);
+            }
+
             var result = await _mediator.Send(
-                new CompleteExamCommand(id, CurrentUserId), cancellationToken);
+                new HoanThanhKhamCommand(id, CurrentUserId), cancellationToken);
+            if (result is null)
+                return Success(new { success = true, message = "Lượt khám đã hoàn tất nhưng không tạo hóa đơn do tổng tiền bằng 0." });
+
             return Success(result, "Hoàn thành lượt khám và tạo hóa đơn thành công");
+        }
+
+        [HttpPost("{id}/emr/lock")]
+        public async Task<IActionResult> LockEmr(int id, [FromBody] LockEmrRequest? request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await _clinicalGovernanceService.LockEmrAsync(
+                    id,
+                    CurrentUserId,
+                    request?.LyDo,
+                    request?.ChuKySo,
+                    cancellationToken);
+
+                return Success(result, result.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return Failure(ex.Message, 400);
+            }
+        }
+
+        [HttpPost("{id}/complete-and-lock")]
+        public async Task<IActionResult> CompleteAndLock(
+            int id,
+            [FromBody] LockEmrRequest? request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var command = new HoanThanhVaKhoaKhamCommand(
+                    id,
+                    CurrentUserId,
+                    request?.LyDo,
+                    request?.ChuKySo
+                );
+
+                var result = await _mediator.Send(command, cancellationToken);
+                return Success(result, result.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Failure(ex.Message, 404);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Failure(ex.Message, 400);
+            }
+            catch (Exception ex)
+            {
+                var innermost = ex;
+                while (innermost.InnerException != null)
+                {
+                    innermost = innermost.InnerException;
+                }
+                return Failure($"Lỗi xử lý hoàn tất và khóa hồ sơ: {innermost.Message}", 500);
+            }
+        }
+
+        [HttpPost("{id}/send-to-paraclinical")]
+        public async Task<IActionResult> SendToParaclinical(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var command = new ChuyenTrangThaiChoClsCommand(
+                    id,
+                    HanhDongChuyenTrangThaiCls.ChuyenChoCls,
+                    CurrentUserId
+                );
+
+                var result = await _mediator.Send(command, cancellationToken);
+                return Success(result, result.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Failure(ex.Message, 404);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Failure(ex.Message, 400);
+            }
+        }
+
+        [HttpPost("{id}/resume-exam")]
+        public async Task<IActionResult> ResumeExam(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var command = new ChuyenTrangThaiChoClsCommand(
+                    id,
+                    HanhDongChuyenTrangThaiCls.TiepTucKham,
+                    CurrentUserId
+                );
+
+                var result = await _mediator.Send(command, cancellationToken);
+                return Success(result, result.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Failure(ex.Message, 404);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Failure(ex.Message, 400);
+            }
         }
 
         [HttpGet("{id}/summary")]
         public async Task<IActionResult> GetTreatmentSummary(int id)
         {
-            var query = new GetLuotKhamByIdQuery { Id = id };
+            var query = new LayLuotKhamTheoIdQuery { Id = id };
             var result = await _mediator.Send(query);
             return Success(result.ToTreatmentSummary());
         }
@@ -78,7 +212,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int? maCoSo = null,
             [FromQuery] int? maKhoa = null)
         {
-            var query = new GetLuotKhamStatsQuery
+            var query = new LayThongKeLuotKhamQuery
             {
                 MaCoSo = maCoSo,
                 MaKhoa = maKhoa
@@ -92,7 +226,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int? maCoSo = null,
             [FromQuery] int? maKhoa = null)
         {
-            var query = new GetLuotKhamDangXuLyQuery
+            var query = new LayLuotKhamDangXuLyQuery
             {
                 MaCoSo = maCoSo,
                 MaKhoa = maKhoa
@@ -109,7 +243,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int? maKhoa = null,
             [FromQuery] int? maCoSo = null)
         {
-            var query = new GetDanhSachBenhNhanQuery
+            var query = new LayDanhSachBenhNhanQuery
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize > 100 ? 100 : pageSize,
@@ -126,7 +260,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int? maCoSo = null,
             [FromQuery] int? maKhoa = null)
         {
-            var query = new GetThongKeBenhNhanQuery
+            var query = new LayThongKeBenhNhanQuery
             {
                 MaCoSo = maCoSo,
                 MaKhoa = maKhoa
@@ -145,7 +279,7 @@ namespace ClinicManagement.API.Controllers
             [FromQuery] int? maCoSo,
             [FromQuery] int? maKhoa)
         {
-            var query = new GetThongKeKhamBenhQuery
+            var query = new LayThongKeKhamBenhQuery
             {
                 MaCoSo = maCoSo,
                 MaKhoa = maKhoa

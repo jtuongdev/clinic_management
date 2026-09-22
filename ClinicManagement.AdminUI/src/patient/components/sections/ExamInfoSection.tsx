@@ -1,12 +1,13 @@
-import { Form, Select, Space } from 'antd';
+import { Form, Select, Space, Tag } from 'antd';
 import { usePhongKhamOptions } from '../../../clinic/hook/usePhongKhamOptions';
+import type { BacSiDto } from '../../../employee/docter/type/docter.type';
 
 const { Option } = Select;
 
 interface ExamInfoSectionProps {
   coSos: any[];
   khoas: any[];
-  bacSis: any[];
+  bacSis: BacSiDto[];
   loadingCoSo: boolean;
   loadingKhoa: boolean;
   loadingBacSi: boolean;
@@ -28,6 +29,14 @@ export const ExamInfoSection = ({
 }: ExamInfoSectionProps) => {
   const maKhoa = Form.useWatch('maKhoa', form);
   const { phongKhams, loading: loadingPhongKham } = usePhongKhamOptions(maKhoa);
+
+  const handleBacSiChange = (bacSiId: number) => {
+    const selectedDoctor = bacSis.find((bs) => bs.id === bacSiId);
+    if (selectedDoctor && selectedDoctor.maPhongKhamMacDinh) {
+      // Auto-fill phòng khám của bác sĩ đang trực
+      form.setFieldsValue({ maPhongKham: selectedDoctor.maPhongKhamMacDinh });
+    }
+  };
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -68,7 +77,44 @@ export const ExamInfoSection = ({
         </Select>
       </Form.Item>
 
-      
+      <Form.Item
+        name="maBacSi"
+        label="Bác sĩ khám"
+        rules={[{ required: true, message: 'Vui lòng chọn bác sĩ khám' }]}
+      >
+        <Select
+          placeholder="Chọn bác sĩ khám"
+          loading={loadingBacSi}
+          disabled={!maKhoa}
+          onChange={handleBacSiChange}
+          showSearch
+          optionFilterProp="label"
+        >
+          {bacSis.map((bs) => (
+            <Option 
+              key={bs.id} 
+              value={bs.id}
+              label={`${bs.hoTen} ${bs.chuyenKhoa || ''}`}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>
+                  <strong>{bs.hoTen}</strong> {bs.chuyenKhoa ? `(${bs.chuyenKhoa})` : ''}
+                </span>
+                {bs.dangTruc ? (
+                  <Tag color="success" style={{ marginLeft: 8, fontSize: '11px', borderRadius: '4px' }}>
+                    ● Đang trực
+                  </Tag>
+                ) : (
+                  <Tag color="default" style={{ marginLeft: 8, fontSize: '11px', color: '#64748b', borderRadius: '4px' }}>
+                    Ngoài ca trực
+                  </Tag>
+                )}
+              </div>
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+
       <Form.Item
         name="maPhongKham"
         label="Phòng khám"
@@ -77,29 +123,11 @@ export const ExamInfoSection = ({
         <Select
           placeholder="Chọn phòng khám"
           loading={loadingPhongKham}
-          disabled={!form.getFieldValue('maKhoa')}
+          disabled={!maKhoa}
         >
           {phongKhams.map((pk) => (
             <Option key={pk.id} value={pk.id}>
               {pk.ten} ({pk.ma})
-            </Option>
-          ))}
-        </Select>
-      </Form.Item>
-
-      <Form.Item
-        name="maBacSi"
-        label="Bác sĩ"
-        rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}
-      >
-        <Select
-          placeholder="Chọn bác sĩ"
-          loading={loadingBacSi}
-          disabled={!form.getFieldValue('maKhoa')}
-        >
-          {bacSis.map((bs) => (
-            <Option key={bs.id} value={bs.id}>
-              {bs.hoTen} ({bs.chuyenKhoa})
             </Option>
           ))}
         </Select>

@@ -22,6 +22,14 @@ namespace ClinicManagement.API.Extensions
         public static List<string> GetUserRoles(this ClaimsPrincipal user)
             => user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
 
+        public static int GetCoSoId(this ClaimsPrincipal user)
+        {
+            var claim = user.FindFirst("CoSoId")?.Value 
+                     ?? user.FindFirst("MaCoSo")?.Value 
+                     ?? user.FindFirst("FacilityId")?.Value;
+            return int.TryParse(claim, out var id) ? id : 0;
+        }
+
         public static bool IsAuthenticated(this ClaimsPrincipal user)
             => user.Identity?.IsAuthenticated ?? false;
     }

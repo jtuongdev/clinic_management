@@ -90,7 +90,7 @@ export function useQueueExtended(options: UseQueueExtendedOptions = {}): UseQueu
           setError(result.message || 'Không thể tải hàng đợi');
         }
       } catch (err: any) {
-        setError(err.message || 'Đã xảy ra lỗi khi tải hàng đợi');
+        setError(err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi tải hàng đợi');
       } finally {
         setLoading(false);
       }

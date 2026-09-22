@@ -14,6 +14,57 @@ import { ExamInfoSection } from './sections/ExamInfoSection';
 import { InsuranceSection } from './sections/InsuranceSection';
 import { MedicalHistorySection } from './sections/MedicalHistorySection';
 
+const addPatientStyles = `
+.add-patient-card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.add-patient-card .ant-card-head {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 12px 20px;
+}
+.add-patient-card .ant-card-head-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #0f172a;
+}
+.add-patient-card .ant-form-item-label > label {
+  font-weight: 500;
+  color: #475569;
+}
+.add-patient-card .ant-input,
+.add-patient-card .ant-select-selector,
+.add-patient-card .ant-picker {
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+.add-patient-card .ant-input:focus,
+.add-patient-card .ant-input:hover,
+.add-patient-card .ant-select-selector:focus,
+.add-patient-card .ant-picker:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.add-patient-card .ant-btn-primary {
+  background: #0f172a;
+  border-color: #0f172a;
+}
+.add-patient-card .ant-btn-primary:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+}
+.add-patient-card .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+@media (max-width: 640px) {
+  .add-patient-card .ant-card-body {
+    padding: 12px;
+  }
+}
+`;
 
 interface AddPatientFormProps {
   onSuccess?: () => void;
@@ -38,8 +89,8 @@ export const AddPatientForm = ({
   // State chọn khoa (dùng để load bác sĩ)
   const [selectedKhoa, setSelectedKhoa] = useState<number | undefined>(undefined);
 
-  // Hook lấy bác sĩ theo maKhoa
-  const { bacSis, loading: loadingBacSi } = useBacSiOptions(selectedKhoa!);
+  // Hook lấy bác sĩ theo maKhoa và maCoSo
+  const { bacSis, loading: loadingBacSi } = useBacSiOptions(selectedKhoa, selectedCoSo);
 
   // Hook quản lý danh sách bảo hiểm
   const { insuranceList, addInsurance, removeInsurance, resetInsuranceList } = useInsuranceList();
@@ -57,25 +108,23 @@ export const AddPatientForm = ({
   // Xử lý khi chọn cơ sở
   const handleCoSoChange = (value: number) => {
     setSelectedCoSo(value);
-    form.setFieldsValue({ maKhoa: undefined, maBacSi: undefined });
+    form.setFieldsValue({ maKhoa: undefined, maBacSi: undefined, maPhongKham: undefined });
     setSelectedKhoa(undefined);
   };
 
   // Xử lý khi chọn khoa
   const handleKhoaChange = (value: number) => {
     setSelectedKhoa(value);
-    form.setFieldsValue({ maBacSi: undefined });
+    form.setFieldsValue({ maBacSi: undefined, maPhongKham: undefined });
   };
 
   return (
-    <Card
-      title="Thêm bệnh nhân mới"
-      style={{
-        borderRadius: 12,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-        border: '1px solid #e2e8f0',
-      }}
-    >
+    <>
+      <style>{addPatientStyles}</style>
+      <Card
+        title="Thêm bệnh nhân mới"
+        className="add-patient-card"
+      >
       <Form
         form={form}
         layout="vertical"
@@ -144,5 +193,6 @@ export const AddPatientForm = ({
         </Row>
       </Form>
     </Card>
+    </>
   );
 };

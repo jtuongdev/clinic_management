@@ -66,6 +66,8 @@ export const useScheduleManagement = () => {
     loadFixedSchedules: fixed.loadFixedSchedules,
     createFixed: fixed.createFixed,
     bulkCreateFixed: fixed.bulkCreateFixed,
+    setFixedSchedule: fixed.setFixedSchedule,
+    generateMonthlySchedule: fixed.generateMonthlySchedule,
     previewGenerate: fixed.previewGenerate,
     updateFixed: fixed.updateFixed,
     removeFixed: fixed.removeFixed,

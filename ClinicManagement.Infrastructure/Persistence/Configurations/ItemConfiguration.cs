@@ -41,6 +41,11 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 
             builder.Property(i => i.HamLuong)
                 .HasMaxLength(100);
+            builder.Property(i => i.HoatChat).HasMaxLength(500);
+            builder.Property(i => i.SoDangKy).HasMaxLength(100);
+            builder.Property(i => i.DuongDung).HasMaxLength(100);
+            builder.Property(i => i.MaBHYT).HasMaxLength(100);
+            builder.Property(i => i.TyLeBHYT).HasColumnType("decimal(5,2)");
                 
             builder.Property(i => i.DonViTinhCoBan)
                 .IsRequired()

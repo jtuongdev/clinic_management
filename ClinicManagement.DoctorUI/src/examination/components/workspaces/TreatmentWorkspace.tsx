@@ -1,9 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useAuth } from '../../../Auth/context/AuthProvider';
 import type { TreatmentWorkspaceProps } from '../../types/examination/treatment.types';
-import type { ServiceCatalogOption, ServiceOrderDto, ServiceOrderRequest, TreatmentSummaryDto } from '../../types/examination/exam.types';
+import type { 
+  ServiceCatalogOption, 
+  ServiceOrderDto, 
+  ServiceOrderRequest, 
+  TreatmentSummaryDto,
+  DrugSearchResult,
+  PrescriptionItemRequest,
+  CreatePrescriptionRequest,
+  DrugInteractionAlert
+} from '../../types/examination/index';
 import { useDiagnosisManagement } from '../../hooks/useDiagnosisManagement';
 import { examinationApi } from '../../api/examination.api';
+import { clinicalRealtime } from '../../services/clinicalRealtime.service';
+import { DrugSearchAutocomplete } from '../DrugSearchAutocomplete';
+import { PrescriptionTable } from '../PrescriptionTable';
 
 const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   data,
@@ -20,6 +32,26 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   const [serviceMessage, setServiceMessage] = useState<string | null>(null);
   const { user } = useAuth();
   const currentDoctorId = user?.id ?? 0;
+
+  // Prescription states
+  const [prescriptionId, setPrescriptionId] = useState<number | null>(null);
+  const [prescriptionStatus, setPrescriptionStatus] = useState<string | null>(null);
+  const [selectedDrug, setSelectedDrug] = useState<DrugSearchResult | null>(null);
+  const [prescribedDrugs, setPrescribedDrugs] = useState<PrescriptionItemRequest[]>([]);
+  const [prescriptionType, setPrescriptionType] = useState<'BHYT' | 'TU_TUC' | 'HON_HOP'>('TU_TUC');
+  const [isPrescriptionLoading, setIsPrescriptionLoading] = useState(false);
+  const [prescriptionMessage, setPrescriptionMessage] = useState<{ text: string; type: 'success' | 'danger' } | null>(null);
+  const [interactionAlerts, setInteractionAlerts] = useState<DrugInteractionAlert[]>([]);
+  const isPrescriptionReadOnly = Boolean(prescriptionStatus && prescriptionStatus !== 'TAM');
+
+  // Prescription item form state
+  const [itemQuantity, setItemQuantity] = useState<number>(1);
+  const [itemUnit, setItemUnit] = useState<string>('Viên');
+  const [itemRoute, setItemRoute] = useState<string>('Uống');
+  const [itemDose] = useState<string>('1 viên/lần');
+  const [itemFrequency, setItemFrequency] = useState<string>('2 lần/ngày');
+  const [itemDays, setItemDays] = useState<number>(5);
+  const [itemInstruction, setItemInstruction] = useState<string>('Sáng 1 viên sau ăn, Tối 1 viên sau ăn');
 
   const fetchServiceOrders = async () => {
     if (!luotKhamId) {
@@ -43,10 +75,52 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
     }
   };
 
+  const fetchPrescription = async () => {
+    if (!luotKhamId) return;
+    try {
+      const res = await examinationApi.getPrescription(luotKhamId);
+      if (res.data?.success && res.data.data) {
+        const pData = res.data.data;
+        if (pData.id) {
+          setPrescriptionId(pData.id);
+        }
+        if (pData.trangThai) {
+          setPrescriptionStatus(pData.trangThai);
+        }
+        if (Array.isArray(pData.items)) {
+          const mappedItems: PrescriptionItemRequest[] = pData.items.map((item: any) => ({
+            thuocId: Number(item.thuocId ?? item.itemId ?? 0),
+            tenThuoc: item.tenThuoc ?? item.itemName ?? '',
+            hoatChat: item.hoatChat ?? '',
+            soLuong: Number(item.soLuong ?? item.quantity ?? 1),
+            donViTinh: item.donViTinh ?? item.baseUnit ?? 'Viên',
+            duongDung: item.duongDung ?? 'Uống',
+            lieuDung: item.lieuDung ?? '',
+            soNgay: Number(item.soNgay ?? 5),
+            huongDanSuDung: item.huongDanSuDung ?? item.huongDan ?? '',
+            donGia: Number(item.donGia ?? item.donGiaKe ?? 0),
+          }));
+          setPrescribedDrugs(mappedItems);
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
   useEffect(() => {
     if (!luotKhamId) {
+      setPrescriptionId(null);
+      setPrescriptionStatus(null);
+      setPrescribedDrugs([]);
       return;
     }
+
+    setPrescriptionId(null);
+    setPrescriptionStatus(null);
+    setPrescribedDrugs([]);
+    setSelectedDrug(null);
+    setPrescriptionMessage(null);
 
     let isMounted = true;
 
@@ -57,16 +131,14 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
           setTreatmentSummary(response.data.data);
         }
       } catch {
-        // Keep fallback values from props when summary API is unavailable.
+        // Keep fallback values from props
       }
     };
 
     const fetchCatalog = async () => {
       try {
         const response = await examinationApi.getServiceCatalog();
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
         const items = response.data?.data ?? [];
         setServiceCatalog(items);
@@ -75,16 +147,24 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
           setSelectedServiceId(items[0].id);
         }
       } catch {
-        // Ignore catalog failures and keep the UI state usable.
+        // Ignore catalog failures
       }
     };
 
     void fetchSummary();
     void fetchServiceOrders();
     void fetchCatalog();
+    void fetchPrescription();
+
+    const unsubscribe = luotKhamId
+      ? clinicalRealtime.subscribeLabResults(luotKhamId, (orders) => {
+          if (isMounted) setServiceOrders(orders);
+        })
+      : () => {};
 
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, [luotKhamId]);
 
@@ -142,9 +222,7 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   };
 
   const handleDeleteService = async (serviceId: number) => {
-    if (!luotKhamId) {
-      return;
-    }
+    if (!luotKhamId) return;
 
     setIsServiceLoading(true);
 
@@ -162,6 +240,186 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
     }
   };
 
+  // Input refs for keyboard-first navigation (Search -> Qty -> Instructions -> Enter)
+  const searchDrugInputRef = useRef<HTMLInputElement | null>(null);
+  const quantityInputRef = useRef<HTMLInputElement | null>(null);
+  const instructionInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleSelectDrug = (drug: DrugSearchResult) => {
+    setSelectedDrug(drug);
+    setItemUnit(drug.donViTinh || 'Viên');
+    setItemRoute(drug.duongDung || 'Uống');
+    setItemQuantity(1);
+
+    // Tự động nhảy focus sang ô số lượng ngay sau khi chọn thuốc (Keyboard-first chaining)
+    setTimeout(() => {
+      quantityInputRef.current?.focus();
+      quantityInputRef.current?.select();
+    }, 60);
+
+    // Check allergy immediately
+    const allergy = data?.examination?.tienSuBenh;
+    const patientAllergies =
+      allergy?.loaiTienSu === '3' || allergy?.loaiTienSu === 'Dị ứng'
+        ? [allergy.ten.toLowerCase()]
+        : [];
+
+    if (
+      drug.hoatChat &&
+      patientAllergies.some((a) => a.includes(drug.hoatChat!.toLowerCase()))
+    ) {
+      setInteractionAlerts((prev) => [
+        ...prev,
+        {
+          type: 'ALLERGY',
+          severity: 'CRITICAL',
+          title: 'CẢNH BÁO NGUY HIỂM: DỊ ỨNG THUỐC',
+          message: `Bệnh nhân có tiền sử dị ứng với hoạt chất ${drug.hoatChat}! Nguy cơ sốc phản vệ.`,
+          drugName: drug.tenThuoc || drug.ten,
+        },
+      ]);
+    }
+  };
+
+  const handleAddDrugToPrescription = () => {
+    if (!selectedDrug) {
+      setPrescriptionMessage({ text: 'Vui lòng chọn thuốc từ danh mục.', type: 'danger' });
+      return;
+    }
+
+    const availableStock = selectedDrug.soLuongKhaDung ?? selectedDrug.tonKho ?? 0;
+    if (availableStock <= 0) {
+      setPrescriptionMessage({
+        text: `Thuốc "${selectedDrug.tenThuoc || selectedDrug.ten}" đã HẾT HÀNG trong kho (tồn = 0). Không thể kê!`,
+        type: 'danger',
+      });
+      return;
+    }
+
+    if (itemQuantity > availableStock) {
+      setPrescriptionMessage({
+        text: `Số lượng kê (${itemQuantity}) vượt quá tồn kho khả dụng (${availableStock} ${selectedDrug.donViTinh}). Tối đa: ${availableStock}.`,
+        type: 'danger',
+      });
+      return;
+    }
+
+    if (itemQuantity <= 0) {
+      setPrescriptionMessage({ text: 'Số lượng kê phải lớn hơn 0.', type: 'danger' });
+      return;
+    }
+
+    const newItem: PrescriptionItemRequest = {
+      thuocId: selectedDrug.id,
+      tenThuoc: selectedDrug.tenThuoc || selectedDrug.ten || '',
+      hoatChat: selectedDrug.hoatChat,
+      soLuong: itemQuantity,
+      donViTinh: itemUnit,
+      duongDung: itemRoute,
+      lieuDung: itemDose,
+      soNgay: itemDays,
+      huongDanSuDung: itemInstruction,
+      donGia: selectedDrug.gia,
+      soLuongKhaDung: availableStock,
+    };
+
+    // Gọi API Backend: POST /api/ai/drug-interaction-check
+    if (selectedDrug.id) {
+      examinationApi
+        .checkDrugInteractions({
+          patientId: luotKhamId ?? 0,
+          medicineIds: [...prescribedDrugs, newItem].map((d) => d.thuocId),
+        })
+        .then((res) => {
+          const result = res.data?.data;
+          if (res.data?.success && result?.alerts?.length) {
+            setInteractionAlerts(result.alerts);
+          }
+        })
+        .catch(() => {
+          // Fallback local check
+        });
+    }
+
+    setPrescribedDrugs((prev) => [...prev, newItem]);
+    setSelectedDrug(null);
+    setItemQuantity(1);
+    setPrescriptionMessage({
+      text: `Đã thêm thuốc "${newItem.tenThuoc}" vào đơn.`,
+      type: 'success',
+    });
+    setTimeout(() => setPrescriptionMessage(null), 3000);
+
+    // Tự động focus quay lại ô tìm kiếm thuốc để bác sĩ tiếp tục gõ mà không cần dùng chuột
+    setTimeout(() => {
+      searchDrugInputRef.current?.focus();
+    }, 80);
+  };
+
+  const handleRemoveDrug = (index: number) => {
+    setPrescribedDrugs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSavePrescription = async () => {
+    if (isPrescriptionLoading) return;
+    if (!luotKhamId || prescribedDrugs.length === 0) {
+      alert('Vui lòng thêm ít nhất một thuốc vào đơn trước khi lưu.');
+      return;
+    }
+
+    if (prescriptionStatus && prescriptionStatus !== 'TAM') {
+      alert(`Đơn thuốc này đã ở trạng thái "${prescriptionStatus}", không thể chỉnh sửa.`);
+      return;
+    }
+
+    setIsPrescriptionLoading(true);
+    setPrescriptionMessage(null);
+    try {
+      const payload: CreatePrescriptionRequest = {
+        luotKhamId,
+        loaiDonThuoc: prescriptionType,
+        ghiChu: prescriptionType,
+        items: prescribedDrugs.map(item => ({
+          itemId: item.thuocId,
+          soLuongKe: item.soLuong,
+          donViTinh: item.donViTinh,
+          donGiaKe: item.donGia,
+          lieuDung: item.lieuDung,
+          tanSuat: item.lieuDung,
+          soNgay: item.soNgay,
+          huongDan: item.huongDanSuDung,
+        })),
+      };
+      const res = await examinationApi.createPrescription(luotKhamId, payload);
+      if (res.data?.success) {
+        if (res.data.data?.id) {
+          setPrescriptionId(res.data.data.id);
+        }
+        if (res.data.data?.trangThai) {
+          setPrescriptionStatus(res.data.data.trangThai);
+        }
+        const isUpdate = res.data.data?.isUpdated || Boolean(prescriptionId);
+        setPrescriptionMessage({
+          text: isUpdate ? 'Cập nhật đơn thuốc thành công!' : 'Lưu đơn thuốc thành công!',
+          type: 'success',
+        });
+      } else {
+        setPrescriptionMessage({ text: res.data?.message || 'Không thể lưu đơn thuốc.', type: 'danger' });
+      }
+    } catch (error: any) {
+      console.error('Lỗi khi lưu đơn thuốc:', error);
+      const errorMsg = error?.response?.data?.message 
+        || error?.response?.data?.detail 
+        || (typeof error?.response?.data === 'string' ? error.response.data : null)
+        || error.message 
+        || 'Lưu đơn thuốc thất bại. Vui lòng kiểm tra lại tồn kho và thông tin thuốc.';
+      setPrescriptionMessage({ text: `Lỗi: ${errorMsg}`, type: 'danger' });
+    } finally {
+      setIsPrescriptionLoading(false);
+      setTimeout(() => setPrescriptionMessage(null), 6000);
+    }
+  };
+
   const servicesList = serviceOrders.length > 0
     ? serviceOrders.map((service) => ({
         name: service.tenDichVu,
@@ -170,10 +428,7 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
         time: service.ngayChiDinh ? new Date(service.ngayChiDinh).toLocaleString('vi-VN') : '---',
       }))
     : (data?.treatment?.services ?? []);
-  const drugsList = data?.treatment?.drugs ?? [];
-  const resultsList = data?.treatment?.results ?? [];
 
-  // Thông tin tóm tắt lượt khám
   const visitSummary = useMemo(() => ({
     visit: treatmentSummary?.maLuotKham ?? data?.visit ?? '---',
     department: treatmentSummary?.khoa ?? data?.department ?? '---',
@@ -189,7 +444,16 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   );
 
   return (
-    <div className="tab-panel active">
+    <div
+      className="tab-panel active"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
       {/* Tabs phụ */}
       <div className="subtabs">
         <button className={`subtab ${activeSubtab === 'diagnosis' ? 'active' : ''}`} onClick={() => setActiveSubtab('diagnosis')}>
@@ -206,10 +470,18 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
         </button>
       </div>
 
-      {/* Tab Chẩn đoán */}
-      {activeSubtab === 'diagnosis' && (
-        <div className="tab-panel active">
-          {/* Strip thông tin */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          padding: '10px 14px',
+          position: 'relative',
+        }}
+      >
+        {/* Tab Chẩn đoán */}
+        {activeSubtab === 'diagnosis' && (
+          <div className="tab-panel active">
           <div className="summary-strip">
             <div className="summary-box"><div className="label">LƯỢT KHÁM</div><div className="value">{visitSummary.visit}</div></div>
             <div className="summary-box"><div className="label">KHOA</div><div className="value">{visitSummary.department}</div></div>
@@ -217,7 +489,6 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
             <div className="summary-box"><div className="label">TRẠNG THÁI</div><div className="value" style={{ color: '#1f9d61' }}>{visitSummary.status}</div></div>
           </div>
 
-          {/* Form nhập liệu - hiển thị khi đang chỉnh sửa */}
           {isDiagnosisEditing && (
             <div className="diagnosis-form-card" style={{ background: '#f8fafc', border: '1px solid var(--line)', borderRadius: '4px', padding: '12px', marginBottom: '10px' }}>
               <div className="section-head" style={{ marginBottom: '8px' }}>
@@ -239,7 +510,7 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
                           setIcdKeyword(e.target.value);
                         }}
                       />
-                      <button className="icon-btn-sm" type="button" onClick={searchICD} disabled={isDiagnosisLoading}>
+                      <button className="icon-btn-sm" type="button" onClick={() => void searchICD()} disabled={isDiagnosisLoading}>
                         <i className="fa-solid fa-search"></i>
                       </button>
                     </div>
@@ -299,14 +570,12 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
             </div>
           )}
 
-          {/* Nút thêm mới */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
             <button className="btn primary" type="button" disabled={!luotKhamId || isDiagnosisEditing} onClick={startCreateDiagnosis}>
               <i className="fa-solid fa-plus"></i> Thêm chẩn đoán
             </button>
           </div>
 
-          {/* Danh sách chẩn đoán */}
           <div className="section">
             <div className="section-head">
               <h3><i className="fa-solid fa-list"></i> Danh sách chẩn đoán</h3>
@@ -358,7 +627,7 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
         </div>
       )}
 
-      {/* Các tab khác giữ nguyên */}
+      {/* Tab Chỉ định dịch vụ */}
       {activeSubtab === 'services' && (
         <div className="tab-panel active">
           <div className="section">
@@ -433,96 +702,547 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
        </div>
       )}
 
+      {/* Tab Đơn thuốc LIVE */}
       {activeSubtab === 'prescription' && (
         <div className="tab-panel active">
-          <div className="section">
-            <div className="section-head"><h3><i className="fa-solid fa-prescription-bottle-medical"></i> Kê đơn thuốc</h3><span className="tag warning"><i className="fa-solid fa-triangle-exclamation"></i> Kiểm tra dị ứng trước khi lưu</span></div>
-            <div className="section-body">
-              <div className="grid-4">
-                <div className="field"><label>Thuốc</label><div className="inline"><input className="grow" placeholder="Chưa có dữ liệu thuốc" readOnly /><button className="icon-btn-sm" type="button"><i className="fa-solid fa-search"></i></button></div></div>
-                <div className="field"><label>Số lượng</label><input type="number" value={1} readOnly /></div>
-                <div className="field"><label>Đơn vị</label><select value="" disabled><option value="">Chưa có đơn vị</option></select></div>
-                <div className="field"><label>Đường dùng</label><select value="" disabled><option value="">Chưa có đường dùng</option></select></div>
+          {/* Cảnh báo an toàn dị ứng & tương tác */}
+          {interactionAlerts.length > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              {interactionAlerts.map((alert, idx) => (
+                <div key={idx} style={{ 
+                  background: alert.severity === 'CRITICAL' ? '#fef2f2' : '#fffbeb', 
+                  border: `1px solid ${alert.severity === 'CRITICAL' ? '#f87171' : '#fde68a'}`,
+                  color: alert.severity === 'CRITICAL' ? '#991b1b' : '#92400e',
+                  padding: '10px 14px', borderRadius: '4px', marginBottom: '6px', fontSize: '13px' 
+                }}>
+                  <i className={`fa-solid ${alert.severity === 'CRITICAL' ? 'fa-triangle-exclamation' : 'fa-circle-exclamation'}`} style={{ marginRight: '6px' }}></i>
+                  <strong>{alert.title}: </strong> {alert.message}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {prescriptionMessage && (
+            <div style={{ 
+              background: prescriptionMessage.type === 'success' ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${prescriptionMessage.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+              color: prescriptionMessage.type === 'success' ? '#166534' : '#991b1b',
+              padding: '8px 12px', borderRadius: '4px', marginBottom: '10px', fontSize: '13px'
+            }}>
+              {prescriptionMessage.text}
+            </div>
+          )}
+
+          {isPrescriptionReadOnly && (
+            <div style={{
+              background: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              color: '#1e40af',
+              padding: '10px 14px',
+              borderRadius: '6px',
+              marginBottom: '10px',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className="fa-solid fa-lock" style={{ fontSize: '16px' }}></i>
+              <span>
+                <strong>Đơn thuốc đã khóa chỉnh sửa:</strong> Trạng thái hiện tại là <strong>{prescriptionStatus}</strong>. Không thể sửa hoặc kê thêm thuốc mới cho lượt khám này.
+              </span>
+            </div>
+          )}
+
+          <div
+            className="section"
+            style={{
+              overflow: 'visible',
+              position: 'relative',
+              zIndex: 30,
+            }}
+          >
+            <div className="section-head">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3><i className="fa-solid fa-prescription-bottle-medical"></i> Kê đơn thuốc điện tử</h3>
+                {prescriptionId && (
+                  <span
+                    className={`tag ${
+                      prescriptionStatus === 'CHO_CAP_PHAT' || prescriptionStatus === 'DA_DUYET'
+                        ? 'success'
+                        : prescriptionStatus === 'DA_XUAT_HET'
+                        ? 'primary'
+                        : prescriptionStatus === 'HUY'
+                        ? 'danger'
+                        : 'warning'
+                    }`}
+                    style={{ fontSize: '11px', padding: '2px 8px' }}
+                  >
+                    {prescriptionStatus === 'CHO_CAP_PHAT' || prescriptionStatus === 'DA_DUYET'
+                      ? `Đã duyệt (#${prescriptionId})`
+                      : prescriptionStatus === 'DA_XUAT_HET'
+                      ? `Đã cấp phát (#${prescriptionId})`
+                      : prescriptionStatus === 'HUY'
+                      ? `Đã hủy (#${prescriptionId})`
+                      : `Đơn lưu tạm (#${prescriptionId})`}
+                  </span>
+                )}
               </div>
-              <div className="grid-4" style={{ marginTop: '10px' }}>
-                <div className="field"><label>Liều dùng</label><input value="" readOnly /></div>
-                <div className="field"><label>Tần suất</label><input value="" readOnly /></div>
-                <div className="field"><label>Số ngày</label><input type="number" value={0} readOnly /></div>
-                <div className="field"><label>&nbsp;</label><button className="btn primary" type="button"><i className="fa-solid fa-plus"></i> Thêm thuốc</button></div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <label style={{ fontSize: '13px' }}>Loại đơn:</label>
+                <select 
+                  value={prescriptionType} 
+                  onChange={(e) => setPrescriptionType(e.target.value as any)}
+                  disabled={isPrescriptionReadOnly}
+                  style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--line)' }}
+                >
+                  <option value="TU_TUC">Tự túc / Thu phí</option>
+                  <option value="BHYT">Bảo hiểm Y tế (BHYT)</option>
+                  <option value="HON_HOP">Hỗn hợp</option>
+                </select>
               </div>
             </div>
+
+            {!isPrescriptionReadOnly && (
+              <div
+                className="section-body"
+                style={{
+                  overflow: 'visible',
+                  position: 'relative',
+                  zIndex: 30,
+                }}
+              >
+              {/* Form tìm kiếm thuốc tự động (Keyboard-first + Debounce) */}
+              <div style={{ marginBottom: 12, position: 'relative', zIndex: 40 }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    marginBottom: 4,
+                    color: '#334155',
+                  }}
+                >
+                  Tìm kiếm thuốc từ kho Dược (theo tên, hoạt chất, mã thuốc hoặc viết tắt không dấu):
+                </label>
+                <DrugSearchAutocomplete
+                  inputRef={searchDrugInputRef}
+                  selectedDrug={selectedDrug}
+                  onSelectDrug={handleSelectDrug}
+                />
+              </div>
+
+              {/* Form chi tiết liều dùng & số lượng với Zero-Stock validation */}
+              {selectedDrug &&
+                (() => {
+                  const availableStock =
+                    selectedDrug.soLuongKhaDung ?? selectedDrug.tonKho ?? 0;
+                  const isOutOfStock = availableStock <= 0;
+                  const isOverStock = itemQuantity > availableStock;
+
+                  return (
+                    <div
+                      style={{
+                        background: '#f8fafc',
+                        padding: '14px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        marginBottom: '14px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '10px',
+                          flexWrap: 'wrap',
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                          }}
+                        >
+                          Thuốc đã chọn:{' '}
+                          <span style={{ color: '#0284c7' }}>
+                            {selectedDrug.tenThuoc || selectedDrug.ten}
+                          </span>
+                          {selectedDrug.hamLuong && (
+                            <span
+                              style={{ color: '#475569', fontWeight: 500 }}
+                            >
+                              {' '}
+                              - {selectedDrug.hamLuong}
+                            </span>
+                          )}
+                          {selectedDrug.hoatChat && (
+                            <span
+                              style={{
+                                color: '#64748b',
+                                fontSize: '12px',
+                                fontWeight: 400,
+                              }}
+                            >
+                              {' '}
+                              ({selectedDrug.hoatChat})
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Badge tồn kho khả dụng */}
+                        <div>
+                          {isOutOfStock ? (
+                            <span
+                              style={{
+                                background: '#fee2e2',
+                                color: '#b91c1c',
+                                border: '1px solid #fecaca',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              <i className="fa-solid fa-ban"></i> HẾT HÀNG / TỒN: 0
+                            </span>
+                          ) : availableStock < 10 ? (
+                            <span
+                              style={{
+                                background: '#fef3c7',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              <i className="fa-solid fa-triangle-exclamation"></i> SẮP
+                              HẾT: còn {availableStock} {selectedDrug.donViTinh}
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                background: '#ecfdf5',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              Tồn khả dụng: {availableStock}{' '}
+                              {selectedDrug.donViTinh}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid-4">
+                        <div className="field">
+                          <label>
+                            Số lượng ({selectedDrug.donViTinh || 'Viên'})
+                          </label>
+                          <input
+                            ref={quantityInputRef}
+                            type="number"
+                            min={1}
+                            max={availableStock > 0 ? availableStock : 1}
+                            value={itemQuantity}
+                            onChange={(e) =>
+                              setItemQuantity(Number(e.target.value))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                instructionInputRef.current?.focus();
+                                instructionInputRef.current?.select();
+                              }
+                            }}
+                            style={{
+                              borderColor:
+                                isOverStock || isOutOfStock
+                                  ? '#ef4444'
+                                  : undefined,
+                              background:
+                                isOverStock || isOutOfStock
+                                  ? '#fff1f2'
+                                  : undefined,
+                            }}
+                          />
+                          {isOutOfStock && (
+                            <div
+                              style={{
+                                color: '#dc2626',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                marginTop: '3px',
+                              }}
+                            >
+                              ⚠️ Thuốc đã hết hàng trong kho.
+                            </div>
+                          )}
+                          {isOverStock && !isOutOfStock && (
+                            <div
+                              style={{
+                                color: '#dc2626',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                marginTop: '3px',
+                              }}
+                            >
+                              ⚠️ Vượt quá tồn kho khả dụng (tối đa{' '}
+                              {availableStock}).
+                            </div>
+                          )}
+                        </div>
+                        <div className="field">
+                          <label>Đơn vị tính</label>
+                          <select
+                            value={itemUnit}
+                            onChange={(e) => setItemUnit(e.target.value)}
+                          >
+                            <option value="Viên">Viên</option>
+                            <option value="Vỉ">Vỉ</option>
+                            <option value="Hộp">Hộp</option>
+                            <option value="Chai">Chai</option>
+                            <option value="Ống">Ống</option>
+                            <option value="Gói">Gói</option>
+                            <option value="Lọ">Lọ</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Đường dùng</label>
+                          <select
+                            value={itemRoute}
+                            onChange={(e) => setItemRoute(e.target.value)}
+                          >
+                            <option value="Uống">Uống</option>
+                            <option value="Tiêm bắp">Tiêm bắp</option>
+                            <option value="Tiêm tĩnh mạch">Tiêm tĩnh mạch</option>
+                            <option value="Bôi ngoài da">Bôi ngoài da</option>
+                            <option value="Nhỏ mắt">Nhỏ mắt</option>
+                            <option value="Ngậm dưới lưỡi">Ngậm dưới lưỡi</option>
+                            <option value="Khí dung">Khí dung</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Số ngày dùng</label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={itemDays}
+                            onChange={(e) => setItemDays(Number(e.target.value))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid-4" style={{ marginTop: '8px' }}>
+                        <div className="field" style={{ gridColumn: 'span 2' }}>
+                          <label>
+                            Liều dùng & Hướng dẫn sử dụng (Bấm Enter để thêm)
+                          </label>
+                          <input
+                            ref={instructionInputRef}
+                            value={itemInstruction}
+                            onChange={(e) => setItemInstruction(e.target.value)}
+                            placeholder="VD: Sáng 1v sau ăn, Tối 1v sau ăn"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddDrugToPrescription();
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Tần suất</label>
+                          <input
+                            value={itemFrequency}
+                            onChange={(e) => setItemFrequency(e.target.value)}
+                            placeholder="VD: 2 lần/ngày"
+                          />
+                        </div>
+                        <div
+                          className="field"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            gap: 6,
+                          }}
+                        >
+                          <button
+                            className="btn success"
+                            type="button"
+                            onClick={handleAddDrugToPrescription}
+                            disabled={
+                              isOutOfStock || isOverStock || itemQuantity <= 0
+                            }
+                            style={{
+                              width: '100%',
+                              height: 34,
+                              opacity:
+                                isOutOfStock || isOverStock || itemQuantity <= 0
+                                  ? 0.5
+                                  : 1,
+                              cursor:
+                                isOutOfStock || isOverStock || itemQuantity <= 0
+                                  ? 'not-allowed'
+                                  : 'pointer',
+                            }}
+                          >
+                            <i className="fa-solid fa-plus"></i> Thêm vào đơn
+                          </button>
+                          <button
+                            className="btn"
+                            type="button"
+                            onClick={() => {
+                              setSelectedDrug(null);
+                              searchDrugInputRef.current?.focus();
+                            }}
+                            style={{ height: 34 }}
+                            title="Hủy chọn thuốc này"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
-          <div className="section">
-            <div className="section-head"><h3>Đơn thuốc hiện tại</h3></div>
-            <div className="section-body table-wrap">
-              {drugsList.length === 0 ? (
-                renderEmptyState('Chưa có thuốc nào được kê trong đơn hiện tại.')
-              ) : (
-                <table>
-                  <thead><tr><th>Thuốc</th><th>SL</th><th>Đơn vị</th><th>Liều</th><th>Tần suất</th><th>Số ngày</th><th>Đường dùng</th><th></th></tr></thead>
-                  <tbody>
-                    {drugsList.map((d, i) => (
-                      <tr key={`${d.name}-${i}`}>
-                        <td><strong>{d.name || '---'}</strong></td>
-                        <td>{d.qty ?? 0}</td>
-                        <td>{d.unit || '---'}</td>
-                        <td>{d.dose || '---'}</td>
-                        <td>{d.freq || '---'}</td>
-                        <td>{d.days ?? 0}</td>
-                        <td>{d.route || '---'}</td>
-                        <td><button className="icon-btn-sm delete" type="button"><i className="fa-solid fa-trash"></i></button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+          {/* Danh sách đơn thuốc hiện tại */}
+          <div
+            className="section"
+            style={{
+              marginTop: 12,
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <div className="section-head">
+              <h3>
+                <i className="fa-solid fa-list-check"></i> Đơn thuốc đã kê (
+                {prescribedDrugs.length} khoản)
+              </h3>
+            </div>
+            <div className="section-body" style={{ padding: 0 }}>
+              <PrescriptionTable
+                items={prescribedDrugs}
+                onRemoveItem={handleRemoveDrug}
+                readOnly={isPrescriptionReadOnly}
+              />
             </div>
           </div>
 
           <div className="footer-actions" style={{ marginTop: '12px' }}>
             <div className="actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button className="btn" type="button"><i className="fa-solid fa-pen-to-square"></i> Sửa đơn thuốc</button>
-              <button className="btn success" type="button"><i className="fa-solid fa-floppy-disk"></i> Lưu đơn thuốc</button>
+              <button className="btn" type="button" onClick={() => window.print()}>
+                <i className="fa-solid fa-print"></i> In đơn thuốc
+              </button>
+              {!isPrescriptionReadOnly && (
+                <button
+                  className="btn success"
+                  type="button"
+                  onClick={handleSavePrescription}
+                  disabled={isPrescriptionLoading || prescribedDrugs.length === 0}
+                  title={isPrescriptionLoading ? 'Đang lưu...' : prescriptionId ? 'Cập nhật đơn thuốc' : 'Lưu đơn thuốc'}
+                >
+                  <i className={`fa-solid ${isPrescriptionLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'}`}></i>{' '}
+                  {prescriptionId ? 'Cập nhật đơn thuốc' : 'Lưu đơn thuốc'}
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* Tab Kết quả Cận Lâm Sàng Thực Tế */}
       {activeSubtab === 'results' && (
         <div className="tab-panel active">
           <div className="section">
-            <div className="section-head"><h3><i className="fa-solid fa-microscope"></i> Kết quả xét nghiệm</h3></div>
+            <div className="section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3><i className="fa-solid fa-microscope"></i> Kết quả Cận lâm sàng & Xét nghiệm (Real-time)</h3>
+              <button 
+                className="btn secondary" 
+                type="button" 
+                style={{ fontSize: '12px', padding: '4px 10px' }}
+                onClick={() => void fetchServiceOrders()}
+                disabled={isServiceLoading}
+              >
+                <i className={`fa-solid ${isServiceLoading ? 'fa-spinner fa-spin' : 'fa-rotate'}`}></i> Làm mới
+              </button>
+            </div>
             <div className="section-body table-wrap">
-              {resultsList.length === 0 ? (
-                renderEmptyState('Chưa có kết quả xét nghiệm nào được ghi nhận.')
+              {serviceOrders.length === 0 ? (
+                renderEmptyState('Chưa có chỉ định cận lâm sàng nào được ghi nhận cho lượt khám này.')
               ) : (
                 <table>
-                  <thead><tr><th>Chỉ số</th><th>Kết quả</th><th>Đơn vị</th><th>Khoảng tham chiếu</th><th>Đánh giá</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Mã/Dịch vụ</th>
+                      <th>Loại DV</th>
+                      <th>Ngày chỉ định</th>
+                      <th>Trạng thái</th>
+                      <th>Kết luận lâm sàng</th>
+                      <th>File / PACS</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {resultsList.map((r, i) => (
-                      <tr key={`${r.indicator}-${i}`}>
-                        <td>{r.indicator || '---'}</td>
-                        <td><strong>{r.result || '---'}</strong></td>
-                        <td>{r.unit || '---'}</td>
-                        <td>{r.ref || '---'}</td>
-                        <td><span className={`tag ${r.evaluation === 'Cao' ? 'warning' : 'success'}`}>{r.evaluation || '---'}</span></td>
-                      </tr>
-                    ))}
+                    {serviceOrders.map((order) => {
+                      const isCompleted = order.trangThai === 'DaCoKetQua';
+                      return (
+                        <tr key={order.id}>
+                          <td><strong>{order.tenDichVu || `Dịch vụ #${order.id}`}</strong></td>
+                          <td><span className="tag">{order.loaiDichVu || 'CLS'}</span></td>
+                          <td style={{ fontSize: '12px', color: '#64748b' }}>
+                            {order.ngayChiDinh ? new Date(order.ngayChiDinh).toLocaleDateString('vi-VN') : '---'}
+                          </td>
+                          <td>
+                            <span className={`tag ${isCompleted ? 'success' : 'warning'}`}>
+                              {isCompleted ? 'Đã có kết quả' : 'Đang chờ KQ'}
+                            </span>
+                          </td>
+                          <td>
+                            {order.ketLuan ? (
+                              <span style={{ color: '#166534', fontWeight: 500 }}>{order.ketLuan}</span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Đang chờ kỹ thuật viên trả kết quả...</span>
+                            )}
+                          </td>
+                          <td>
+                            {order.urlKetQua ? (
+                              <a 
+                                href={order.urlKetQua} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="btn outline"
+                                style={{ padding: '2px 8px', fontSize: '11px', textDecoration: 'none' }}
+                              >
+                                <i className="fa-solid fa-eye"></i> Xem file/ảnh
+                              </a>
+                            ) : (
+                              <span style={{ color: '#cbd5e1' }}>---</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
             </div>
           </div>
-
-          <div className="section">
-            <div className="section-head"><h3><i className="fa-solid fa-image"></i> Chẩn đoán hình ảnh</h3></div>
-            <div className="section-body">
-              {renderEmptyState('Chưa có kết quả chẩn đoán hình ảnh mới.')}
-            </div>
-          </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

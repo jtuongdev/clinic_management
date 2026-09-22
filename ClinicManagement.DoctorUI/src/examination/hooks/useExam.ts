@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ExamWorkspace, QueuePatient, ExamDetail } from '../types/examination';
 import { examinationApi } from '../api/examination.api';
+import { useAuth } from '../../Auth/context/AuthProvider';
 
 // 1. Chuẩn hóa kiểu trả về của hàm mapStatus để khớp chính xác với kiểu dữ liệu của QueuePatient.status
 const mapStatus = (status: string): 'wait' | 'exam' | 'done' | 'cancel' => {
@@ -14,6 +15,7 @@ const mapStatus = (status: string): 'wait' | 'exam' | 'done' | 'cancel' => {
 };
 
 export const useExam = () => {
+  const { user } = useAuth();
   const [activeWorkspace, setActiveWorkspace] = useState<ExamWorkspace>('patient');
   const [selectedPatient, setSelectedPatient] = useState<QueuePatient | null>(null);
   const [searchQueue, setSearchQueue] = useState('');
@@ -67,11 +69,14 @@ export const useExam = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Hàm lấy danh sách hàng đợi từ API
-  const fetchQueue = async (maBacSi: number) => {
+  const fetchQueue = async (maBacSi?: number) => {
+    const doctorId = maBacSi || user?.id;
+    if (!doctorId) return;
+
     setLoading(true);
     setError(null);
     try {
-      const response = await examinationApi.getHangDoi({ maBacSi });
+      const response = await examinationApi.getHangDoi({ maBacSi: doctorId });
       
       if (response.data?.success && response.data?.data?.items) {
         // 2. Định nghĩa rõ ràng kiểu dữ liệu QueuePatient[] cho mảng sau khi map
@@ -141,8 +146,10 @@ export const useExam = () => {
   };
 
   useEffect(() => {
-    fetchQueue(1);
-  }, []);
+    if (user?.id) {
+      fetchQueue(user.id);
+    }
+  }, [user?.id]);
 
   return {
     activeWorkspace,

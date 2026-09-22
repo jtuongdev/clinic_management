@@ -1,3 +1,5 @@
+using ClinicManagement.API.Authorization;
+using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.API.Common;
 using ClinicManagement.Application.DTOs.LichLamViec;
 using ClinicManagement.Application.Features.LichLamViec;
@@ -9,7 +11,7 @@ namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.XEM, PhamViDuLieu.TOAN_HE_THONG)]
     public class LichLamViecController : BaseController
     {
         private readonly IMediator mediator;
@@ -24,6 +26,16 @@ namespace ClinicManagement.API.Controllers
             CancellationToken cancellationToken = default)
         {
             var result = await mediator.Send(new GetLichLamViecQuery(fromDate, toDate, maNhanVien, maKhoa), cancellationToken);
+            return Success(result);
+        }
+
+        [HttpGet("my-schedule")]
+        [AllowSelf]
+        public async Task<IActionResult> GetMySchedule([FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null, CancellationToken cancellationToken = default)
+        {
+            var from = fromDate ?? DateTime.Today.AddDays(-7);
+            var to = toDate ?? DateTime.Today.AddDays(28);
+            var result = await mediator.Send(new GetLichLamViecQuery(from, to, CurrentUserId), cancellationToken);
             return Success(result);
         }
 
@@ -48,7 +60,7 @@ namespace ClinicManagement.API.Controllers
         [HttpPost("bulk")]
         public async Task<IActionResult> BulkCreate([FromBody] BulkScheduleRequest request, CancellationToken cancellationToken)
         {
-            var result = await mediator.Send(new BulkScheduleCommand(request), cancellationToken);
+            var result = await mediator.Send(new PhanLichHangLoatCommand(request), cancellationToken);
             return Success(result, "Đã xử lý tạo lịch hàng loạt.");
         }
 
@@ -79,6 +91,16 @@ namespace ClinicManagement.API.Controllers
             => Success(await mediator.Send(new UpdateLichLamViecCoDinhCommand(id, request), cancellationToken),
                 "Cập nhật lịch cố định thành công.");
 
+        [HttpPost("fixed/set")]
+        public async Task<IActionResult> SetFixedSchedule([FromBody] SetFixedScheduleRequest request, CancellationToken cancellationToken)
+            => Success(await mediator.Send(new SetFixedScheduleCommand(request.MaNhanVien, request.Shifts), cancellationToken),
+                "Thiết lập lịch cố định cho nhân viên thành công.");
+
+        [HttpPost("generate-monthly")]
+        public async Task<IActionResult> GenerateMonthly([FromBody] GenerateMonthlyScheduleRequest request, CancellationToken cancellationToken)
+            => Success(await mediator.Send(new GenerateMonthlyScheduleCommand(request.Thang, request.Nam, request.MaKhoa, request.MaNhanVien), cancellationToken),
+                $"Đã sinh lịch làm việc tự động cho tháng {request.Thang}/{request.Nam}.");
+
         [HttpPost("generate")]
         public async Task<IActionResult> Generate([FromQuery] DateTime tuNgay, [FromQuery] DateTime denNgay,
             [FromQuery] int? maKhoa = null, CancellationToken cancellationToken = default)
@@ -107,6 +129,6 @@ namespace ClinicManagement.API.Controllers
 
         [HttpGet("{id:int}/adjustments")]
         public async Task<IActionResult> GetAdjustments(int id, CancellationToken cancellationToken)
-            => Success(await mediator.Send(new GetLichLamViecAdjustmentsQuery(id), cancellationToken));
+            => Success(await mediator.Send(new LayDieuChinhLichLamViecQuery(id), cancellationToken));
     }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { ExaminationWorkspaceProps } from '../../types/examination/examination-form.types';
 import { useExaminationForm } from '../../hooks/useExaminationForm';
 import './Workspace.css';
@@ -26,6 +26,31 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
     handleDeleteTienSu,
   } = useExaminationForm({ data, luotKhamId, onSaveSuccess });
 
+  // Tự động tính chỉ số BMI
+  const bmiInfo = useMemo(() => {
+    const w = parseFloat(formState.canNang);
+    const h = parseFloat(formState.chieuCao) / 100; // mét
+    if (w > 0 && h > 0) {
+      const val = +(w / (h * h)).toFixed(1);
+      let cat = 'Bình thường';
+      let color = '#16a34a';
+      if (val < 18.5) { cat = 'Thiếu cân'; color = '#d97706'; }
+      else if (val >= 25 && val < 30) { cat = 'Thừa cân'; color = '#ea580c'; }
+      else if (val >= 30) { cat = 'Béo phì'; color = '#dc2626'; }
+      return { value: val, category: cat, color };
+    }
+    return null;
+  }, [formState.canNang, formState.chieuCao]);
+
+  // Danh sách các dị ứng nguy hiểm đã ghi nhận
+  const allergies = useMemo(() => {
+    return formState.tienSuBenhs.filter(
+      item => item.loaiTienSu === '3' || 
+              item.loaiTienSu?.toLowerCase().includes('dị ứng') ||
+              item.ten.toLowerCase().includes('dị ứng')
+    );
+  }, [formState.tienSuBenhs]);
+
   if (isLoading) {
     return (
       <div className="exam-loading">
@@ -37,6 +62,38 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
 
   return (
     <div className="exam-workspace">
+      {/* CẢNH BÁO NGUY HIỂM: Sticky Allergy Banner */}
+      {allergies.length > 0 && (
+        <div style={{
+          background: '#fef2f2',
+          border: '2px solid #ef4444',
+          color: '#991b1b',
+          padding: '12px 16px',
+          borderRadius: '6px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 2px 4px rgba(239, 68, 68, 0.15)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '20px', color: '#dc2626' }}></i>
+            <div>
+              <strong style={{ fontSize: '14px', textTransform: 'uppercase' }}>Cảnh báo dị ứng nghiêm trọng:</strong>
+              <div style={{ marginTop: '2px', fontSize: '13px' }}>
+                Bệnh nhân có tiền sử dị ứng với: {allergies.map(a => a.ten).join(', ')}
+              </div>
+            </div>
+          </div>
+          <span style={{
+            background: '#dc2626', color: '#fff', padding: '4px 10px',
+            borderRadius: '4px', fontSize: '12px', fontWeight: 'bold'
+          }}>
+            LƯU Ý KÊ ĐƠN
+          </span>
+        </div>
+      )}
+
       {(saveSuccess || saveError) && (
         <div className={`exam-alert ${saveSuccess ? 'alert-success' : 'alert-danger'}`}>
           <i className={`fa-regular ${saveSuccess ? 'fa-circle-check' : 'fa-circle-exclamation'}`} />
@@ -67,7 +124,12 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
         {/* Sinh hiệu */}
         <section className="section vitals-section">
           <div className="section-head">
-            <span><i className="fa-regular fa-heart-pulse" /> Sinh hiệu</span>
+            <span><i className="fa-regular fa-heart-pulse" /> Sinh hiệu (Vitals & Triage)</span>
+            {bmiInfo && (
+              <span style={{ fontSize: '12px', color: bmiInfo.color, fontWeight: 600 }}>
+                BMI: {bmiInfo.value} kg/m² ({bmiInfo.category})
+              </span>
+            )}
           </div>
           <div className="section-body">
             <div className="vitals-grid">
@@ -95,6 +157,20 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
                   </div>
                 </div>
               ))}
+
+              {/* Ô hiển thị BMI tự động */}
+              <div className="vital-field">
+                <label>Chỉ số BMI</label>
+                <div className="input-with-unit">
+                  <input
+                    type="text"
+                    value={bmiInfo ? `${bmiInfo.value} (${bmiInfo.category})` : '---'}
+                    readOnly
+                    style={{ fontWeight: 600, color: bmiInfo?.color || 'inherit' }}
+                  />
+                  <span className="input-unit">kg/m²</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -103,7 +179,7 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
       {/* Tiền sử bệnh */}
       <section className="section history-section">
         <div className="section-head">
-          <span><i className="fa-regular fa-file-lines" /> Tiền sử bệnh</span>
+          <span><i className="fa-regular fa-file-lines" /> Tiền sử bệnh & Dị ứng</span>
           {formState.tienSuBenhs.length > 0 && (
             <span className="badge">{formState.tienSuBenhs.length}</span>
           )}
@@ -122,18 +198,23 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))
                 ) : (
-                  <option value="1">Bệnh nền</option>
+                  <>
+                    <option value="1">Bệnh mãn tính / Bệnh nền</option>
+                    <option value="2">Phẫu thuật / Can thiệp</option>
+                    <option value="3">Dị ứng thuốc / Thức ăn</option>
+                    <option value="4">Tiền sử gia đình</option>
+                  </>
                 )}
               </select>
             </div>
             <div className="field">
-              <label>Tên tiền sử</label>
+              <label>Tên tiền sử / Dị ứng</label>
               <input
                 type="text"
                 value={formState.tenTienSu}
                 disabled={!isEditing}
                 onChange={(e) => handleFieldChange('tenTienSu', e.target.value)}
-                placeholder="Ví dụ: Tăng huyết áp..."
+                placeholder="Ví dụ: Dị ứng Penicillin, Tăng huyết áp..."
               />
             </div>
             <div className="field">
@@ -176,11 +257,15 @@ const ExaminationWorkspace: React.FC<ExaminationWorkspaceProps> = ({
                   <tbody>
                     {formState.tienSuBenhs.map((item, index) => {
                       const option = loaiTienSuOptions.find((x) => x.value === item.loaiTienSu);
+                      const isAllergy = item.loaiTienSu === '3' || item.ten.toLowerCase().includes('dị ứng');
                       return (
-                        <tr key={item.id ?? `new-${index}`}>
+                        <tr key={item.id ?? `new-${index}`} style={isAllergy ? { background: '#fef2f2' } : {}}>
                           <td className="text-center">{index + 1}</td>
-                          <td style={{ fontWeight: 500 }}>{option?.label ?? item.loaiTienSu}</td>
-                          <td style={{ fontWeight: 500 }}>{item.ten}</td>
+                          <td style={{ fontWeight: 500 }}>
+                            {isAllergy && <span style={{ color: '#dc2626', marginRight: '4px' }}>⚠️</span>}
+                            {option?.label ?? (item.loaiTienSu === '3' ? 'Dị ứng' : item.loaiTienSu)}
+                          </td>
+                          <td style={{ fontWeight: 500, color: isAllergy ? '#991b1b' : 'inherit' }}>{item.ten}</td>
                           <td className="text-muted">{item.ghiChu || '—'}</td>
                           {isEditing && (
                             <td className="text-center">

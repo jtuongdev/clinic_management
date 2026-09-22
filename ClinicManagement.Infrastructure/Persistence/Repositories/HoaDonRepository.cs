@@ -34,6 +34,7 @@ public sealed class HoaDonRepository(ClinicDbContext context) : IHoaDonRepositor
         DateTime? fromDate,
         DateTime? toDate,
         TrangThaiHoaDon? trangThai,
+        string? keyword,
         int pageIndex,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -47,6 +48,15 @@ public sealed class HoaDonRepository(ClinicDbContext context) : IHoaDonRepositor
             query = query.Where(h => h.NgayLap < toDate.Value.AddDays(1));
         if (trangThai.HasValue)
             query = query.Where(h => h.TrangThai == trangThai.Value);
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var kw = keyword.Trim().ToLower();
+            query = query.Where(h =>
+                h.SoHoaDon.ToLower().Contains(kw) ||
+                (h.BenhNhan != null && ((h.BenhNhan.Ho + " " + h.BenhNhan.Ten).ToLower().Contains(kw) || h.BenhNhan.DienThoai.Contains(kw) || h.BenhNhan.SoCCCD.Contains(kw))) ||
+                h.MaBenhNhan.ToString().Contains(kw) ||
+                h.MaLuotKham.ToString().Contains(kw));
+        }
 
         var total = await query.CountAsync(cancellationToken);
         var items = await query

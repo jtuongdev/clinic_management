@@ -13,6 +13,7 @@ public interface IHoaDonRepository
         DateTime? fromDate,
         DateTime? toDate,
         TrangThaiHoaDon? trangThai,
+        string? keyword,
         int pageIndex,
         int pageSize,
         CancellationToken cancellationToken = default);

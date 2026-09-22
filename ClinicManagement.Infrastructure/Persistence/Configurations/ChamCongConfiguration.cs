@@ -33,8 +33,9 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(cc => cc.MaLichLamViec)
+                .HasDatabaseName("IX_ChamCong_MaLichLamViec")
                 .IsUnique()
-                .HasFilter("[MaLichLamViec] IS NOT NULL");
+                .HasFilter("[IsDeleted] = 0 AND [MaLichLamViec] IS NOT NULL");
             builder.HasQueryFilter(cc => !cc.IsDeleted);
         }
     }

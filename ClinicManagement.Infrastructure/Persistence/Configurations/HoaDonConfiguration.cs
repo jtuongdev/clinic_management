@@ -34,7 +34,9 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasMaxLength(20);
                 
             builder.Property(h => h.GhiChu)
-                .HasMaxLength(500);
+                .IsRequired()
+                .HasMaxLength(500)
+                .HasDefaultValue(string.Empty);
             
             builder.HasOne(h => h.LuotKham)
                 .WithMany(l => l.HoaDons)

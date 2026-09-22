@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClinicManagement.Application.Common.Interfaces;
+using ClinicManagement.Application.DTOs.Kho;
 using ClinicManagement.Application.DTOs.Kho.CapPhat;
 using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Domain.Examination;
@@ -132,7 +133,25 @@ public sealed partial class KhoService
             });
         }
 
-        public async Task<InventoryResult> Import(ImportRequest request)
+    private async Task<(decimal baseQuantity, decimal basePrice, decimal lineTotal)> CalculateImportQuantityAndPrice(
+        Item item, decimal quantity, decimal purchasePrice, string? unit)
+    {
+        if (quantity <= 0 || purchasePrice < 0) return (0, 0, 0);
+        decimal factor = 1m;
+        if (!string.IsNullOrWhiteSpace(unit) && !unit.Equals(item.DonViTinhCoBan, StringComparison.OrdinalIgnoreCase))
+        {
+            var conversion = await db.DonViTinhQuyDois.FirstOrDefaultAsync(x => x.MaItem == item.Id && x.DonVi == unit);
+            if (conversion is null || conversion.HeSo <= 0) return (0, 0, 0);
+            factor = conversion.HeSo;
+        }
+
+        var baseQuantity = quantity * factor;
+        var basePrice = purchasePrice / factor;
+        var lineTotal = quantity * purchasePrice;
+        return (baseQuantity, basePrice, lineTotal);
+    }
+
+    public async Task<InventoryResult> Import(ImportRequest request)
     {
         var replay = await ReplayAsync(request.IdempotencyKey, nameof(Import));
         if (replay is not null) return replay;
@@ -141,47 +160,484 @@ public sealed partial class KhoService
         if (supplier.TrangThai != TrangThaiNhaCungCap.HoatDong) return InventoryResult.Error("Nhà cung cấp đã ngừng hợp tác.", 409);
         var items = request.Items.ToList();
         if (items.Count == 0) return InventoryResult.Error("Phiếu nhập phải có ít nhất một dòng.");
+
+        var warehouseId = (request.WarehouseId.HasValue && request.WarehouseId.Value > 0)
+            ? request.WarehouseId.Value
+            : DefaultWarehouseId;
+        var warehouse = await db.Khos
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == warehouseId);
+        if (warehouse is null)
+        {
+            warehouse = await db.Khos
+                .AsNoTracking()
+                .Where(x => x.TrangThai == TrangThaiKho.HoatDong)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync();
+            warehouseId = warehouse?.Id ?? warehouseId;
+        }
+        if (warehouse is null)
+            return InventoryResult.Error("Chưa cấu hình kho nhập hợp lệ trong hệ thống.", 409);
+        if (warehouse.TrangThai != TrangThaiKho.HoatDong)
+            return InventoryResult.Error("Kho nhập đang ngừng hoạt động.", 409);
+
         await using var transaction = await db.BeginTransactionAsync();
-        var receipt = new PhieuNhapKho { MaPhieu = $"PN-{DateTime.UtcNow:yyyyMMddHHmmssfff}",
-            MaCoSo = 1, MaKho = DefaultWarehouseId, MaNhaCungCap = request.SupplierId,
-            NgayNhap = request.ReceivedAt, MaNguoiNhap = UserId, GhiChu = request.Note ?? string.Empty,
-            NhaCungCap = supplier };
+        var receipt = new PhieuNhapKho
+        {
+            MaPhieu = $"PN-{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+            MaCoSo = warehouse.MaCoSo,
+            MaKho = warehouseId,
+            MaNhaCungCap = request.SupplierId,
+            NgayNhap = request.ReceivedAt,
+            MaNguoiNhap = UserId,
+            GhiChu = request.Note ?? string.Empty,
+            NhaCungCap = supplier
+        };
+
         foreach (var line in items)
         {
             var item = await db.Items.FirstOrDefaultAsync(x => x.Id == line.ItemId && x.IsActive);
             if (item is null) return InventoryResult.Error($"Mặt hàng {line.ItemId} không tồn tại hoặc đã ngừng sử dụng.", 404);
-            var quantity = await ToBaseQuantity(item, line.Quantity, line.Unit);
-            if (quantity <= 0 || (item.LoaiItem == LoaiItem.THUOC && !line.ExpiryDate.HasValue))
-                return InventoryResult.Error("Số lượng/hạn sử dụng không hợp lệ.");
-            var detail = new ChiTietNhapKho { Item = item, SoLuong = quantity, DonGiaNhap = line.PurchasePrice,
-                SoLo = line.BatchNumber.Trim(), HanSuDung = line.ExpiryDate };
+
+            if (string.IsNullOrWhiteSpace(line.BatchNumber))
+                return InventoryResult.Error($"Số lô của mặt hàng '{item.Ten}' không được để trống.");
+
+            if (item.LoaiItem == LoaiItem.THUOC)
+            {
+                if (!line.ExpiryDate.HasValue || line.ExpiryDate.Value.Date <= DateTime.UtcNow.Date)
+                    return InventoryResult.Error($"Thuốc '{item.Ten}' đã hết hạn sử dụng hoặc hạn dùng không hợp lệ.");
+            }
+
+            var (baseQuantity, basePrice, lineTotal) = await CalculateImportQuantityAndPrice(item, line.Quantity, line.PurchasePrice, line.Unit);
+            if (baseQuantity <= 0)
+                return InventoryResult.Error($"Số lượng hoặc đơn vị quy đổi của mặt hàng '{item.Ten}' không hợp lệ.");
+
+            var detail = new ChiTietNhapKho
+            {
+                Item = item,
+                SoLuong = baseQuantity,
+                DonGiaNhap = basePrice,
+                SoLo = line.BatchNumber.Trim(),
+                HanSuDung = line.ExpiryDate
+            };
             receipt.ChiTietNhapKhos.Add(detail);
-            receipt.TongTien += quantity * line.PurchasePrice;
+            receipt.TongTien += lineTotal;
         }
+
         receipt.TrangThai = request.SaveDraft ? TrangThaiPhieuNhap.CHO_DUYET : TrangThaiPhieuNhap.DA_NHAP;
         db.Add(receipt);
         await db.SaveChangesAsync();
+
         if (!request.SaveDraft)
         {
             foreach (var detail in receipt.ChiTietNhapKhos)
             {
-                var stock = new TonKho { MaKho = DefaultWarehouseId, MaItem = detail.MaItem, MaChiTietNhap = detail.Id,
-                    SoLuongTon = detail.SoLuong, NgayCapNhatCuoi = DateTime.UtcNow };
+                var stock = new TonKho
+                {
+                    MaKho = warehouseId,
+                    MaItem = detail.MaItem,
+                    MaChiTietNhap = detail.Id,
+                    SoLuongTon = detail.SoLuong,
+                    NgayCapNhatCuoi = DateTime.UtcNow
+                };
                 db.Add(stock);
-                db.Add(new InventoryTransaction { LoaiGiaoDich = LoaiGiaoDichKho.NHAP,
-                    MaItem = detail.MaItem, MaTonKho = stock.Id, SoLo = detail.SoLo, SoLuongThayDoi = detail.SoLuong,
-                    SoLuongSau = detail.SoLuong, MaChungTu = receipt.MaPhieu, MaNguoiThucHien = UserId,
-                    IdempotencyKey = request.IdempotencyKey });
+
+                var tx = new InventoryTransaction
+                {
+                    LoaiGiaoDich = LoaiGiaoDichKho.NHAP,
+                    MaItem = detail.MaItem,
+                    TonKho = stock, // Navigation Property fixes Foreign Key constraint!
+                    SoLo = detail.SoLo,
+                    SoLuongThayDoi = detail.SoLuong,
+                    SoLuongSau = detail.SoLuong,
+                    MaChungTu = receipt.MaPhieu,
+                    MaNguoiThucHien = UserId,
+                    IdempotencyKey = request.IdempotencyKey ?? string.Empty
+                };
+                db.Add(tx);
             }
             await db.SaveChangesAsync();
         }
+
         var result = new { id = receipt.Id, referenceCode = receipt.MaPhieu, status = receipt.TrangThai.ToString() };
         await SaveReplayAsync(request.IdempotencyKey, nameof(Import), result);
         await transaction.CommitAsync();
         return InventoryResult.Ok(result);
     }
 
-        public async Task<InventoryResult> ApproveImport(int id)
+    public async Task<InventoryResult> GetPendingPurchaseOrders(int? supplierId)
+    {
+        var query = db.DonDatHangs.AsNoTracking()
+            .Include(x => x.NhaCungCap)
+            .Include(x => x.Kho)
+            .Include(x => x.ChiTietDonDatHangs)
+            .Where(x => !x.IsDeleted && (x.TrangThai == TrangThaiDonDatHang.DA_DAT || x.TrangThai == TrangThaiDonDatHang.GIAO_MOT_PHAN));
+
+        if (supplierId.HasValue && supplierId.Value > 0)
+        {
+            query = query.Where(x => x.MaNhaCungCap == supplierId.Value);
+        }
+
+        var orders = await query
+            .OrderByDescending(x => x.NgayDat)
+            .Select(x => new PurchaseOrderPendingDto(
+                x.Id,
+                x.MaDonDatHang,
+                x.MaNhaCungCap,
+                x.NhaCungCap.Ma,
+                x.NhaCungCap.Ten,
+                x.MaKho,
+                x.Kho.TenKho,
+                x.NgayDat,
+                x.NgayDuKienGiao,
+                x.TongTien,
+                x.TrangThai.ToString(),
+                x.ChiTietDonDatHangs.Count,
+                x.GhiChu
+            ))
+            .ToListAsync();
+
+        return InventoryResult.Ok(orders);
+    }
+
+    public async Task<InventoryResult> GetPurchaseOrderForImport(int id)
+    {
+        var po = await db.DonDatHangs.AsNoTracking()
+            .Include(x => x.NhaCungCap)
+            .Include(x => x.Kho)
+            .Include(x => x.ChiTietDonDatHangs)
+                .ThenInclude(ct => ct.Item)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (po is null)
+            return InventoryResult.Error("Không tìm thấy đơn đặt hàng.", 404);
+
+        if (po.TrangThai == TrangThaiDonDatHang.HOAN_THANH || po.TrangThai == TrangThaiDonDatHang.DA_HUY)
+            return InventoryResult.Error("Đơn đặt hàng này đã hoàn tất hoặc đã bị hủy.", 409);
+
+        var dateStr = DateTime.UtcNow.ToString("yyMMdd");
+        var rand = new Random();
+
+        var lines = po.ChiTietDonDatHangs
+            .OrderBy(ct => ct.Id)
+            .Select(ct =>
+            {
+                var remaining = ct.SoLuongConLai;
+                var rawCode = !string.IsNullOrWhiteSpace(ct.Item.Ma) ? ct.Item.Ma : "LOT";
+                var codePart = new string(rawCode.Where(char.IsLetterOrDigit).ToArray());
+                if (codePart.Length > 4) codePart = codePart[..4];
+                if (string.IsNullOrEmpty(codePart)) codePart = "LOT";
+                var defaultBatch = $"L{dateStr}-{codePart.ToUpper()}{rand.Next(100, 999)}";
+
+                return new PurchaseOrderForImportLineDto(
+                    ct.Id,
+                    ct.MaItem,
+                    ct.Item.Ma,
+                    ct.Item.Ten,
+                    ct.Item.LoaiItem.ToString(),
+                    !string.IsNullOrWhiteSpace(ct.DonViTinh) ? ct.DonViTinh : ct.Item.DonViTinhCoBan,
+                    ct.SoLuongDat,
+                    ct.SoLuongDaNhap,
+                    remaining,
+                    ct.DonGiaDat,
+                    defaultBatch
+                );
+            })
+            .ToList();
+
+        var result = new PurchaseOrderForImportDto(
+            po.Id,
+            po.MaDonDatHang,
+            po.MaNhaCungCap,
+            po.NhaCungCap.Ma,
+            po.NhaCungCap.Ten,
+            po.MaKho,
+            po.Kho.TenKho,
+            po.NgayDat,
+            po.NgayDuKienGiao,
+            po.TongTien,
+            po.TrangThai.ToString(),
+            po.GhiChu,
+            lines
+        );
+
+        return InventoryResult.Ok(result);
+    }
+
+    public async Task<InventoryResult> CreateImportFromPo(CreateImportFromPoRequest request)
+    {
+        var replay = await ReplayAsync(request.IdempotencyKey, nameof(CreateImportFromPo));
+        if (replay is not null) return replay;
+
+        var po = await db.DonDatHangs
+            .Include(x => x.ChiTietDonDatHangs)
+            .FirstOrDefaultAsync(x => x.Id == request.PurchaseOrderId && !x.IsDeleted);
+
+        if (po is null)
+            return InventoryResult.Error("Không tìm thấy đơn đặt hàng.", 404);
+
+        if (po.TrangThai != TrangThaiDonDatHang.DA_DAT && po.TrangThai != TrangThaiDonDatHang.GIAO_MOT_PHAN)
+            return InventoryResult.Error("Đơn đặt hàng không ở trạng thái chờ giao hàng.", 409);
+
+        var linesToImport = request.Lines?.Where(l => l.Quantity > 0).ToList();
+        if (linesToImport is null || linesToImport.Count == 0)
+            return InventoryResult.Error("Phiếu nhập từ PO phải có ít nhất một mặt hàng với số lượng nhận lớn hơn 0.");
+
+        var supplier = await db.NhaCungCaps.FirstOrDefaultAsync(x => x.Id == po.MaNhaCungCap);
+        if (supplier is null) return InventoryResult.Error("Không tìm thấy nhà cung cấp.", 404);
+        if (supplier.TrangThai != TrangThaiNhaCungCap.HoatDong) return InventoryResult.Error("Nhà cung cấp đã ngừng hợp tác.", 409);
+
+        var warehouseId = (request.WarehouseId.HasValue && request.WarehouseId.Value > 0)
+            ? request.WarehouseId.Value
+            : po.MaKho;
+
+        var warehouse = await db.Khos.AsNoTracking().FirstOrDefaultAsync(x => x.Id == warehouseId);
+        if (warehouse is null)
+            return InventoryResult.Error("Không tìm thấy kho tiếp nhận hợp lệ.", 409);
+
+        await using var transaction = await db.BeginTransactionAsync();
+
+        var receipt = new PhieuNhapKho
+        {
+            MaPhieu = $"PN-{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+            MaCoSo = warehouse.MaCoSo,
+            MaKho = warehouseId,
+            MaNhaCungCap = po.MaNhaCungCap,
+            MaDonDatHang = po.Id,
+            NgayNhap = request.ReceivedAt,
+            MaNguoiNhap = UserId,
+            GhiChu = string.IsNullOrWhiteSpace(request.Note)
+                ? $"Nhập kho theo đơn đặt hàng #{po.MaDonDatHang}"
+                : $"{request.Note.Trim()} (Nhập theo PO #{po.MaDonDatHang})",
+            NhaCungCap = supplier,
+            DonDatHang = po
+        };
+
+        foreach (var line in linesToImport)
+        {
+            var poDetail = po.ChiTietDonDatHangs.FirstOrDefault(d => d.Id == line.PoDetailId);
+            if (poDetail is null)
+                return InventoryResult.Error($"Dòng chi tiết đơn đặt hàng #{line.PoDetailId} không tồn tại trên PO này.");
+
+            var remaining = poDetail.SoLuongConLai;
+            if (line.Quantity > remaining)
+            {
+                return InventoryResult.Error(
+                    $"Số lượng nhận của mặt hàng #{poDetail.MaItem} ({line.Quantity}) vượt quá số lượng còn lại của đơn đặt hàng ({remaining}).");
+            }
+
+            var item = await db.Items.FirstOrDefaultAsync(x => x.Id == line.ItemId && x.IsActive);
+            if (item is null)
+                return InventoryResult.Error($"Mặt hàng {line.ItemId} không tồn tại hoặc đã ngừng sử dụng.", 404);
+
+            if (string.IsNullOrWhiteSpace(line.BatchNumber))
+                return InventoryResult.Error($"Số lô của mặt hàng '{item.Ten}' không được để trống.");
+
+            if (item.LoaiItem == LoaiItem.THUOC)
+            {
+                if (!line.ExpiryDate.HasValue || line.ExpiryDate.Value.Date <= DateTime.UtcNow.Date)
+                    return InventoryResult.Error($"Thuốc '{item.Ten}' chưa có hạn dùng hoặc hạn dùng không hợp lệ.");
+            }
+
+            var (baseQuantity, basePrice, lineTotal) = await CalculateImportQuantityAndPrice(item, line.Quantity, line.PurchasePrice, line.Unit);
+            if (baseQuantity <= 0)
+                return InventoryResult.Error($"Số lượng hoặc đơn vị quy đổi của mặt hàng '{item.Ten}' không hợp lệ.");
+
+            var detail = new ChiTietNhapKho
+            {
+                Item = item,
+                MaChiTietDonDatHang = poDetail.Id,
+                ChiTietDonDatHang = poDetail,
+                SoLuong = baseQuantity,
+                DonGiaNhap = basePrice,
+                SoLo = line.BatchNumber.Trim(),
+                HanSuDung = line.ExpiryDate
+            };
+            receipt.ChiTietNhapKhos.Add(detail);
+            receipt.TongTien += lineTotal;
+
+            // Cập nhật số lượng đã nhận lũy kế trên dòng PO
+            poDetail.SoLuongDaNhap += line.Quantity;
+        }
+
+        // Tính lại trạng thái PO: GIAO_MOT_PHAN hoặc HOAN_THANH
+        po.RecalculateStatus();
+
+        receipt.TrangThai = request.SaveDraft ? TrangThaiPhieuNhap.CHO_DUYET : TrangThaiPhieuNhap.DA_NHAP;
+        db.Add(receipt);
+        await db.SaveChangesAsync();
+
+        if (!request.SaveDraft)
+        {
+            foreach (var detail in receipt.ChiTietNhapKhos)
+            {
+                var stock = new TonKho
+                {
+                    MaKho = warehouseId,
+                    MaItem = detail.MaItem,
+                    MaChiTietNhap = detail.Id,
+                    SoLuongTon = detail.SoLuong,
+                    NgayCapNhatCuoi = DateTime.UtcNow
+                };
+                db.Add(stock);
+
+                var tx = new InventoryTransaction
+                {
+                    LoaiGiaoDich = LoaiGiaoDichKho.NHAP,
+                    MaItem = detail.MaItem,
+                    TonKho = stock, // Navigation property prevents FK constraints!
+                    SoLo = detail.SoLo,
+                    SoLuongThayDoi = detail.SoLuong,
+                    SoLuongSau = detail.SoLuong,
+                    MaChungTu = receipt.MaPhieu,
+                    MaNguoiThucHien = UserId,
+                    IdempotencyKey = request.IdempotencyKey ?? string.Empty
+                };
+                db.Add(tx);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var result = new
+        {
+            id = receipt.Id,
+            referenceCode = receipt.MaPhieu,
+            status = receipt.TrangThai.ToString(),
+            purchaseOrderId = po.Id,
+            purchaseOrderStatus = po.TrangThai.ToString()
+        };
+
+        await SaveReplayAsync(request.IdempotencyKey, nameof(CreateImportFromPo), result);
+        await transaction.CommitAsync();
+
+        return InventoryResult.Ok(result);
+    }
+
+    public async Task<InventoryResult> UpdateImport(int id, ImportRequest request)
+    {
+        var receipt = await db.PhieuNhapKhos.Include(x => x.ChiTietNhapKhos).FirstOrDefaultAsync(x => x.Id == id);
+        if (receipt is null) return InventoryResult.Error("Không tìm thấy phiếu nhập.", 404);
+        if (receipt.TrangThai != TrangThaiPhieuNhap.CHO_DUYET && receipt.TrangThai != TrangThaiPhieuNhap.TAM)
+            return InventoryResult.Error("Chỉ có thể chỉnh sửa phiếu nhập ở trạng thái chờ duyệt hoặc tạm.", 409);
+
+        var supplier = await db.NhaCungCaps.FirstOrDefaultAsync(x => x.Id == request.SupplierId);
+        if (supplier is null) return InventoryResult.Error("Không tìm thấy nhà cung cấp.", 404);
+        if (supplier.TrangThai != TrangThaiNhaCungCap.HoatDong) return InventoryResult.Error("Nhà cung cấp đã ngừng hợp tác.", 409);
+
+        var items = request.Items.ToList();
+        if (items.Count == 0) return InventoryResult.Error("Phiếu nhập phải có ít nhất một dòng.");
+
+        var warehouseId = (request.WarehouseId.HasValue && request.WarehouseId.Value > 0)
+            ? request.WarehouseId.Value
+            : DefaultWarehouseId;
+
+        await using var transaction = await db.BeginTransactionAsync();
+
+        receipt.MaNhaCungCap = request.SupplierId;
+        receipt.MaKho = warehouseId;
+        receipt.NgayNhap = request.ReceivedAt;
+        receipt.GhiChu = request.Note ?? string.Empty;
+        receipt.TongTien = 0;
+
+        // Xóa chi tiết cũ
+        db.RemoveRange(receipt.ChiTietNhapKhos);
+        receipt.ChiTietNhapKhos.Clear();
+
+        foreach (var line in items)
+        {
+            var item = await db.Items.FirstOrDefaultAsync(x => x.Id == line.ItemId && x.IsActive);
+            if (item is null) return InventoryResult.Error($"Mặt hàng {line.ItemId} không tồn tại hoặc đã ngừng sử dụng.", 404);
+
+            if (string.IsNullOrWhiteSpace(line.BatchNumber))
+                return InventoryResult.Error($"Số lô của mặt hàng '{item.Ten}' không được để trống.");
+
+            if (item.LoaiItem == LoaiItem.THUOC)
+            {
+                if (!line.ExpiryDate.HasValue || line.ExpiryDate.Value.Date <= DateTime.UtcNow.Date)
+                    return InventoryResult.Error($"Thuốc '{item.Ten}' đã hết hạn sử dụng hoặc hạn dùng không hợp lệ.");
+            }
+
+            var (baseQuantity, basePrice, lineTotal) = await CalculateImportQuantityAndPrice(item, line.Quantity, line.PurchasePrice, line.Unit);
+            if (baseQuantity <= 0)
+                return InventoryResult.Error($"Số lượng hoặc đơn vị quy đổi của mặt hàng '{item.Ten}' không hợp lệ.");
+
+            var detail = new ChiTietNhapKho
+            {
+                Item = item,
+                SoLuong = baseQuantity,
+                DonGiaNhap = basePrice,
+                SoLo = line.BatchNumber.Trim(),
+                HanSuDung = line.ExpiryDate
+            };
+            receipt.ChiTietNhapKhos.Add(detail);
+            receipt.TongTien += lineTotal;
+        }
+
+        if (!request.SaveDraft)
+        {
+            receipt.TrangThai = TrangThaiPhieuNhap.DA_NHAP;
+            await db.SaveChangesAsync();
+
+            foreach (var detail in receipt.ChiTietNhapKhos)
+            {
+                var stock = new TonKho
+                {
+                    MaKho = warehouseId,
+                    MaItem = detail.MaItem,
+                    MaChiTietNhap = detail.Id,
+                    SoLuongTon = detail.SoLuong,
+                    NgayCapNhatCuoi = DateTime.UtcNow
+                };
+                db.Add(stock);
+
+                var tx = new InventoryTransaction
+                {
+                    LoaiGiaoDich = LoaiGiaoDichKho.NHAP,
+                    MaItem = detail.MaItem,
+                    TonKho = stock,
+                    SoLo = detail.SoLo,
+                    SoLuongThayDoi = detail.SoLuong,
+                    SoLuongSau = detail.SoLuong,
+                    MaChungTu = receipt.MaPhieu,
+                    MaNguoiThucHien = UserId,
+                    IdempotencyKey = request.IdempotencyKey ?? string.Empty
+                };
+                db.Add(tx);
+            }
+        }
+        else
+        {
+            receipt.TrangThai = TrangThaiPhieuNhap.CHO_DUYET;
+        }
+
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return InventoryResult.Ok(new { id = receipt.Id, referenceCode = receipt.MaPhieu, status = receipt.TrangThai.ToString() });
+    }
+
+    public async Task<InventoryResult> CancelImport(int id, string? reason)
+    {
+        var receipt = await db.PhieuNhapKhos.FirstOrDefaultAsync(x => x.Id == id);
+        if (receipt is null) return InventoryResult.Error("Không tìm thấy phiếu nhập.", 404);
+        if (receipt.TrangThai == TrangThaiPhieuNhap.DA_HUY)
+            return InventoryResult.Error("Phiếu nhập này đã bị hủy trước đó.", 409);
+        if (receipt.TrangThai == TrangThaiPhieuNhap.DA_NHAP)
+            return InventoryResult.Error("Không thể hủy phiếu nhập kho đã hoàn tất nhập hàng.", 409);
+
+        receipt.Cancel();
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            receipt.GhiChu = string.IsNullOrWhiteSpace(receipt.GhiChu)
+                ? $"[Lý do hủy: {reason.Trim()}]"
+                : $"{receipt.GhiChu} | [Lý do hủy: {reason.Trim()}]";
+        }
+
+        await db.SaveChangesAsync();
+        return InventoryResult.Ok(new { id, status = receipt.TrangThai.ToString() });
+    }
+
+    public async Task<InventoryResult> ApproveImport(int id)
     {
         var receipt = await db.PhieuNhapKhos.Include(x => x.ChiTietNhapKhos).FirstOrDefaultAsync(x => x.Id == id);
         if (receipt is null) return InventoryResult.Error("Không tìm thấy phiếu nhập.", 404);
@@ -190,28 +646,167 @@ public sealed partial class KhoService
         receipt.Approve();
         foreach (var detail in receipt.ChiTietNhapKhos)
         {
-            var stock = new TonKho { MaKho = receipt.MaKho, MaItem = detail.MaItem, MaChiTietNhap = detail.Id,
-                SoLuongTon = detail.SoLuong, NgayCapNhatCuoi = DateTime.UtcNow };
+            var stock = new TonKho
+            {
+                MaKho = receipt.MaKho,
+                MaItem = detail.MaItem,
+                MaChiTietNhap = detail.Id,
+                SoLuongTon = detail.SoLuong,
+                NgayCapNhatCuoi = DateTime.UtcNow
+            };
             db.Add(stock);
-            db.Add(new InventoryTransaction { LoaiGiaoDich = LoaiGiaoDichKho.NHAP,
-                MaItem = detail.MaItem, MaTonKho = stock.Id, SoLo = detail.SoLo, SoLuongThayDoi = detail.SoLuong,
-                SoLuongSau = detail.SoLuong, MaChungTu = receipt.MaPhieu, MaNguoiThucHien = UserId });
+
+            var tx = new InventoryTransaction
+            {
+                LoaiGiaoDich = LoaiGiaoDichKho.NHAP,
+                MaItem = detail.MaItem,
+                TonKho = stock, // Navigation Property fixes Foreign Key constraint!
+                SoLo = detail.SoLo,
+                SoLuongThayDoi = detail.SoLuong,
+                SoLuongSau = detail.SoLuong,
+                MaChungTu = receipt.MaPhieu,
+                MaNguoiThucHien = UserId
+            };
+            db.Add(tx);
         }
-        await db.SaveChangesAsync(); await transaction.CommitAsync();
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return InventoryResult.Ok(new { id, status = receipt.TrangThai.ToString() });
     }
 
-        public async Task<InventoryResult> PendingPrescriptions(int pageIndex = 1, int pageSize = 20)
+    public async Task<InventoryResult> PendingPrescriptions(int pageIndex = 1, int pageSize = 20)
     {
-        var query = db.DonThuocs.AsNoTracking().Where(x => x.TrangThai == TrangThaiDonThuoc.DA_DUYET);
+        var query = db.DonThuocs.AsNoTracking()
+            .Include(x => x.LuotKham).ThenInclude(lk => lk.BenhNhan)
+            .Include(x => x.LuotKham).ThenInclude(lk => lk.HoaDons)
+            .Include(x => x.BacSi)
+            .Include(x => x.ChiTietDonThuocs)
+            .Where(x => x.TrangThai == TrangThaiDonThuoc.DA_DUYET);
+
         var total = await query.CountAsync();
-        var data = await query.OrderBy(x => x.NgayKe).Skip((Math.Max(1, pageIndex) - 1) * Math.Clamp(pageSize, 1, 100))
-            .Take(Math.Clamp(pageSize, 1, 100)).Select(x => new { prescriptionId = x.Id, x.MaLuotKham,
-                x.MaBacSi, x.NgayKe, trangThai = "CHO_CAP_PHAT", x.GhiChu }).ToListAsync();
+        var rawData = await query.OrderBy(x => x.NgayKe)
+            .Skip((Math.Max(1, pageIndex) - 1) * Math.Clamp(pageSize, 1, 100))
+            .Take(Math.Clamp(pageSize, 1, 100))
+            .ToListAsync();
+
+        var data = rawData.Select(x =>
+        {
+            var activeInvoice = x.LuotKham.HoaDons.FirstOrDefault(h => h.TrangThai != TrangThaiHoaDon.DA_HUY);
+            var isPaid = activeInvoice != null && (activeInvoice.TrangThai == TrangThaiHoaDon.DA_THANH_TOAN || (activeInvoice.TongTien > 0 && activeInvoice.DaThanhToan >= activeInvoice.TongTien));
+            var canDispense = !settings.RequirePaymentBeforeDispense || isPaid;
+
+            return new
+            {
+                prescriptionId = x.Id,
+                prescriptionCode = $"DT-{x.NgayKe.Year}-{x.Id:D5}",
+                maLuotKham = x.MaLuotKham,
+                patientName = (x.LuotKham.BenhNhan.Ho + " " + x.LuotKham.BenhNhan.Ten).Trim(),
+                patientCode = $"BN-{x.LuotKham.BenhNhan.Id:D5}",
+                doctorName = x.BacSi.HoTen,
+                maBacSi = x.MaBacSi,
+                ngayKe = x.NgayKe,
+                trangThai = "CHO_CAP_PHAT",
+                isPaid,
+                canDispense,
+                invoiceNumber = activeInvoice?.SoHoaDon,
+                invoiceStatus = activeInvoice?.TrangThai.ToString(),
+                invoiceAmount = activeInvoice?.TongTien,
+                lineCount = x.ChiTietDonThuocs.Count,
+                x.GhiChu
+            };
+        }).ToList();
+
         return InventoryResult.Ok(new { items = data, total });
     }
 
-        public async Task<InventoryResult> DispensedPrescriptions(
+    public async Task<InventoryResult> PreviewFefo(int prescriptionId)
+    {
+        var prescription = await db.DonThuocs.AsNoTracking()
+            .Include(x => x.ChiTietDonThuocs)
+            .Include(x => x.LuotKham).ThenInclude(lk => lk.BenhNhan)
+            .Include(x => x.LuotKham).ThenInclude(lk => lk.HoaDons)
+            .Include(x => x.BacSi)
+            .FirstOrDefaultAsync(x => x.Id == prescriptionId);
+
+        if (prescription is null) return InventoryResult.Error("Không tìm thấy đơn thuốc.", 404);
+
+        var activeInvoice = prescription.LuotKham?.HoaDons
+            .FirstOrDefault(h => h.TrangThai != TrangThaiHoaDon.DA_HUY);
+        var isPaid = activeInvoice != null && (activeInvoice.TrangThai == TrangThaiHoaDon.DA_THANH_TOAN || (activeInvoice.TongTien > 0 && activeInvoice.DaThanhToan >= activeInvoice.TongTien));
+        var canDispense = !settings.RequirePaymentBeforeDispense || isPaid;
+
+        var itemsPreview = new List<object>();
+        bool allAvailable = true;
+
+        foreach (var line in prescription.ChiTietDonThuocs)
+        {
+            var item = await db.Items.AsNoTracking().FirstOrDefaultAsync(x => x.Id == line.MaItem && x.IsActive);
+            if (item is null) continue;
+
+            var need = line.RemainingQuantity();
+            var batches = await db.TonKhos.AsNoTracking()
+                .Include(x => x.ChiTietNhapKho)
+                .Where(x => x.MaKho == DefaultWarehouseId &&
+                            x.MaItem == line.MaItem &&
+                            x.SoLuongTon > 0 &&
+                            (!x.ChiTietNhapKho.HanSuDung.HasValue || x.ChiTietNhapKho.HanSuDung.Value > DateTime.UtcNow))
+                .OrderBy(x => x.ChiTietNhapKho.HanSuDung)
+                .ToListAsync();
+
+            var totalStock = batches.Sum(x => x.SoLuongTon);
+            if (totalStock < need) allAvailable = false;
+
+            var allocations = new List<object>();
+            var remainingNeed = need;
+
+            foreach (var batch in batches)
+            {
+                if (remainingNeed <= 0) break;
+                var take = Math.Min(remainingNeed, batch.SoLuongTon);
+                allocations.Add(new
+                {
+                    stockId = batch.Id,
+                    batchNumber = batch.ChiTietNhapKho.SoLo,
+                    expiryDate = batch.ChiTietNhapKho.HanSuDung,
+                    quantityToTake = take,
+                    availableBefore = batch.SoLuongTon,
+                    availableAfter = batch.SoLuongTon - take
+                });
+                remainingNeed -= take;
+            }
+
+            itemsPreview.Add(new
+            {
+                itemId = item.Id,
+                itemCode = item.Ma,
+                itemName = item.Ten,
+                baseUnit = item.DonViTinhCoBan,
+                prescribedQuantity = line.SoLuongKe,
+                dispensedQuantity = line.SoLuongDaXuat,
+                remainingQuantity = need,
+                totalAvailableStock = totalStock,
+                isSufficient = totalStock >= need,
+                allocations
+            });
+        }
+
+        return InventoryResult.Ok(new
+        {
+            prescriptionId = prescription.Id,
+            prescriptionCode = $"DT-{prescription.NgayKe.Year}-{prescription.Id:D5}",
+            patientName = (prescription.LuotKham?.BenhNhan.Ho + " " + prescription.LuotKham?.BenhNhan.Ten).Trim(),
+            patientCode = prescription.LuotKham?.BenhNhan != null ? $"BN-{prescription.LuotKham.BenhNhan.Id:D5}" : string.Empty,
+            doctorName = prescription.BacSi?.HoTen ?? string.Empty,
+            isPaid,
+            canDispense,
+            invoiceNumber = activeInvoice?.SoHoaDon,
+            requirePayment = settings.RequirePaymentBeforeDispense,
+            allAvailable,
+            items = itemsPreview
+        });
+    }
+
+    public async Task<InventoryResult> DispensedPrescriptions(
         string? keyword,
         DateTime? fromDate,
         DateTime? toDate,
@@ -277,75 +872,132 @@ public sealed partial class KhoService
         return InventoryResult.Ok(new { items, total, pageIndex, pageSize });
     }
 
-
-        public async Task<InventoryResult> Dispense(int prescriptionId, DispenseRequest request)
+    public async Task<InventoryResult> Dispense(int prescriptionId, DispenseRequest request)
     {
         var replay = await ReplayAsync(request.IdempotencyKey, nameof(Dispense));
         if (replay is not null) return replay;
+
         var prescription = await db.DonThuocs.Include(x => x.ChiTietDonThuocs).FirstOrDefaultAsync(x => x.Id == prescriptionId);
         if (prescription is null) return InventoryResult.Error("Không tìm thấy đơn thuốc.", 404);
         if (prescription.TrangThai != TrangThaiDonThuoc.DA_DUYET) return InventoryResult.Error("Đơn thuốc chưa sẵn sàng cấp phát.", 409);
-        var allocations = new List<object>();
-        await using var transaction = await db.BeginTransactionAsync();
-        var export = new PhieuXuatKho { MaPhieu = $"PX-{DateTime.UtcNow:yyyyMMddHHmmssfff}", LoaiXuat = LoaiXuatKho.XUAT_DON,
-            MaKhoXuat = DefaultWarehouseId, MaDonThuoc = prescriptionId, MaNguoiXuat = UserId,
-            GhiChu = request.Note ?? string.Empty };
-        foreach (var line in prescription.ChiTietDonThuocs)
+
+        // Khép kín Viện phí & Quầy dược
+        if (settings.RequirePaymentBeforeDispense)
         {
-            var item = await db.Items.FirstOrDefaultAsync(x => x.Id == line.MaItem && x.IsActive);
-            if (item is null) return InventoryResult.Error($"Mặt hàng {line.MaItem} không tồn tại.", 404);
-            var need = line.RemainingQuantity();
-            if (need <= 0) continue;
-            var batches = await db.TonKhos.Include(x => x.ChiTietNhapKho).Where(x => x.MaKho == DefaultWarehouseId &&
-                x.MaItem == line.MaItem && x.SoLuongTon > 0 &&
-                (!x.ChiTietNhapKho.HanSuDung.HasValue || x.ChiTietNhapKho.HanSuDung.Value > DateTime.UtcNow))
-                .OrderBy(x => x.ChiTietNhapKho.HanSuDung).ToListAsync();
-            if (batches.Sum(x => x.SoLuongTon) < need) return InventoryResult.Error($"Không đủ tồn kho cho {item.Ma}.", 409);
-            var lineAllocations = new List<object>();
-            foreach (var batch in batches)
-            {
-                // Concurrency guard: snapshot version khi load, so sánh khi subtract
-                // Nếu frontend truyền ExpectedVersion thì dùng giá trị đó, ngược lại dùng version hiện tại
-                var snapshotVersion = batch.Version;
-                var quantity = Math.Min(need, batch.SoLuongTon);
-                var before = batch.SoLuongTon;
-                try { batch.SubtractQuantity(quantity); }
-                catch (InvalidOperationException ex) { return InventoryResult.Error(ex.Message, 409); }
-                // Nếu Version sau subtract khác snapshotVersion + 1 → có thể bị cập nhật ngoài luồng
-                // EF sẽ bắt DbUpdateConcurrencyException khi SaveChanges vì Version là ConcurrencyToken
-                if (request.ExpectedVersion.HasValue && snapshotVersion != request.ExpectedVersion.Value)
-                    return InventoryResult.Error("Dữ liệu tồn kho đã thay đổi, vui lòng tải lại.", 409);
-                export.ChiTietXuatKhos.Add(new ChiTietXuatKho { ChiTietNhapKho = batch.ChiTietNhapKho,
-                    SoLuongXuat = quantity, DonGiaXuat = line.DonGiaKe });
-                db.Add(new InventoryTransaction { LoaiGiaoDich = LoaiGiaoDichKho.XUAT_DON,
-                    MaItem = line.MaItem, MaTonKho = batch.Id, SoLo = batch.ChiTietNhapKho.SoLo,
-                    SoLuongTruoc = before, SoLuongThayDoi = -quantity, SoLuongSau = batch.SoLuongTon,
-                    MaChungTu = export.MaPhieu, MaNguoiThucHien = UserId, IdempotencyKey = request.IdempotencyKey });
-                line.UpdateDispensedQuantity(quantity); lineAllocations.Add(new { batchNumber = batch.ChiTietNhapKho.SoLo, quantity });
-                need -= quantity; if (need == 0) break;
-            }
-            allocations.Add(new { itemId = line.MaItem, itemName = item.Ten, quantity = line.SoLuongDaXuat, allocations = lineAllocations });
+            var activeInvoice = await db.HoaDons.AsNoTracking()
+                .Where(h => h.MaLuotKham == prescription.MaLuotKham && h.TrangThai != TrangThaiHoaDon.DA_HUY)
+                .OrderByDescending(h => h.Id)
+                .FirstOrDefaultAsync();
+
+            var isPaid = activeInvoice != null && (activeInvoice.TrangThai == TrangThaiHoaDon.DA_THANH_TOAN || (activeInvoice.TongTien > 0 && activeInvoice.DaThanhToan >= activeInvoice.TongTien));
+            if (!isPaid)
+                return InventoryResult.Error("Đơn thuốc chưa được thanh toán viện phí tại quầy thu ngân.", 409);
         }
-        prescription.CompleteDispense(UserId);
-        db.Add(export);
-        try { await db.SaveChangesAsync(); }
-        catch (DbUpdateConcurrencyException) { return InventoryResult.Error("Tồn kho đã thay đổi trong lúc xử lý, vui lòng thử lại.", 409); }
-        var printData = await PrescriptionPrintData(prescriptionId);
-        if (!printData.IsSuccess) return printData;
-        var result = new
+
+        const int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            prescriptionId,
-            exportReceiptId = export.Id,
-            prescriptionStatus = "DA_XUAT_HET",
-            dispensedItems = allocations,
-            printData = printData.Data
-        };
-        await SaveReplayAsync(request.IdempotencyKey, nameof(Dispense), result);
-        await transaction.CommitAsync();
-        return InventoryResult.Ok(result);
+            await using var transaction = await db.BeginTransactionAsync();
+            try
+            {
+                var allocations = new List<object>();
+                var export = new PhieuXuatKho
+                {
+                    MaPhieu = $"PX-{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                    LoaiXuat = LoaiXuatKho.XUAT_DON,
+                    MaKhoXuat = DefaultWarehouseId,
+                    MaDonThuoc = prescriptionId,
+                    MaNguoiXuat = UserId,
+                    GhiChu = request.Note ?? string.Empty
+                };
+
+                foreach (var line in prescription.ChiTietDonThuocs)
+                {
+                    var item = await db.Items.FirstOrDefaultAsync(x => x.Id == line.MaItem && x.IsActive);
+                    if (item is null) return InventoryResult.Error($"Mặt hàng {line.MaItem} không tồn tại.", 404);
+                    var need = line.RemainingQuantity();
+                    if (need <= 0) continue;
+
+                    var batches = await db.TonKhos.Include(x => x.ChiTietNhapKho)
+                        .Where(x => x.MaKho == DefaultWarehouseId &&
+                                    x.MaItem == line.MaItem &&
+                                    x.SoLuongTon > 0 &&
+                                    (!x.ChiTietNhapKho.HanSuDung.HasValue || x.ChiTietNhapKho.HanSuDung.Value > DateTime.UtcNow))
+                        .OrderBy(x => x.ChiTietNhapKho.HanSuDung)
+                        .ToListAsync();
+
+                    if (batches.Sum(x => x.SoLuongTon) < need)
+                        return InventoryResult.Error($"Không đủ tồn kho cho thuốc {item.Ma} ({item.Ten}).", 409);
+
+                    var lineAllocations = new List<object>();
+                    foreach (var batch in batches)
+                    {
+                        var quantity = Math.Min(need, batch.SoLuongTon);
+                        var before = batch.SoLuongTon;
+                        try { batch.SubtractQuantity(quantity); }
+                        catch (InvalidOperationException ex) { return InventoryResult.Error(ex.Message, 409); }
+
+                        export.ChiTietXuatKhos.Add(new ChiTietXuatKho
+                        {
+                            ChiTietNhapKho = batch.ChiTietNhapKho,
+                            SoLuongXuat = quantity,
+                            DonGiaXuat = line.DonGiaKe
+                        });
+
+                        db.Add(new InventoryTransaction
+                        {
+                            LoaiGiaoDich = LoaiGiaoDichKho.XUAT_DON,
+                            MaItem = line.MaItem,
+                            MaTonKho = batch.Id,
+                            SoLo = batch.ChiTietNhapKho.SoLo,
+                            SoLuongTruoc = before,
+                            SoLuongThayDoi = -quantity,
+                            SoLuongSau = batch.SoLuongTon,
+                            MaChungTu = export.MaPhieu,
+                            MaNguoiThucHien = UserId,
+                            IdempotencyKey = request.IdempotencyKey
+                        });
+
+                        line.UpdateDispensedQuantity(quantity);
+                        lineAllocations.Add(new { batchNumber = batch.ChiTietNhapKho.SoLo, quantity });
+                        need -= quantity;
+                        if (need == 0) break;
+                    }
+                    allocations.Add(new { itemId = line.MaItem, itemName = item.Ten, quantity = line.SoLuongDaXuat, allocations = lineAllocations });
+                }
+
+                prescription.CompleteDispense(UserId);
+                db.Add(export);
+                await db.SaveChangesAsync();
+
+                var printData = await PrescriptionPrintData(prescriptionId);
+                if (!printData.IsSuccess) return printData;
+
+                var result = new
+                {
+                    prescriptionId,
+                    exportReceiptId = export.Id,
+                    prescriptionStatus = "DA_XUAT_HET",
+                    dispensedItems = allocations,
+                    printData = printData.Data
+                };
+
+                await SaveReplayAsync(request.IdempotencyKey, nameof(Dispense), result);
+                await transaction.CommitAsync();
+                return InventoryResult.Ok(result);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (attempt == maxRetries)
+                    return InventoryResult.Error("Tồn kho đang có biến động từ giao dịch đồng thời, vui lòng thử lại.", 409);
+                await Task.Delay(50 * attempt);
+            }
+        }
+
+        return InventoryResult.Error("Không thể hoàn tất cấp phát do xung đột tồn kho.", 409);
     }
 
-        public async Task<InventoryResult> PrescriptionPrintData(int prescriptionId)
+    public async Task<InventoryResult> PrescriptionPrintData(int prescriptionId)
         {
            if (prescriptionId <= 0)
                return InventoryResult.Error("Mã đơn thuốc không hợp lệ.");

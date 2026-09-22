@@ -5,4 +5,7 @@ export const authApi = {
   login(request: LoginRequest) {
     return api.post<LoginResponse>('/auth/login', request);
   },
+  changePassword(request: { oldPassword: string; newPassword: string }) {
+    return api.post('/Auth/change-password', request);
+  },
 };

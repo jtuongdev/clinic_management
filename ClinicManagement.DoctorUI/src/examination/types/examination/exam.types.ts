@@ -235,3 +235,67 @@ export interface TienSuBenhDto {
   ten: string;
   ghiChu?: string;
 }
+// =================== PRESCRIPTION & DRUG TYPES ===================
+export interface DrugSearchResult {
+  id: number;
+  maThuoc: string;
+  tenThuoc: string;
+  ma?: string;
+  ten?: string;
+  hoatChat?: string;
+  hamLuong?: string;
+  donViTinh?: string;
+  duongDung?: string;
+  tonKho?: number;
+  soLuongKhaDung?: number;
+  dangGiuCho?: number;
+  gia?: number;
+  laThuocBHYT?: boolean;
+}
+
+export interface PrescriptionItemRequest {
+  thuocId: number;
+  tenThuoc: string;
+  hoatChat?: string;
+  soLuong: number;
+  donViTinh: string;
+  duongDung: string;
+  lieuDung: string;
+  soNgay: number;
+  huongDanSuDung?: string;
+  ghiChu?: string;
+  donGia?: number;
+  soLuongKhaDung?: number;
+}
+
+export interface CreatePrescriptionRequest {
+  luotKhamId: number;
+  loaiDonThuoc: 'BHYT' | 'TU_TUC' | 'HON_HOP';
+  ghiChu?: string;
+  items: Array<{
+    itemId: number;
+    soLuongKe: number;
+    donViTinh: string;
+    donGiaKe?: number;
+    lieuDung?: string;
+    tanSuat?: string;
+    soNgay?: number;
+    huongDan?: string;
+  }>;
+}
+
+export interface DrugInteractionCheckRequest {
+  patientId: number;
+  medicineIds: number[];
+  note?: string;
+}
+
+export interface DrugInteractionAlert {
+  medicineId?: number;
+  matchedIngredients?: string[];
+  message: string;
+  blockPrescription?: boolean;
+  severity: 'WARNING' | 'CRITICAL';
+  title?: string;
+  drugName?: string;
+}
