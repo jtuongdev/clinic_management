@@ -43,6 +43,23 @@ const OverviewPanel: React.FC = () => {
     loadQueue();
   }, [loadStatus, loadQueue]);
 
+  useEffect(() => {
+    const refreshStatus = () => {
+      if (document.visibilityState === 'visible') {
+        void loadStatus();
+      }
+    };
+    const timer = window.setInterval(refreshStatus, 30_000);
+    window.addEventListener('focus', refreshStatus);
+    document.addEventListener('visibilitychange', refreshStatus);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshStatus);
+      document.removeEventListener('visibilitychange', refreshStatus);
+    };
+  }, [loadStatus]);
+
   const handleQuickCheck = async (isCheckIn: boolean) => {
     try {
       setActionLoading(true);

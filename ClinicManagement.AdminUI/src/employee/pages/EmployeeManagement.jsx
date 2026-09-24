@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Shield,
   Briefcase,
+  Trash2,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { employeeApi } from '../api/employee.api';
@@ -86,11 +87,13 @@ export const EmployeeManagement = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [roleModal, setRoleModal] = useState({ open: false, employee: null });
+  const [deleteModal, setDeleteModal] = useState({ open: false, employee: null });
+  const [deleteForm] = Form.useForm();
   const [roles, setRoles] = useState([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [roleLoading, setRoleLoading] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const activeTab = ['payroll'].includes(searchParams.get('tab'))
     ? searchParams.get('tab')
     : 'employees';
@@ -215,6 +218,26 @@ export const EmployeeManagement = () => {
       await loadEmployees();
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Không thể cập nhật trạng thái.'));
+    }
+  };
+
+  const openDelete = (employee) => {
+    setDeleteModal({ open: true, employee });
+    deleteForm.setFieldsValue({
+      ngayNghiViec: new Date().toISOString().slice(0, 10),
+      lyDo: '',
+    });
+  };
+
+  const deleteEmployee = async () => {
+    const values = await deleteForm.validateFields();
+    try {
+      await employeeApi.delete(deleteModal.employee.id, values);
+      message.success(`Đã xoá mềm nhân viên ${deleteModal.employee.hoTen}.`);
+      setDeleteModal({ open: false, employee: null });
+      await loadEmployees();
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không thể xoá nhân viên.'));
     }
   };
 
@@ -400,6 +423,16 @@ export const EmployeeManagement = () => {
             >
               <Switch size="small" checked={row.isActive} />
             </Popconfirm>
+          </Tooltip>
+          <Tooltip title="Xoá mềm nhân viên">
+            <Button
+              size="small"
+              danger
+              icon={<Trash2 size={14} />}
+              onClick={() => openDelete(row)}
+            >
+              Xoá
+            </Button>
           </Tooltip>
         </Space>
       ),
@@ -635,6 +668,40 @@ export const EmployeeManagement = () => {
               </Form.Item>
             </Col>
           </Row>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`Xoá mềm nhân viên: ${deleteModal.employee?.hoTen || ''}`}
+        open={deleteModal.open}
+        onCancel={() => setDeleteModal({ open: false, employee: null })}
+        onOk={deleteEmployee}
+        okText="Xác nhận xoá mềm"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+        destroyOnHidden
+      >
+        <div style={{ marginBottom: 12, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', padding: 12, borderRadius: 8 }}>
+          Hồ sơ, chấm công, bảng lương và lịch sử giải trình sẽ được giữ lại. Lịch tương lai chưa chấm công sẽ bị huỷ, quyền truy cập và mẫu lịch sẽ bị thu hồi.
+        </div>
+        <Form form={deleteForm} layout="vertical">
+          <Form.Item
+            name="ngayNghiViec"
+            label="Ngày nghỉ việc"
+            rules={[{ required: true, message: 'Vui lòng chọn ngày nghỉ việc.' }]}
+          >
+            <Input type="date" />
+          </Form.Item>
+          <Form.Item
+            name="lyDo"
+            label="Lý do nghỉ việc"
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập lý do nghỉ việc.' },
+              { max: 500, message: 'Lý do không vượt quá 500 ký tự.' },
+            ]}
+          >
+            <Input.TextArea rows={4} placeholder="Nhập lý do để lưu vào hồ sơ và nhật ký kiểm toán..." />
+          </Form.Item>
         </Form>
       </Modal>
 

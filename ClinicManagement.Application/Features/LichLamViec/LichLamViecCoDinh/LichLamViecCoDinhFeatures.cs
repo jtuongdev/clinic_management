@@ -110,7 +110,8 @@ namespace ClinicManagement.Application.Features.LichLamViec
                     if (item.TuNgay.Date > date || (item.DenNgay.HasValue && item.DenNgay.Value.Date < date))
                         continue;
                     eligible++;
-                    if (await repository.DailyScheduleExistsAsync(item.MaNhanVien, item.MaCaTruc, date, cancellationToken))
+                    if (await repository.EmployeeHasScheduleAsync(item.MaNhanVien, date, cancellationToken) ||
+                        await repository.HasApprovedLeaveAsync(item.MaNhanVien, date, cancellationToken))
                         continue;
                     await repository.AddAsync(new Domain.Identity.LichLamViec
                     {
@@ -147,7 +148,8 @@ namespace ClinicManagement.Application.Features.LichLamViec
                     {
                         preview.UnassignedEmployeeCount++;
                     }
-                    else if (await repository.DailyScheduleExistsAsync(item.MaNhanVien, item.MaCaTruc, date, cancellationToken))
+                    else if (await repository.EmployeeHasScheduleAsync(item.MaNhanVien, date, cancellationToken) ||
+                        await repository.HasApprovedLeaveAsync(item.MaNhanVien, date, cancellationToken))
                     {
                         preview.ExistingCount++;
                     }
@@ -225,7 +227,8 @@ namespace ClinicManagement.Application.Features.LichLamViec
             for (var date = fromDate.Date; date <= toDate.Date; date = date.AddDays(1))
             {
                 if (fixedSchedule.ThuTrongTuan != date.DayOfWeek ||
-                    await repository.DailyScheduleExistsAsync(fixedSchedule.MaNhanVien, fixedSchedule.MaCaTruc, date, cancellationToken))
+                    await repository.EmployeeHasScheduleAsync(fixedSchedule.MaNhanVien, date, cancellationToken) ||
+                    await repository.HasApprovedLeaveAsync(fixedSchedule.MaNhanVien, date, cancellationToken))
                     continue;
 
                 await repository.AddAsync(new Domain.Identity.LichLamViec
@@ -334,7 +337,8 @@ namespace ClinicManagement.Application.Features.LichLamViec
                     if (template.TuNgay.Date > date || (template.DenNgay.HasValue && template.DenNgay.Value.Date < date))
                         continue;
 
-                    if (await repository.DailyScheduleExistsAsync(template.MaNhanVien, template.MaCaTruc, date, cancellationToken))
+                    if (await repository.EmployeeHasScheduleAsync(template.MaNhanVien, date, cancellationToken) ||
+                        await repository.HasApprovedLeaveAsync(template.MaNhanVien, date, cancellationToken))
                     {
                         skippedCount++;
                         continue;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -75,6 +75,7 @@ export const FixedScheduleManagement = ({
   const [selectedWeeklyEmp, setSelectedWeeklyEmp] = useState(null);
   const [weeklyGrid, setWeeklyGrid] = useState({});
   const [savingWeekly, setSavingWeekly] = useState(false);
+  const [weeklyDirty, setWeeklyDirty] = useState(false);
 
   // Monthly Schedule generate modal
   const [monthlyModalOpen, setMonthlyModalOpen] = useState(false);
@@ -134,6 +135,7 @@ export const FixedScheduleManagement = ({
     const targetEmpId = empId || employees[0]?.id;
     setSelectedWeeklyEmp(targetEmpId);
     initWeeklyGridForEmp(targetEmpId);
+    setWeeklyDirty(false);
     setWeeklyModalOpen(true);
   };
 
@@ -167,6 +169,7 @@ export const FixedScheduleManagement = ({
         maPhongKham: prev[key]?.maPhongKham,
       },
     }));
+    setWeeklyDirty(true);
   };
 
   const setWeeklyCellRoom = (dayValue, shiftId, roomId) => {
@@ -178,6 +181,7 @@ export const FixedScheduleManagement = ({
         maPhongKham: roomId,
       },
     }));
+    setWeeklyDirty(true);
   };
 
   const submitWeeklyMatrix = async () => {
@@ -199,11 +203,28 @@ export const FixedScheduleManagement = ({
         maNhanVien: selectedWeeklyEmp,
         shifts: shiftsPayload,
       });
+      setWeeklyDirty(false);
       setWeeklyModalOpen(false);
     } finally {
       setSavingWeekly(false);
     }
   };
+
+  const handleCloseWeekly = useCallback(() => {
+    if (weeklyDirty && !window.confirm('Các thay đổi chưa được lưu sẽ bị mất. Bạn có chắc muốn đóng form không?')) {
+      return;
+    }
+    setWeeklyModalOpen(false);
+  }, [weeklyDirty]);
+
+  useEffect(() => {
+    if (!weeklyModalOpen) return undefined;
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') handleCloseWeekly();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [weeklyModalOpen, handleCloseWeekly]);
 
   // --- Handlers for Monthly Schedule Generation ---
   const handleGenerateMonthly = async () => {
@@ -414,32 +435,40 @@ export const FixedScheduleManagement = ({
       />
 
       {/* --- MODAL 1: CẤU HÌNH LỊCH TUẦN NHÂN VIÊN (WEEKLY MATRIX) --- */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0f172a' }}>
-            <UserCheck size={18} color="#0284c7" />
-            <span>Thiết lập lịch làm việc tuần hoàn cho nhân viên</span>
-          </div>
-        }
-        open={weeklyModalOpen}
-        onCancel={() => setWeeklyModalOpen(false)}
-        width={980}
-        footer={[
-          <Button key="cancel" onClick={() => setWeeklyModalOpen(false)}>
-            Đóng
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={savingWeekly}
-            onClick={submitWeeklyMatrix}
-            style={{ background: '#0b4f6c', borderColor: '#0b4f6c' }}
-          >
-            Lưu toàn bộ lịch tuần
-          </Button>,
-        ]}
-      >
-        <div style={{ marginBottom: 16 }}>
+      {weeklyModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-100 flex flex-col overflow-hidden">
+          <header className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm">
+            <div className="flex items-center min-w-0">
+              <button
+                type="button"
+                onClick={handleCloseWeekly}
+                className="mr-3 px-2.5 py-1.5 rounded border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold"
+              >
+                ← Quay lại
+              </button>
+              <span className="h-4 w-px bg-slate-300 mx-2" />
+              <UserCheck size={17} color="#0284c7" className="mr-2 shrink-0" />
+              <span className="text-sm font-bold text-slate-900 uppercase tracking-wide truncate">
+                Cấu hình lịch làm việc cố định
+              </span>
+              {selectedWeeklyEmp && (
+                <span className="text-xs text-slate-500 font-mono ml-2 truncate">
+                  Nhân viên: {employees.find((item) => item.id === selectedWeeklyEmp)?.hoTen || `#${selectedWeeklyEmp}`}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseWeekly}
+              className="px-3 py-1.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1.5 shrink-0"
+            >
+              Đóng [Esc]
+            </button>
+          </header>
+
+          <main className="flex-1 min-w-0 overflow-y-auto p-6 max-w-7xl mx-auto w-full">
+            <section className="bg-white border border-slate-200 rounded-lg p-5 mb-5">
+              <div style={{ marginBottom: 16 }}>
           <label style={{ fontWeight: 600, display: 'block', marginBottom: 6, color: '#334155' }}>
             Chọn nhân viên cần thiết lập:
           </label>
@@ -463,8 +492,11 @@ export const FixedScheduleManagement = ({
           description="Đánh dấu tick vào các ô ca trực tương ứng với các thứ trong tuần mà nhân viên sẽ làm việc cố định. Bạn có thể chọn phòng khám mặc định cho từng ca. Khi lưu, hệ thống sẽ tự động đồng bộ trọn vẹn lịch tuần của nhân sự này."
           style={{ marginBottom: 16 }}
         />
+            </section>
 
-        <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+            <section className="bg-white border border-slate-200 rounded-lg p-5">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">Ma trận ca theo tuần</h3>
+              <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 8 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -538,8 +570,34 @@ export const FixedScheduleManagement = ({
               ))}
             </tbody>
           </table>
+              </div>
+            </section>
+          </main>
+
+          <footer className="h-14 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0">
+            <span className={`text-xs font-medium ${weeklyDirty ? 'text-amber-700' : 'text-slate-500'}`}>
+              {weeklyDirty ? 'Chưa lưu thay đổi' : 'Đã đồng bộ lịch tuần'}
+            </span>
+            <div>
+              <button
+                type="button"
+                onClick={handleCloseWeekly}
+                className="h-9 px-4 rounded border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium mr-2"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={submitWeeklyMatrix}
+                disabled={savingWeekly}
+                className="h-9 px-5 rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold shadow-none"
+              >
+                {savingWeekly ? 'Đang lưu...' : 'Lưu cấu hình'}
+              </button>
+            </div>
+          </footer>
         </div>
-      </Modal>
+      )}
 
       {/* --- MODAL 2: SINH LỊCH THÁNG TỰ ĐỘNG --- */}
       <Modal
@@ -570,6 +628,9 @@ export const FixedScheduleManagement = ({
                   </li>
                   <li>
                     Các ca trực đã tồn tại sẵn trong ngày sẽ <strong>tự động được giữ nguyên</strong> (không sinh đè).
+                  </li>
+                  <li>
+                    Ngày đã có lịch được xếp trước hoặc có đơn nghỉ phép đã duyệt sẽ <strong>được bỏ qua an toàn</strong>; hệ thống không tạo ca trùng hoặc ghi đè.
                   </li>
                   <li>
                     Sau khi sinh, lịch làm việc thực tế hoàn toàn <strong>độc lập</strong> với khuôn mẫu (quản trị viên có thể đổi ca, hủy ca tùy ý).
@@ -645,7 +706,7 @@ export const FixedScheduleManagement = ({
               <Col span={8}>
                 <Card bordered={false} style={{ background: '#f8fafc', borderRadius: 8 }}>
                   <Statistic
-                    title={<span style={{ fontSize: 12, color: '#475569' }}>Ca đã có (Bỏ qua)</span>}
+                    title={<span style={{ fontSize: 12, color: '#475569' }}>Ca đã có / nghỉ phép (Bỏ qua)</span>}
                     value={monthlyResult.totalSchedulesSkipped}
                     valueStyle={{ color: '#64748b', fontWeight: 600 }}
                   />
@@ -661,6 +722,13 @@ export const FixedScheduleManagement = ({
                 </Card>
               </Col>
             </Row>
+            <Alert
+              type="warning"
+              showIcon
+              message="Các ca bị bỏ qua không phải lỗi"
+              description="Số ca bỏ qua bao gồm ngày đã có lịch trước đó hoặc ngày nhân viên có đơn nghỉ phép đã được duyệt. Bạn có thể kiểm tra lại tại Bảng chấm công trước khi chốt kỳ."
+              style={{ textAlign: 'left', marginBottom: 20 }}
+            />
 
             <Button
               type="primary"

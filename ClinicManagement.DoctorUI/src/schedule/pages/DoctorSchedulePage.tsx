@@ -51,6 +51,23 @@ export const DoctorSchedulePage: React.FC = () => {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') {
+        void loadData();
+      }
+    };
+    const timer = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [loadData]);
+
   // Selected shift for check-in if multiple shifts exist
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
 

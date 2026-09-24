@@ -83,7 +83,12 @@ export const ScheduleManagement = ({ embedded = false }) => {
     if (schedule.trangThai === 'HUY') return { label: statusCatalog.HUY || schedule.trangThai, color: 'default', icon: '×' };
     const attendanceStatus = getAttendance(schedule.id)?.trangThai;
     if (attendanceStatus === 'VANG_MAT') return { label: attendanceStatusCatalog.VANG_MAT || attendanceStatus, color: 'red', icon: '!' };
-    if (attendanceStatus === 'THIEU_CHECK_OUT') return { label: attendanceStatusCatalog.THIEU_CHECK_OUT || attendanceStatus, color: 'volcano', icon: '!' };
+    if (attendanceStatus === 'THIEU_CHECK_OUT' || attendanceStatus === 'THIEU_CHECKOUT') return { label: 'Thiếu check-out', color: 'orange', icon: '!' };
+    if (attendanceStatus === 'DI_MUON_VE_SOM') return {
+      label: `${attendanceStatusCatalog.DI_MUON_VE_SOM || 'Đi muộn & về sớm'} (${(getAttendance(schedule.id)?.phutDiMuon || 0) + (getAttendance(schedule.id)?.phutVeSom || 0)} phút)`,
+      color: 'orange',
+      icon: '!',
+    };
     if (attendanceStatus === 'NGHI_PHEP') return { label: attendanceStatusCatalog.NGHI_PHEP || attendanceStatus, color: 'orange', icon: '●' };
     if (schedule.nguonLich === 'TU_DONG_THEO_LICH_MAU' || schedule.nguonLich === 'CO_DINH') {
       return { label: 'Lịch mẫu', color: 'blue', icon: '⚡' };
@@ -463,8 +468,16 @@ export const ScheduleManagement = ({ embedded = false }) => {
                                         </Tooltip>
                                         {getAttendance(schedule.id)?.trangThai && (
                                           <Tooltip title={`Chấm công: ${attendanceStatusCatalog[getAttendance(schedule.id).trangThai] || getAttendance(schedule.id).trangThai}`}>
-                                          <Tag color={['VANG_MAT', 'THIEU_CHECK_OUT'].includes(getAttendance(schedule.id).trangThai) ? 'red' : 'green'}>
+                                          <Tag
+                                            color={['VANG_MAT'].includes(getAttendance(schedule.id).trangThai) ? 'red' : ['THIEU_CHECK_OUT', 'THIEU_CHECKOUT', 'DI_MUON_VE_SOM'].includes(getAttendance(schedule.id).trangThai) ? 'orange' : 'green'}
+                                            style={['THIEU_CHECK_OUT', 'THIEU_CHECKOUT'].includes(getAttendance(schedule.id).trangThai) ? { background: '#fffbeb', color: '#92400e', borderColor: '#fde68a' } : undefined}
+                                          >
                                             {attendanceStatusCatalog[getAttendance(schedule.id).trangThai] || getAttendance(schedule.id).trangThai}
+                                            {getAttendance(schedule.id).trangThai === 'DI_MUON_VE_SOM' && (
+                                              <span style={{ marginLeft: 4, fontFamily: 'monospace' }}>
+                                                ({(getAttendance(schedule.id).phutDiMuon || 0) + (getAttendance(schedule.id).phutVeSom || 0)}p)
+                                              </span>
+                                            )}
                                           </Tag>
                                           </Tooltip>
                                         )}

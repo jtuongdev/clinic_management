@@ -23,6 +23,7 @@ namespace ClinicManagement.Domain.Identity
         public decimal PhuCapCoDinh { get; private set; }
         public decimal TyLeBaoHiem { get; private set; } = 10.5m;
         public DateTime? LastLogin { get; private set; }
+        public string LyDoNghiViec { get; private set; } = string.Empty;
 
         public virtual ChucVu? ChucVu { get; private set; }
         public virtual ICollection<NhanVienVaiTro> NhanVienVaiTro { get; private set; }
@@ -103,6 +104,12 @@ namespace ClinicManagement.Domain.Identity
         public void Activate() => IsActive = true;
         public void Deactivate() => IsActive = false;
         public void RecordLogin() => LastLogin = DateTime.UtcNow;
+        public void SetTerminationReason(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new ArgumentException("Lý do nghỉ việc không được để trống.", nameof(reason));
+            LyDoNghiViec = reason.Trim();
+        }
 
         public void AssignRole(VaiTro vaiTro, DateTime ngayBatDau, DateTime? ngayKetThuc = null)
         {
