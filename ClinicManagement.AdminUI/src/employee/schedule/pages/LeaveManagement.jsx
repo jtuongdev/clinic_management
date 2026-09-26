@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Form, Input, Modal, Select, Space, Table, Tag } from 'antd';
+import dayjs from 'dayjs';
 
 const leaveTypes = [
   { value: 'PHEP_NAM', label: 'Phép năm' },
@@ -10,25 +11,96 @@ const leaveTypes = [
 
 export const LeaveManagement = ({ employees, leaves, createLeave, reviewLeave, cancelLeave, statusLabels = {} }) => {
   const [open, setOpen] = useState(false);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [form] = Form.useForm();
+
   const submit = async (values) => {
     await createLeave(values);
     setOpen(false);
     form.resetFields();
   };
+
   const columns = [
-    { title: 'Nhân viên', dataIndex: 'tenNhanVien' },
-    { title: 'Thời gian', render: (_, row) => `${row.tuNgay} - ${row.denNgay}` },
-    { title: 'Loại nghỉ', dataIndex: 'loaiNghi', render: (value) => leaveTypes.find(item => item.value === value)?.label || value },
-    { title: 'Trạng thái', dataIndex: 'trangThai', render: (value) => <Tag color={value === 'DA_DUYET' ? 'green' : value === 'TU_CHOI' ? 'red' : 'blue'}>{statusLabels[value] || value}</Tag> },
-    { title: 'Lý do', dataIndex: 'lyDo' },
-    { title: 'Thao tác', render: (_, row) => (
-      <Space>
-        {row.trangThai === 'CHO_DUYET' && <><Button size="small" type="primary" onClick={() => reviewLeave(row.id, true)}>Duyệt</Button><Button size="small" danger onClick={() => reviewLeave(row.id, false)}>Từ chối</Button></>}
-        {row.trangThai === 'CHO_DUYET' && <Button size="small" onClick={() => cancelLeave(row.id)}>Hủy</Button>}
-      </Space>
-    ) },
+    {
+      title: 'STT',
+      width: 50,
+      align: 'center',
+      className: 'excel-stt-cell',
+      render: (_, __, idx) => (pagination.current - 1) * pagination.pageSize + idx + 1,
+    },
+    {
+      title: 'Nhân viên',
+      dataIndex: 'tenNhanVien',
+      width: 190,
+      render: (v) => <strong style={{ color: '#0f172a' }}>{v}</strong>,
+    },
+    {
+      title: 'Thời gian nghỉ',
+      width: 220,
+      align: 'center',
+      className: 'excel-date-cell',
+      render: (_, row) => (
+        <span>
+          {dayjs(row.tuNgay).format('DD/MM/YYYY')} — {dayjs(row.denNgay).format('DD/MM/YYYY')}
+        </span>
+      ),
+    },
+    {
+      title: 'Loại nghỉ',
+      dataIndex: 'loaiNghi',
+      width: 130,
+      align: 'center',
+      render: (value) => (
+        <Tag color="cyan">
+          {leaveTypes.find(item => item.value === value)?.label || value}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Lý do',
+      dataIndex: 'lyDo',
+      render: (v) => <span style={{ color: '#334155' }}>{v}</span>,
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'trangThai',
+      width: 120,
+      align: 'center',
+      render: (value) => (
+        <Tag color={value === 'DA_DUYET' ? 'green' : value === 'TU_CHOI' ? 'red' : value === 'HUY' ? 'default' : 'gold'}>
+          {statusLabels[value] || value}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Thao tác',
+      width: 160,
+      align: 'center',
+      render: (_, row) => (
+        <Space size={6}>
+          {row.trangThai === 'CHO_DUYET' && (
+            <>
+              <Button size="small" type="primary" style={{ background: '#10b981', borderColor: '#10b981' }} onClick={() => reviewLeave(row.id, true)}>
+                Duyệt
+              </Button>
+              <Button size="small" danger onClick={() => reviewLeave(row.id, false)}>
+                Từ chối
+              </Button>
+            </>
+          )}
+          {row.trangThai === 'CHO_DUYET' && (
+            <Button size="small" onClick={() => cancelLeave(row.id)}>
+              Hủy
+            </Button>
+          )}
+          {row.trangThai !== 'CHO_DUYET' && (
+            <span style={{ color: '#94a3b8' }}>Đã xử lý</span>
+          )}
+        </Space>
+      ),
+    },
   ];
+
   return (
     <div className="schedule-leave-panel">
       <div className="schedule-fixed-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -44,9 +116,16 @@ export const LeaveManagement = ({ employees, leaves, createLeave, reviewLeave, c
         rowKey="id"
         dataSource={leaves}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        className="excel-data-grid"
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          showSizeChanger: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn`,
+        }}
+        onChange={(p) => setPagination({ current: p.current || 1, pageSize: p.pageSize || 10 })}
         locale={{ emptyText: 'Chưa có đơn nghỉ trong tuần.' }}
-        style={{ border: '1px solid #e9edf4', borderRadius: 10, overflow: 'hidden' }}
+        style={{ border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}
       />
       <Modal title="Tạo đơn nghỉ phép" open={open} onCancel={() => setOpen(false)} footer={null}>
         <Form form={form} layout="vertical" onFinish={submit}>

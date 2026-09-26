@@ -92,6 +92,7 @@ namespace ClinicManagement.Infrastructure.Persistence
         public DbSet<KyLuong> KyLuongs { get; set; }
         public DbSet<BangLuong> BangLuongs { get; set; }
         public DbSet<ChiTietBangLuong> ChiTietBangLuongs { get; set; }
+        public DbSet<CauHinhHoaHongLoaiDichVu> CauHinhHoaHongLoaiDichVus { get; set; }
 
         // Phân hệ Hệ thống
         public DbSet<ThamSoHeThong> ThamSoHeThongs { get; set; }

@@ -11,6 +11,7 @@ namespace ClinicManagement.Domain.Service
         public string Ten { get; set; } = string.Empty;
         public string DonViTinh { get; set; } = string.Empty;
         public decimal Gia { get; set; }
+        public decimal? TyLeHoaHong { get; set; }
 
         public virtual ICollection<ChiDinhDichVu> ChiDinhDichVus { get; set; }
         public virtual ICollection<DinhMucVatTuDichVu> DinhMucVatTus { get; set; }

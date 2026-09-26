@@ -22,7 +22,9 @@ public class DuyetDieuChinhChamCongCommandHandler : IRequestHandler<DuyetDieuChi
             var start = schedule.NgayLam.Date.Add(schedule.CaTruc.ThoiGianBatDau);
             var end = schedule.NgayLam.Date.Add(schedule.CaTruc.ThoiGianKetThuc);
             if (schedule.CaTruc.ThoiGianKetThuc <= schedule.CaTruc.ThoiGianBatDau) end = end.AddDays(1);
-            x.ChamCong.ApplyAdjustment(x.CheckInMoi, x.CheckOutMoi, start, end);
+            var checkInMoi = DongHoChamCong.NormalizeNullable(x.CheckInMoi);
+            var checkOutMoi = DongHoChamCong.NormalizeNullable(x.CheckOutMoi);
+            x.ChamCong.ApplyAdjustment(checkInMoi, checkOutMoi, start, end);
             repository.Update(x.ChamCong);
             x.Approve(c.ReviewerId, c.Note);
         }

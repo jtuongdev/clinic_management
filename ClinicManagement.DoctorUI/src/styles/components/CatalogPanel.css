@@ -1,4 +1,4 @@
-/* src/styles/components/CatalogPanel.css - Enterprise Desk Layout */
+/* src/styles/components/CatalogPanel.css - High-Density Excel Data Grid Standard */
 
 .panel-catalog {
     display: none;
@@ -24,7 +24,7 @@
     overflow: hidden;
 }
 
-/* 42px Compact Metric Ribbon */
+/* 40px Compact Metric Ribbon */
 .catalog-stats {
     display: flex;
     align-items: center;
@@ -52,7 +52,7 @@
     font-size: 12px;
 }
 
-/* 36px Docked Sub-tabs */
+/* 38px Docked Sub-tabs */
 .catalog-tabs {
     display: flex;
     gap: 2px;
@@ -103,8 +103,8 @@
 }
 .catalog-toolbar .search {
     position: relative;
-    width: 260px;
-    max-width: 360px;
+    width: 320px;
+    max-width: 420px;
 }
 .catalog-toolbar .search input {
     width: 100%;
@@ -134,50 +134,379 @@
     gap: 8px;
 }
 
-/* Full Bleed Table Container */
+/* ==========================================================================
+   EXCEL HIGH-DENSITY GRID & UTILITY REINFORCEMENT (ZERO COLLISION SPEC)
+   ========================================================================== */
+
+/* Outer scroll container */
+.w-full { width: 100% !important; }
+.overflow-x-auto { overflow-x: auto !important; }
+.rounded-none { border-radius: 0px !important; }
+.bg-white { background-color: #ffffff !important; }
+
 .catalog-table-wrap {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    border: none;
-    border-radius: 0;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0 !important;
     background: #fff;
+    position: relative;
 }
-.catalog-table-wrap table {
+
+/* Excel Fixed Table */
+.table-fixed {
+    table-layout: fixed !important;
+}
+.border-collapse {
+    border-collapse: collapse !important;
+}
+
+table.table-fixed {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: collapse !important;
     font-size: 12px;
+    line-height: 1.25;
 }
-.catalog-table-wrap th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: #f8fafc;
+
+/* Cell borders and heights */
+.border {
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+.border-slate-300 {
+    border-color: #cbd5e1 !important;
+}
+.border-slate-400 {
+    border-color: #94a3b8 !important;
+}
+.border-b-2 {
+    border-bottom-width: 2px !important;
+}
+
+/* Cell alignment & spacing */
+.align-middle {
+    vertical-align: middle !important;
+}
+.h-9 {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+}
+.h-10 {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+}
+.px-2 {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+.py-1\.5 {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+/* Global cell constraints for Excel grid */
+.catalog-table-wrap th,
+.catalog-table-wrap td,
+table.table-fixed th,
+table.table-fixed td {
+    box-sizing: border-box !important;
+    border: 1px solid #cbd5e1 !important;
+    vertical-align: middle !important;
+    height: 36px !important;
+    padding: 4px 8px !important;
+    white-space: nowrap !important;
+}
+
+/* Header standard */
+.bg-slate-100 {
+    background-color: #f1f5f9 !important;
+}
+.text-slate-800 {
+    color: #1e293b !important;
+}
+.text-slate-700 {
+    color: #334155 !important;
+}
+.text-slate-600 {
+    color: #475569 !important;
+}
+.text-slate-500 {
+    color: #64748b !important;
+}
+.text-slate-900 {
+    color: #0f172a !important;
+}
+.text-sky-800 {
+    color: #0369a1 !important;
+}
+.font-bold {
+    font-weight: 700 !important;
+}
+.font-semibold {
+    font-weight: 600 !important;
+}
+.text-xs {
+    font-size: 11px !important;
+    line-height: 1rem !important;
+}
+.uppercase {
+    text-transform: uppercase !important;
+}
+.tracking-tight {
+    letter-spacing: -0.025em !important;
+}
+.sticky {
+    position: sticky !important;
+}
+.top-0 {
+    top: 0 !important;
+}
+.z-10 {
+    z-index: 10 !important;
+}
+
+.catalog-table-wrap thead th,
+table.table-fixed thead th {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: -0.025em !important;
+    border-bottom: 2px solid #94a3b8 !important;
+    border-top: 1px solid #cbd5e1 !important;
+    border-left: 1px solid #cbd5e1 !important;
+    border-right: 1px solid #cbd5e1 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    user-select: none;
+}
+
+/* Alternating rows and hover */
+.even\:bg-slate-50\/50:nth-child(even),
+table.table-fixed tbody tr:nth-child(even) {
+    background-color: rgba(248, 250, 252, 0.6) !important;
+}
+.hover\:bg-sky-50\/60:hover,
+table.table-fixed tbody tr:hover td {
+    background-color: rgba(240, 249, 255, 0.75) !important;
+}
+.transition-colors {
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+/* Horizontal alignments */
+.text-center {
+    text-align: center !important;
+}
+.text-left {
+    text-align: left !important;
+}
+.text-right {
+    text-align: right !important;
+}
+
+/* Tabular mono numbers */
+.font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+/* Strict Column Width Locks */
+.w-12, .min-w-\[48px\], .max-w-\[48px\] {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+}
+.w-24, .min-w-\[96px\], .max-w-\[96px\] {
+    width: 96px !important;
+    min-width: 96px !important;
+    max-width: 96px !important;
+}
+.w-28, .min-w-\[112px\], .max-w-\[112px\] {
+    width: 112px !important;
+    min-width: 112px !important;
+    max-width: 112px !important;
+}
+.w-32, .min-w-\[128px\], .max-w-\[128px\] {
+    width: 128px !important;
+    min-width: 128px !important;
+    max-width: 128px !important;
+}
+.w-36, .min-w-\[144px\], .max-w-\[144px\] {
+    width: 144px !important;
+    min-width: 144px !important;
+    max-width: 144px !important;
+}
+.w-48, .min-w-\[160px\], .max-w-\[192px\] {
+    width: 180px !important;
+    min-width: 160px !important;
+    max-width: 192px !important;
+}
+.w-56, .min-w-\[180px\], .max-w-\[240px\] {
+    width: 220px !important;
+    min-width: 180px !important;
+    max-width: 240px !important;
+}
+
+/* Truncation & Anti-collision */
+.min-w-0 {
+    min-width: 0 !important;
+}
+.truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+}
+
+/* Compact Excel Badges */
+.catalog-table-wrap .badge,
+table.table-fixed .badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    padding: 0 6px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    border-radius: 2px !important;
+    border: 1px solid transparent !important;
+}
+.catalog-table-wrap .badge.green,
+table.table-fixed .badge.green {
+    background: #ecfdf5 !important;
+    color: #047857 !important;
+    border-color: #a7f3d0 !important;
+}
+.catalog-table-wrap .badge.blue,
+table.table-fixed .badge.blue {
+    background: #f0f9ff !important;
+    color: #0369a1 !important;
+    border-color: #bae6fd !important;
+}
+.catalog-table-wrap .badge.red,
+table.table-fixed .badge.red {
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+    border-color: #fecaca !important;
+}
+
+/* Action button inside table cells */
+.catalog-action-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
     color: #475569;
-    font-weight: 700;
-    text-transform: uppercase;
+    border-radius: 3px;
+    height: 24px;
+    padding: 0 7px;
     font-size: 11px;
-    letter-spacing: 0.3px;
-    text-align: left;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--line);
-    white-space: nowrap;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
-.catalog-table-wrap td {
-    padding: 7px 12px;
-    border-bottom: 1px solid #f1f5f9;
+.catalog-action-btn:hover {
+    background: #f1f5f9;
+    color: #0284c7;
+    border-color: #94a3b8;
+}
+
+/* ==========================================================================
+   EXCEL STATUS BAR & PAGINATION FOOTER
+   ========================================================================== */
+.catalog-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 38px;
+    min-height: 38px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-top: none;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #475569;
+    user-select: none;
+}
+.catalog-pagination .pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+}
+.catalog-pagination .pagination-info strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+.catalog-pagination .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.catalog-pagination .page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+.catalog-pagination .page-size-selector select {
+    height: 24px;
+    padding: 0 6px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 3px;
+    font-size: 11px;
     color: #1e293b;
-    vertical-align: middle;
+    outline: none;
+    cursor: pointer;
 }
-.catalog-table-wrap tr:hover td {
+.catalog-pagination .page-size-selector select:focus {
+    border-color: var(--primary);
+}
+.catalog-pagination .page-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.catalog-pagination .page-nav-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    border-radius: 3px;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.catalog-pagination .page-nav-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: var(--primary);
+    border-color: #94a3b8;
+}
+.catalog-pagination .page-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
     background: #f8fafc;
 }
-.catalog-table-wrap .empty-catalog {
-    text-align: center;
-    padding: 40px 16px;
-    color: #94a3b8;
-    font-size: 13px;
+.catalog-pagination .page-current {
+    font-size: 11px;
+    padding: 0 6px;
+    color: #475569;
 }
-.catalog-table-wrap .empty-catalog i {
-    margin-right: 6px;
+.catalog-pagination .page-current strong {
+    color: #0f172a;
 }

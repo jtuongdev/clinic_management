@@ -72,7 +72,7 @@ export const examinationApi = {
   },
 
   searchICD: (keyword?: string) => {
-    return api.get<ApiResponse<ICDOption[]>>('/LuotKham/icd', { params: { keyword } });
+    return api.get<ApiResponse<ICDOption[]>>('/LuotKham/icd', { params: { keyword, q: keyword } });
   },
 
   // Chẩn đoán ICD-10

@@ -20,6 +20,9 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             builder.Property(c => c.MoTa)
                 .HasMaxLength(255);
                 
+            builder.Property(c => c.ThuLaoMoiLuot)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0m);
         }
     }
 }

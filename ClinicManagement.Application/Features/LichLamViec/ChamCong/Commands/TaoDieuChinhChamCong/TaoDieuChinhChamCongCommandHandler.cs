@@ -16,8 +16,10 @@ public class TaoDieuChinhChamCongCommandHandler : IRequestHandler<TaoDieuChinhCh
         var attendance = await repository.GetByIdAsync(r.MaChamCong, ct) ?? throw new KeyNotFoundException("Không tìm thấy bản ghi chấm công.");
         if (await repository.IsPeriodLockedAsync(attendance.NgayChamCong, ct))
             throw new InvalidOperationException("Kỳ chấm công đã bị khóa.");
-        if (r.CheckIn.HasValue && r.CheckOut.HasValue && r.CheckOut < r.CheckIn)
-            throw new ArgumentException("Thời gian điều chỉnh không hợp lệ.");
+        var checkInMoi = DongHoChamCong.NormalizeNullable(r.CheckIn);
+        var checkOutMoi = DongHoChamCong.NormalizeNullable(r.CheckOut);
+        if (checkInMoi.HasValue && checkOutMoi.HasValue && checkOutMoi < checkInMoi)
+            throw new ArgumentException("Thời gian điều chỉnh không hợp lệ. Giờ check-out không thể trước giờ check-in.");
 
         var entity = new DieuChinhChamCong
         {
@@ -25,8 +27,8 @@ public class TaoDieuChinhChamCongCommandHandler : IRequestHandler<TaoDieuChinhCh
             MaNhanVien = attendance.MaNhanVien,
             CheckInCu = attendance.CheckIn,
             CheckOutCu = attendance.CheckOut,
-            CheckInMoi = r.CheckIn,
-            CheckOutMoi = r.CheckOut,
+            CheckInMoi = checkInMoi,
+            CheckOutMoi = checkOutMoi,
             LyDo = r.LyDo?.Trim() ?? ""
         };
 

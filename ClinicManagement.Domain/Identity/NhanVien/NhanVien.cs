@@ -22,6 +22,7 @@ namespace ClinicManagement.Domain.Identity
         public decimal LuongCoBan { get; private set; }
         public decimal PhuCapCoDinh { get; private set; }
         public decimal TyLeBaoHiem { get; private set; } = 10.5m;
+        public decimal? ThuLaoMoiLuot { get; private set; }
         public DateTime? LastLogin { get; private set; }
         public string LyDoNghiViec { get; private set; } = string.Empty;
 
@@ -88,13 +89,23 @@ namespace ClinicManagement.Domain.Identity
             LuongCoBan = luongCoBan;
         }
 
-        public void SetPayrollSettings(decimal phuCapCoDinh, decimal tyLeBaoHiem = 10.5m)
+        public void SetPayrollSettings(decimal phuCapCoDinh, decimal tyLeBaoHiem = 10.5m, decimal? thuLaoMoiLuot = null)
         {
             if (phuCapCoDinh < 0) throw new ArgumentOutOfRangeException(nameof(phuCapCoDinh));
             if (tyLeBaoHiem is < 0 or > 100) throw new ArgumentOutOfRangeException(nameof(tyLeBaoHiem));
+            if (thuLaoMoiLuot.HasValue && thuLaoMoiLuot.Value < 0) throw new ArgumentOutOfRangeException(nameof(thuLaoMoiLuot));
             PhuCapCoDinh = phuCapCoDinh;
             TyLeBaoHiem = tyLeBaoHiem;
+            ThuLaoMoiLuot = thuLaoMoiLuot;
         }
+
+        public void SetThuLaoMoiLuot(decimal? thuLaoMoiLuot)
+        {
+            if (thuLaoMoiLuot.HasValue && thuLaoMoiLuot.Value < 0) throw new ArgumentOutOfRangeException(nameof(thuLaoMoiLuot));
+            ThuLaoMoiLuot = thuLaoMoiLuot;
+        }
+
+        public decimal GetEffectiveThuLaoMoiLuot() => ThuLaoMoiLuot ?? ChucVu?.ThuLaoMoiLuot ?? 0m;
 
         public void SetPassword(string hashedPassword)
         {

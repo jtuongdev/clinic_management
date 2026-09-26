@@ -11,6 +11,7 @@ export interface Employee {
   chuyenKhoa: string;
   soHanhNghe: string;
   isActive: boolean;
+  luongCoBan?: number;
   lastLogin?: string;
 }
 

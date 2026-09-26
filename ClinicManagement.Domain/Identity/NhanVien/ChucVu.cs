@@ -7,6 +7,7 @@ namespace ClinicManagement.Domain.Identity
     {
         public string TenChucVu { get; set; } = string.Empty;
         public string MoTa { get; set; } = string.Empty;
+        public decimal ThuLaoMoiLuot { get; set; } = 0m;
 
         public virtual ICollection<NhanVien> NhanViens { get; set; }
 

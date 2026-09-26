@@ -12,6 +12,7 @@ namespace ClinicManagement.Domain.Payroll
         public DateTime DenNgay { get; private set; }
         public int? MaKyChamCong { get; private set; }
         public string TrangThai { get; private set; } = "NHAP";
+        public bool IsPublished { get; private set; } = false;
 
         public virtual ICollection<BangLuong> BangLuongs { get; private set; }
 
@@ -63,6 +64,20 @@ namespace ClinicManagement.Domain.Payroll
                 throw new InvalidOperationException("Kỳ lương phải được chốt trước khi thanh toán.");
 
             TrangThai = "DA_THANH_TOAN";
+        }
+
+        public void Publish()
+        {
+            if (TrangThai != "DA_CHOT" && TrangThai != "DA_THANH_TOAN")
+                throw new InvalidOperationException("Chỉ được công bố kỳ lương đã chốt hoặc đã thanh toán.");
+            IsPublished = true;
+        }
+
+        public void Unpublish()
+        {
+            if (TrangThai != "DA_CHOT")
+                throw new InvalidOperationException("Chỉ được hủy công bố kỳ lương đã chốt.");
+            IsPublished = false;
         }
     }
 }

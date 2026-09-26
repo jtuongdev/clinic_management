@@ -22,7 +22,8 @@ namespace ClinicManagement.Application.Features.NhanVien.Queries
             {
                 Id = cv.Id,
                 TenChucVu = cv.TenChucVu,
-                MoTa = cv.MoTa
+                MoTa = cv.MoTa,
+                ThuLaoMoiLuot = cv.ThuLaoMoiLuot
             }).ToList();
         }
     }

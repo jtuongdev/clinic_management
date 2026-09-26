@@ -11,6 +11,11 @@ export type ICDOption = {
   maICD: string;
   tenICD: string;
   chuong: string;
+  ma?: string;
+  ten?: string;
+  code?: string;
+  name?: string;
+  tenChanDoan?: string;
 };
 
 export interface DiagnosisFormState {

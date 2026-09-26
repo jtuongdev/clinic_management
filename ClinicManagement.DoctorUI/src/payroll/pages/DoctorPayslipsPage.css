@@ -1,18 +1,18 @@
 /* ==========================================================================
-   DOCTOR PAYSLIPS PAGE - Enterprise Desktop HIS Design System
-   Synchronized 100% with DoctorUI Design Tokens & Clinical Clean Pattern
+   DOCTOR PAYSLIPS PAGE - Enterprise Desktop HIS / HRM Design System
+   Master-Detail Layout (28% - 72%) & A4 Print Specification
    ========================================================================== */
 
 .doctor-payslips-page {
   flex: 1;
   min-height: 0;
   height: 100%;
-  overflow-y: auto;
-  padding: 14px 16px;
-  background: var(--bg-subtle);
+  overflow: hidden;
+  padding: 12px 16px;
+  background: var(--bg-subtle, #f8fafc);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   box-sizing: border-box;
 }
 
@@ -23,6 +23,10 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  background: #ffffff;
+  padding: 10px 14px;
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 4px;
 }
 
 .payslip-title {
@@ -34,111 +38,168 @@
 .payslip-title h2 {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--text, #0f172a);
   margin: 0;
   line-height: 1.2;
 }
 
 .payslip-title .payslip-subtitle {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--muted, #64748b);
   margin-top: 2px;
 }
 
-/* Debt Alert Callout - Aligned with common .alert-box */
-.debt-alert-banner {
-  background: var(--danger-soft);
-  border: 1px solid #fecaca;
-  border-left: 4px solid var(--danger);
-  border-radius: 4px;
-  padding: 10px 14px;
-  color: #991b1b;
+/* MASTER-DETAIL LAYOUT (28% - 72%) */
+.payslip-master-detail {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.debt-alert-banner i {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-/* Payslip KPI Grid */
-.payslip-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+  flex: 1;
+  min-height: 0;
+  height: calc(100% - 60px);
 }
 
-.kpi-stat-card {
+/* CỘT TRÁI (28%): LỊCH SỬ KỲ LƯƠNG */
+.payslip-master-sidebar {
+  width: 28%;
+  min-width: 280px;
+  max-width: 360px;
   background: #ffffff;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line, #cbd5e1);
   border-radius: 4px;
-  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.master-sidebar-header {
+  padding: 10px 12px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.master-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.master-period-card {
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  box-shadow: var(--shadow);
 }
 
-/* Clinical Primary Highlight - Flat Enterprise standard replacing dark gradient */
-.kpi-stat-card.net-pay {
-  background: var(--primary-soft);
-  border: 1px solid #c9dff0;
-  border-top: 3px solid var(--primary);
-  color: var(--text);
-  box-shadow: var(--shadow);
+.master-period-card:hover {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
 }
 
-.kpi-stat-card.net-pay .kpi-stat-label {
-  color: var(--primary);
+.master-period-card.active {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  border-left: 4px solid #0284c7;
+}
+
+.master-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.master-period-title {
+  font-size: 13px;
   font-weight: 700;
+  color: #0f172a;
 }
 
-.kpi-stat-card.net-pay .kpi-stat-val {
-  color: var(--primary);
-  font-weight: 800;
-}
-
-.kpi-stat-card.debt {
-  background: var(--danger-soft);
-  border: 1px solid #fecaca;
-  border-top: 3px solid var(--danger);
-}
-
-.kpi-stat-card.debt .kpi-stat-label {
-  color: var(--danger);
+.master-period-net {
+  font-size: 14px;
   font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: #0369a1;
 }
 
-.kpi-stat-card.debt .kpi-stat-val {
-  color: var(--danger);
-}
-
-.kpi-stat-label {
+.master-period-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* CỘT PHẢI (72%): BẢNG KÊ CHI TIẾT THU NHẬP */
+.payslip-detail-main {
+  flex: 1;
+  width: 72%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Action Toolbar */
+.detail-action-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Khung Thực lĩnh nổi bật */
+.thuc-linh-hero-box {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-left: 4px solid #0284c7;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.thuc-linh-hero-label {
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #0369a1;
+  letter-spacing: 0.03em;
 }
 
-.kpi-stat-val {
-  font-size: 20px;
+.thuc-linh-hero-amount {
+  font-size: 22px;
   font-weight: 800;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: #0369a1;
 }
 
-.kpi-stat-sub {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* Breakdown Layout: 2 Columns */
+/* Breakdown Grid */
 .breakdown-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -147,49 +208,45 @@
 
 .breakdown-card {
   background: #ffffff;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line, #cbd5e1);
   border-radius: 4px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  box-shadow: var(--shadow);
 }
 
 .breakdown-card-head {
-  height: 36px;
-  padding: 0 14px;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--line);
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--line, #cbd5e1);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
 }
 
 .breakdown-card-head h3 {
+  margin: 0;
   font-size: 12px;
   font-weight: 700;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.02em;
 }
 
 .breakdown-list {
-  padding: 6px 14px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  flex: 1;
 }
 
 .breakdown-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px dashed var(--line);
   font-size: 12px;
+  padding: 3px 0;
+  border-bottom: 1px dashed #f1f5f9;
 }
 
 .breakdown-item:last-child {
@@ -197,126 +254,196 @@
 }
 
 .breakdown-item .label {
-  color: var(--text-secondary);
+  color: #475569;
 }
 
 .breakdown-item .val {
   font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, monospace;
   font-variant-numeric: tabular-nums;
 }
 
 .breakdown-item .val.income {
-  color: var(--success);
+  color: #059669;
 }
 
 .breakdown-item .val.deduct {
-  color: var(--danger);
+  color: #dc2626;
 }
 
 .breakdown-card-footer {
-  padding: 10px 14px;
-  background: var(--bg-hover);
-  border-top: 1px solid var(--line);
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-top: 1px solid var(--line, #cbd5e1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: 700;
-  font-size: 13px;
-}
-
-/* History Card & Table */
-.history-card {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-.history-card-head {
-  height: 36px;
-  padding: 0 14px;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--line);
   font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Status Badges - Clean HIS Standard */
+/* Debt Alert Callout */
+.debt-alert-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+/* Enterprise status badge */
 .badge-status-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
-  border-radius: 3px;
-  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 10px;
   font-weight: 600;
-  background: var(--bg-hover);
-  color: var(--text-secondary);
+  text-transform: uppercase;
 }
 
 .badge-status-tag.on-time {
-  background: var(--success-soft);
-  color: var(--success);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .badge-status-tag.paid {
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .badge-status-tag.late {
-  background: var(--warning-soft);
-  color: var(--warning);
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
-.badge-status-tag.absent {
-  background: var(--danger-soft);
-  color: var(--danger);
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
 }
 
-/* Responsive Overrides following DoctorUI responsive.css */
-@media (max-width: 1100px) {
-  .payslip-kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.modal-content {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
 }
 
-@media (max-width: 800px) {
-  .doctor-payslips-page {
-    padding: 10px 12px;
-    gap: 10px;
-  }
+/* ==========================================================================
+   A4 PRINT SPECIFICATION (@media print)
+   ========================================================================== */
 
-  .payslip-kpi-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .breakdown-row {
-    grid-template-columns: 1fr;
-  }
-
-  .history-card-head {
-    flex-direction: column;
-    align-items: flex-start;
-    height: auto;
-    padding: 8px 12px;
-    gap: 4px;
-  }
+.print-only {
+  display: none;
 }
 
-@media (max-width: 500px) {
-  .payslip-kpi-grid {
-    grid-template-columns: 1fr;
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
   }
 
-  .kpi-stat-val {
-    font-size: 18px;
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print,
+  .app-header,
+  .context-bar,
+  .payslip-header,
+  .payslip-master-sidebar,
+  .modal-overlay,
+  .detail-action-toolbar,
+  .breakdown-row,
+  .thuc-linh-hero-box,
+  .debt-alert-banner,
+  .history-card,
+  button,
+  .btn {
+    display: none !important;
+  }
+
+  .doctor-payslips-page,
+  .payslip-master-detail,
+  .payslip-detail-main {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    border: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .a4-print-sheet {
+    display: block !important;
+    width: 100% !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    font-family: "Times New Roman", Times, serif;
+    line-height: 1.4;
+  }
+
+  .a4-print-sheet table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 10px;
+    margin-bottom: 12px;
+  }
+
+  .a4-print-sheet th,
+  .a4-print-sheet td {
+    border: 1px solid #000000 !important;
+    padding: 6px 8px !important;
+    font-size: 9.5pt !important;
+  }
+
+  .a4-print-sheet th {
+    background-color: #f1f5f9 !important;
+    font-weight: bold !important;
+  }
+
+  .a4-signatures {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 36px !important;
+    page-break-inside: avoid;
+  }
+
+  .signature-box {
+    text-align: center !important;
+    width: 30% !important;
+    font-size: 9.5pt !important;
   }
 }

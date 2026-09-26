@@ -42,7 +42,8 @@ public sealed class PayrollRepository(ClinicDbContext context) : IPayrollReposit
             .Include(x => x.NhanVien).ThenInclude(x => x.ChucVu)
             .Include(x => x.NhanVien).ThenInclude(x => x.NhanVienKhoa).ThenInclude(x => x.Khoa)
             .Include(x => x.ChiTiets)
-            .Where(x => x.MaNhanVien == employeeId)
+            .Where(x => x.MaNhanVien == employeeId && 
+                       (x.KyLuong.TrangThai == "DA_CHOT" || x.KyLuong.TrangThai == "DA_THANH_TOAN"))
             .OrderByDescending(x => x.KyLuong.Nam)
             .ThenByDescending(x => x.KyLuong.Thang)
             .ToListAsync(ct);
@@ -63,6 +64,89 @@ public sealed class PayrollRepository(ClinicDbContext context) : IPayrollReposit
             .Where(x => x.MaNhanVien == employeeId && x.NgayChamCong >= from.Date && x.NgayChamCong < to.Date.AddDays(1))
             .OrderBy(x => x.NgayChamCong)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<LuotKhamHisSnapshot>> GetHisDataForEmployeeAsync(
+        int bacSiId, DateTime tuNgay, DateTime denNgay, IReadOnlyDictionary<ClinicManagement.Domain.Common.Enums.LoaiDichVu, decimal>? defaultCommissionRates = null, CancellationToken ct = default)
+    {
+        var rates = defaultCommissionRates;
+        if (rates == null)
+        {
+            rates = await context.CauHinhHoaHongLoaiDichVus
+                .AsNoTracking()
+                .ToDictionaryAsync(x => x.LoaiDichVu, x => x.TyLeHoaHong, ct);
+        }
+
+        var luotKhams = await context.LuotKhams
+            .Include(x => x.ChiDinhDichVus).ThenInclude(c => c.DanhMucDichVu)
+            .Where(x => x.MaBacSi == bacSiId
+                     && x.NgayKham.Date >= tuNgay.Date
+                     && x.NgayKham.Date <= denNgay.Date)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return luotKhams.Select(lk => new LuotKhamHisSnapshot(
+            LaHoanThanh: lk.TrangThai == ClinicManagement.Domain.Common.Enums.TrangThaiLuotKham.HOAN_THANH,
+            DichVus: lk.ChiDinhDichVus
+                .Where(c => c.DanhMucDichVu != null)
+                .Select(c => {
+                    var gia = c.DanhMucDichVu!.Gia;
+                    var tyLe = c.DanhMucDichVu.TyLeHoaHong ?? rates.GetValueOrDefault(c.DanhMucDichVu.LoaiDichVu, 0m);
+                    return new ClsDichVuSnapshot(gia, tyLe);
+                })
+                .ToList()
+        )).ToList();
+    }
+
+    public async Task<IReadOnlyList<CauHinhHoaHongLoaiDichVu>> GetCauHinhHoaHongLoaiDichVusAsync(CancellationToken ct = default) =>
+        await context.CauHinhHoaHongLoaiDichVus.AsNoTracking().ToListAsync(ct);
+
+    public async Task<CauHinhHoaHongLoaiDichVu?> GetCauHinhHoaHongByLoaiAsync(ClinicManagement.Domain.Common.Enums.LoaiDichVu loaiDichVu, CancellationToken ct = default) =>
+        await context.CauHinhHoaHongLoaiDichVus.FirstOrDefaultAsync(x => x.LoaiDichVu == loaiDichVu, ct);
+
+    public async Task SaveCauHinhHoaHongLoaiDichVusAsync(IEnumerable<CauHinhHoaHongLoaiDichVu> configs, CancellationToken ct = default)
+    {
+        foreach (var config in configs)
+        {
+            var existing = await context.CauHinhHoaHongLoaiDichVus.FirstOrDefaultAsync(x => x.LoaiDichVu == config.LoaiDichVu, ct);
+            if (existing != null)
+            {
+                existing.TyLeHoaHong = config.TyLeHoaHong;
+                existing.GhiChu = config.GhiChu;
+            }
+            else
+            {
+                await context.CauHinhHoaHongLoaiDichVus.AddAsync(config, ct);
+            }
+        }
+    }
+
+    public async Task<IReadOnlyList<ChucVu>> GetChucVusAsync(CancellationToken ct = default) =>
+        await context.ChucVus.AsNoTracking().OrderBy(x => x.TenChucVu).ToListAsync(ct);
+
+    public async Task<ChucVu?> GetChucVuByIdAsync(int id, CancellationToken ct = default) =>
+        await context.ChucVus.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public async Task UpdateChucVuRateAsync(int id, decimal thuLaoMoiLuot, CancellationToken ct = default)
+    {
+        var cv = await context.ChucVus.FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new KeyNotFoundException($"Không tìm thấy chức vụ với Id = {id}.");
+        cv.ThuLaoMoiLuot = thuLaoMoiLuot;
+    }
+
+    public async Task UpdateEmployeeRateAsync(int employeeId, decimal? thuLaoMoiLuot, CancellationToken ct = default)
+    {
+        var nv = await context.NhanViens.FirstOrDefaultAsync(x => x.Id == employeeId, ct)
+            ?? throw new KeyNotFoundException($"Không tìm thấy nhân viên với Id = {employeeId}.");
+        nv.SetThuLaoMoiLuot(thuLaoMoiLuot);
+    }
+
+    public async Task UpdateServiceCommissionRateAsync(int serviceId, decimal? tyLeHoaHong, CancellationToken ct = default)
+    {
+        var dv = await context.DanhMucDichVus.FirstOrDefaultAsync(x => x.Id == serviceId, ct)
+            ?? throw new KeyNotFoundException($"Không tìm thấy dịch vụ với Id = {serviceId}.");
+        dv.TyLeHoaHong = tyLeHoaHong;
+    }
+
     public void RemoveBangLuongDetail(ChiTietBangLuong item) => context.Set<ChiTietBangLuong>().Remove(item);
     public void Update(KyLuong period) => context.KyLuongs.Update(period);
 }

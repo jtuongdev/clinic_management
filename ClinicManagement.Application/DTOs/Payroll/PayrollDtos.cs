@@ -53,6 +53,7 @@ public class PayrollPeriodDto
     public int? MaKyChamCong { get; set; }
     public string TrangThai { get; set; } = "";
     public int SoBangLuong { get; set; }
+    public bool IsPublished { get; set; }
 }
 
 public sealed class PayrollDetailDto : PayrollPeriodDto
@@ -87,5 +88,10 @@ public sealed class PayrollLineDto
     public decimal TienTangCa { get; set; }
     public decimal KhauTruDiMuonVeSom { get; set; }
     public decimal TienBaoHiem { get; set; }
+    public decimal TienThuLaoKham { get; set; }
+    public decimal TienHoaHongCls { get; set; }
+    public decimal TongThuNhap { get; set; }
+    public decimal TongGiamTru { get; set; }
+    public decimal TongThuLaoHis { get; set; }
     public List<ChiTietBangLuongDto> ChiTiets { get; set; } = [];
 }

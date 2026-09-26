@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Card, Col, Row, Statistic } from 'antd';
+import { Alert, Card, Col, Row } from 'antd';
 import { Wallet, Clock, ShieldCheck, Banknote, AlertTriangle } from 'lucide-react';
 import type { PayrollSummaryKpi } from '../payroll.api';
 
@@ -13,178 +13,243 @@ export const PayrollKpiDashboard: React.FC<PayrollKpiDashboardProps> = ({ kpi })
   if (!kpi) return null;
 
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: 16 }}>
       {kpi.soNhanVienPhatSinhNo > 0 && (
         <Alert
           type="warning"
           showIcon
-          icon={<AlertTriangle size={18} style={{ color: '#d97706' }} />}
+          icon={<AlertTriangle size={16} style={{ color: '#b45309' }} />}
           message={
-            <span style={{ fontWeight: 600 }}>
+            <span style={{ fontWeight: 600, fontSize: 13, color: '#92400e' }}>
               Cảnh báo phát sinh dư nợ khấu trừ ({kpi.soNhanVienPhatSinhNo} nhân viên)
             </span>
           }
           description={
-            <div>
+            <div style={{ fontSize: 12, color: '#78350f' }}>
               Tổng số tiền khấu trừ vượt quá thu nhập tháng này là{' '}
-              <strong style={{ color: '#b45309' }}>-{money(kpi.tongTienNoKyNay)}</strong>.
-              Thực lĩnh của nhân viên đã được đưa về 0 đ và số nợ được bảo lưu để cấn trừ vào kỳ lương tiếp theo.
+              <strong style={{ fontFamily: 'monospace' }}>-{money(kpi.tongTienNoKyNay)}</strong>.
+              Thực lĩnh đã được đưa về 0 đ và số nợ được bảo lưu cấn trừ vào kỳ sau.
             </div>
           }
-          style={{ marginBottom: 16, borderRadius: 8 }}
+          style={{
+            marginBottom: 14,
+            borderRadius: 6,
+            background: '#fffbeb',
+            border: '1px solid #fde68a',
+            padding: '8px 14px',
+          }}
           closable
         />
       )}
 
-      <Row gutter={[16, 16]}>
+      {/* 4 THẺ CHỈ SỐ KPI CHUẨN KẾ TOÁN (NỀN TRẮNG, VIỀN XÁM MỎNG, FONT-MONO FONT-BOLD) */}
+      <Row gutter={[14, 14]}>
+        {/* THẺ 1: TỔNG QUỸ LƯƠNG */}
         <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
+          <div
             style={{
-              borderRadius: 10,
-              background: '#f8fafc',
+              background: '#ffffff',
               border: '1px solid #e2e8f0',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              borderRadius: 6,
+              padding: '14px 18px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
-            styles={{ body: { padding: '16px 20px' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>TỔNG QUỸ LƯƠNG</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>
-                  {money(kpi.tongQuyLuong)}
-                </div>
-                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                  {kpi.soNhanVien} nhân viên được tính
-                </div>
+            <div>
+              <div style={{ fontSize: 11.5, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Tổng quỹ lương
               </div>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  background: '#e0f2fe',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#0284c7',
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  fontFamily: 'monospace',
+                  fontVariantNumeric: 'tabular-nums',
+                  marginTop: 4,
                 }}
               >
-                <Wallet size={22} />
+                {money(kpi.tongQuyLuong)}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                {kpi.soNhanVien} nhân sự được tính
               </div>
             </div>
-          </Card>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#334155',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <Wallet size={19} />
+            </div>
+          </div>
         </Col>
 
+        {/* THẺ 2: LÀM THÊM GIỜ (OT) */}
         <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
+          <div
             style={{
-              borderRadius: 10,
-              background: '#f8fafc',
+              background: '#ffffff',
               border: '1px solid #e2e8f0',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              borderRadius: 6,
+              padding: '14px 18px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
-            styles={{ body: { padding: '16px 20px' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>LÀM THÊM GIỜ (OT)</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706', marginTop: 4 }}>
-                  {money(kpi.tongLamThemOT)}
-                </div>
-                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Hệ số 150% ngoài giờ</div>
+            <div>
+              <div style={{ fontSize: 11.5, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Làm thêm giờ (OT)
               </div>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  background: '#fef3c7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#d97706',
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  fontFamily: 'monospace',
+                  fontVariantNumeric: 'tabular-nums',
+                  marginTop: 4,
                 }}
               >
-                <Clock size={22} />
+                {money(kpi.tongLamThemOT)}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                Hệ số ×1.5 ngoài giờ
               </div>
             </div>
-          </Card>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#334155',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <Clock size={19} />
+            </div>
+          </div>
         </Col>
 
+        {/* THẺ 3: BẢO HIỂM TRÍCH NỘP */}
         <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
+          <div
             style={{
-              borderRadius: 10,
-              background: '#f8fafc',
+              background: '#ffffff',
               border: '1px solid #e2e8f0',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              borderRadius: 6,
+              padding: '14px 18px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
-            styles={{ body: { padding: '16px 20px' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>BẢO HIỂM TRÍCH NỘP</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#6366f1', marginTop: 4 }}>
-                  {money(kpi.tongBaoHiem)}
-                </div>
-                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Trích 10.5% từ LCB</div>
+            <div>
+              <div style={{ fontSize: 11.5, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Bảo hiểm trích nộp
               </div>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  background: '#e0e7ff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#6366f1',
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: '#be123c',
+                  fontFamily: 'monospace',
+                  fontVariantNumeric: 'tabular-nums',
+                  marginTop: 4,
                 }}
               >
-                <ShieldCheck size={22} />
+                -{money(kpi.tongBaoHiem)}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                Trích 10.5% từ lương cơ bản
               </div>
             </div>
-          </Card>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#334155',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <ShieldCheck size={19} />
+            </div>
+          </div>
         </Col>
 
+        {/* THẺ 4: TỔNG THỰC LĨNH */}
         <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
+          <div
             style={{
-              borderRadius: 10,
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 6,
+              padding: '14px 18px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
-            styles={{ body: { padding: '16px 20px' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#166534', fontWeight: 600 }}>TỔNG THỰC LĨNH</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d', marginTop: 4 }}>
-                  {money(kpi.tongThucLinh)}
-                </div>
-                <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>Thực chi cho người lao động</div>
+            <div>
+              <div style={{ fontSize: 11.5, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Tổng thực lĩnh
               </div>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  background: '#dcfce7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#15803d',
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  fontFamily: 'monospace',
+                  fontVariantNumeric: 'tabular-nums',
+                  marginTop: 4,
                 }}
               >
-                <Banknote size={22} />
+                {money(kpi.tongThucLinh)}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                Tổng thực chi chuyển khoản
               </div>
             </div>
-          </Card>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#334155',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <Banknote size={19} />
+            </div>
+          </div>
         </Col>
       </Row>
     </div>

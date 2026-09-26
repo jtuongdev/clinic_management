@@ -18,6 +18,8 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             builder.Property(b => b.TongKhauTru).HasPrecision(18, 2);
             builder.Property(b => b.ThucLinh).HasPrecision(18, 2);
             builder.Property(b => b.TienNoKyNay).HasPrecision(18, 2);
+            builder.Property(b => b.TienThuLaoKham).HasPrecision(18, 2).HasDefaultValue(0m);
+            builder.Property(b => b.TienHoaHongCls).HasPrecision(18, 2).HasDefaultValue(0m);
             builder.Property(b => b.MaKyChamCong);
 
             builder.HasOne(b => b.KyLuong)

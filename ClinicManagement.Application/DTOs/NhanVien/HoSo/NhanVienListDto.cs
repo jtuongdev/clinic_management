@@ -10,6 +10,7 @@ namespace ClinicManagement.Application.DTOs.NhanVien
         public string? TenChucVu { get; set; }
         public string ChuyenKhoa { get; set; } = string.Empty;
         public bool IsActive { get; set; }
+        public decimal LuongCoBan { get; set; }
         public DateTime? LastLogin { get; set; }
     }
 }

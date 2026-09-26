@@ -28,6 +28,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 
             builder.Property(d => d.Gia)
                 .HasColumnType("decimal(18,2)");
+            builder.Property(d => d.TyLeHoaHong).HasPrecision(5, 2).IsRequired(false);
             
             builder.HasIndex(d => new { d.LoaiDichVu, d.Ma })
                 .IsUnique();

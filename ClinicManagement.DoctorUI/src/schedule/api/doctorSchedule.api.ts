@@ -68,6 +68,14 @@ export interface TodayStatusDto {
   shifts?: DoctorShiftItemDto[];
 }
 
+export interface ChiTietKhoanDto {
+  id?: number;
+  loaiKhoan: 'PHU_CAP' | 'KHAU_TRU' | string;
+  tenKhoan: string;
+  soTien: number;
+  ghiChu?: string;
+}
+
 export interface PayslipItemDto {
   id: number;
   maKyLuong: number;
@@ -88,6 +96,46 @@ export interface PayslipItemDto {
   tienTangCa: number;
   khauTruDiMuonVeSom: number;
   tienBaoHiem: number;
+  tienThuLaoKham: number;
+  tienHoaHongCls: number;
+  tongThuNhap?: number;
+  tongGiamTru?: number;
+  tongThuLaoHis?: number;
+  tenKhoa: string;
+  chucDanh: string;
+  chiTiets: ChiTietKhoanDto[];
+  tongPhutDiMuon?: number;
+  tongPhutVeSom?: number;
+  soNgayThieuCheckout?: number;
+}
+
+export interface ChiTietLuotKhamDto {
+  ngayKham: string;
+  maBenhNhan: number;
+  tenBenhNhan: string;
+  trangThai: string;
+}
+
+export interface HisSummaryDto {
+  soLuotKhamHoanThanh: number;
+  tienThuLaoKham: number;
+  soDichVuClsChiDinh: number;
+  tongHoaHongCls: number;
+  chiTietLuotKhams: ChiTietLuotKhamDto[];
+}
+
+export interface AttendanceDrillDownItemDto {
+  ngay: string;
+  tenCa: string;
+  gioVao?: string;
+  gioRa?: string;
+  phutDiMuon: number;
+  phutVeSom: number;
+  soGioLamThucTe: number;
+  soGioOT: number;
+  trangThai: string;
+  loaiCong: string;
+  ghiChu: string;
 }
 
 interface ApiResponse<T> {
@@ -141,6 +189,18 @@ export const doctorScheduleApi = {
   // Bảng lương cá nhân
   async getMyPayslips(): Promise<ApiResponse<PayslipItemDto[]>> {
     const res = await api.get<ApiResponse<PayslipItemDto[]>>('/payroll/my-payslips');
+    return res.data;
+  },
+
+  // Chi tiết ngày công theo bảng lương
+  async getAttendanceDrilldown(bangLuongId: number): Promise<ApiResponse<AttendanceDrillDownItemDto[]>> {
+    const res = await api.get<ApiResponse<AttendanceDrillDownItemDto[]>>(`/payroll/bang-luong/${bangLuongId}/attendance-drilldown`);
+    return res.data;
+  },
+
+  // Thống kê HIS (lượt khám & hoa hồng CLS)
+  async getHisSummary(bangLuongId: number): Promise<ApiResponse<HisSummaryDto>> {
+    const res = await api.get<ApiResponse<HisSummaryDto>>(`/payroll/bang-luong/${bangLuongId}/his-summary`);
     return res.data;
   },
 };

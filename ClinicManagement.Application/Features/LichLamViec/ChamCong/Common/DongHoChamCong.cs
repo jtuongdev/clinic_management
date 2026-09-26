@@ -25,4 +25,17 @@ public static class DongHoChamCong
         }
         return val;
     }
+
+    public static DateTime? NormalizeNullable(DateTime? time)
+    {
+        if (!time.HasValue || time.Value == default)
+            return null;
+
+        var val = time.Value;
+        if (val.Kind == DateTimeKind.Utc)
+        {
+            return TimeZoneInfo.ConvertTimeFromUtc(val, GetTimeZone());
+        }
+        return val;
+    }
 }

@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Alert, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag } from 'antd';
-import { Clock, LogIn, LogOut, CheckCircle2, AlertCircle, Search } from 'lucide-react';
+import { Button, Space, Table, Tag, Tooltip } from 'antd';
 import dayjs from 'dayjs';
-import { dateRangePresets } from '../../../shared/utils/datePresets';
+
+import { AttendanceQuickClock } from '../components/attendance/AttendanceQuickClock';
+import { AttendanceFilterToolbar } from '../components/attendance/AttendanceFilterToolbar';
+import { AttendanceAdjustmentModal } from '../components/attendance/AttendanceAdjustmentModal';
+import { AttendanceAdjustmentsListModal } from '../components/attendance/AttendanceAdjustmentsListModal';
+import { AttendancePeriodModal } from '../components/attendance/AttendancePeriodModal';
 
 export const AttendanceManagement = ({
   schedules = [],
@@ -22,16 +26,11 @@ export const AttendanceManagement = ({
   khoas = [],
   selectedKhoa,
 }) => {
-  const [now, setNow] = useState(dayjs());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(dayjs()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const [adjustmentRow, setAdjustmentRow] = useState(null);
+  const [adjustmentDefaults, setAdjustmentDefaults] = useState(null);
   const [periodOpen, setPeriodOpen] = useState(false);
-  const [adjustmentForm] = Form.useForm();
-  const [periodForm] = Form.useForm();
+  const [adjustmentsModalOpen, setAdjustmentsModalOpen] = useState(false);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 15 });
 
   // Bộ lọc nội bộ cho Bảng Chấm công
   const [deptFilter, setDeptFilter] = useState(selectedKhoa || undefined);
@@ -45,77 +44,39 @@ export const AttendanceManagement = ({
     }
   }, [selectedKhoa]);
 
-  const employeeOptions = employees?.length
-    ? employees.map((e) => ({ value: e.id, label: `${e.hoTen || e.name} (${e.chuyenKhoa || 'Nhân viên'})` }))
-    : Array.from(new Map(schedules.map((s) => [s.maNhanVien, { value: s.maNhanVien, label: s.tenNhanVien }])).values());
+  const pendingAdjustmentsCount = useMemo(
+    () => (adjustments || []).filter((a) => a.trangThai === 'CHO_DUYET').length,
+    [adjustments]
+  );
 
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(employeeOptions[0]?.value || null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [recentMatch, setRecentMatch] = useState(null);
-
-  useEffect(() => {
-    if (!selectedEmployeeId && employeeOptions.length > 0) {
-      setSelectedEmployeeId(employeeOptions[0].value);
-    }
-  }, [employeeOptions]);
-
-  const handleQuickCheckIn = async () => {
-    if (!selectedEmployeeId) return;
-    setActionLoading(true);
-    try {
-      const result = await checkIn({ maNhanVien: selectedEmployeeId });
-      if (result) {
-        setRecentMatch({
-          type: 'check-in',
-          success: true,
-          tenNhanVien: result.tenNhanVien || employeeOptions.find((e) => e.value === selectedEmployeeId)?.label || '',
-          tenCa: result.tenCa,
-          thoiGianBatDau: result.thoiGianBatDau,
-          thoiGianKetThuc: result.thoiGianKetThuc,
-          trangThai: result.trangThai,
-          time: dayjs().format('HH:mm:ss DD/MM/YYYY'),
-        });
-      }
-    } catch (err) {
-      setRecentMatch({
-        type: 'check-in',
-        success: false,
-        message: err?.response?.data?.message || err?.message || 'Bạn không có lịch làm việc trong khung giờ này. Vui lòng liên hệ quản trị phòng khám.',
-        time: dayjs().format('HH:mm:ss DD/MM/YYYY'),
-      });
-    } finally {
-      setActionLoading(false);
-    }
+  const openAdjustmentModal = (row, defaults = {}) => {
+    setAdjustmentRow(row);
+    setAdjustmentDefaults(defaults);
   };
 
-  const handleQuickCheckOut = async () => {
-    if (!selectedEmployeeId) return;
-    setActionLoading(true);
-    try {
-      const result = await checkOut({ maNhanVien: selectedEmployeeId });
-      if (result) {
-        setRecentMatch({
-          type: 'check-out',
-          success: true,
-          tenNhanVien: result.tenNhanVien || employeeOptions.find((e) => e.value === selectedEmployeeId)?.label || '',
-          tenCa: result.tenCa,
-          thoiGianBatDau: result.thoiGianBatDau,
-          thoiGianKetThuc: result.thoiGianKetThuc,
-          trangThai: result.trangThai,
-          time: dayjs().format('HH:mm:ss DD/MM/YYYY'),
-          gioLamThucTe: result.gioLamThucTe,
-        });
+  const handleQuickApproveCheckOut = (row) => {
+    let defaultCheckOut = null;
+    if (row.ngayLam && row.thoiGianKetThuc) {
+      const datePart = dayjs(row.ngayLam).format('YYYY-MM-DD');
+      const timePart = row.thoiGianKetThuc.length === 5 ? `${row.thoiGianKetThuc}:00` : row.thoiGianKetThuc;
+      let targetTime = dayjs(`${datePart}T${timePart}`);
+      if (row.thoiGianBatDau && row.thoiGianKetThuc <= row.thoiGianBatDau) {
+        targetTime = targetTime.add(1, 'day');
       }
-    } catch (err) {
-      setRecentMatch({
-        type: 'check-out',
-        success: false,
-        message: err?.response?.data?.message || err?.message || 'Không tìm thấy ca làm việc đang chờ check-out.',
-        time: dayjs().format('HH:mm:ss DD/MM/YYYY'),
-      });
-    } finally {
-      setActionLoading(false);
+      defaultCheckOut = targetTime.isValid() ? targetTime : dayjs();
+    } else {
+      defaultCheckOut = dayjs();
     }
+
+    const checkInVal = row.attendance?.checkIn && dayjs(row.attendance.checkIn).isValid()
+      ? dayjs(row.attendance.checkIn)
+      : (row.ngayLam && row.thoiGianBatDau ? dayjs(`${dayjs(row.ngayLam).format('YYYY-MM-DD')}T${row.thoiGianBatDau.substring(0, 5)}:00`) : null);
+
+    openAdjustmentModal(row, {
+      checkIn: checkInVal,
+      checkOut: defaultCheckOut,
+      lyDo: 'Quản trị viên duyệt bổ sung giờ ra ca chuẩn trước khi chốt công.',
+    });
   };
 
   // =========================================================================
@@ -193,47 +154,190 @@ export const AttendanceManagement = ({
     });
   }, [attendance, schedules, employees, deptFilter, statusFilter, searchKeyword]);
 
+  // =========================================================================
+  // QUẢN LÝ ĐỘ RỘNG CỘT & RESIZER CHO BẢNG EXCEL DATA GRID
+  // =========================================================================
+  const [colWidths, setColWidths] = useState({
+    stt: 55,
+    ngayLam: 105,
+    tenNhanVien: 210,
+    tenCa: 175,
+    checkIn: 95,
+    checkOut: 95,
+    trangThai: 155,
+    diMuon: 85,
+    veSom: 85,
+    gioThucTe: 105,
+    dieuChinh: 145,
+    thaoTac: 135,
+  });
+
+  const startColResize = (colKey, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = colWidths[colKey] || 100;
+
+    const onMouseMove = (moveEvent) => {
+      const delta = moveEvent.clientX - startX;
+      const minWidthMap = {
+        stt: 50,
+        ngayLam: 95,
+        tenNhanVien: 160,
+        tenCa: 140,
+        checkIn: 85,
+        checkOut: 85,
+        trangThai: 120,
+        diMuon: 75,
+        veSom: 75,
+        gioThucTe: 90,
+        dieuChinh: 120,
+        thaoTac: 120,
+      };
+      const minWidth = minWidthMap[colKey] || 70;
+      const newWidth = Math.max(minWidth, startWidth + delta);
+      setColWidths((prev) => ({ ...prev, [colKey]: newWidth }));
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  const renderHeader = (title, key, align = 'left') => (
+    <div
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
+        width: '100%',
+        paddingRight: 6,
+        userSelect: 'none',
+      }}
+    >
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+      <div
+        className="excel-col-resizer"
+        onMouseDown={(e) => startColResize(key, e)}
+      />
+    </div>
+  );
+
+  const totalTableWidth = useMemo(
+    () => Object.values(colWidths).reduce((sum, w) => sum + w, 0),
+    [colWidths]
+  );
+
   const columns = [
     {
-      title: 'Ngày',
-      dataIndex: 'ngayLam',
-      width: 110,
-      render: (value) => (value ? dayjs(value).format('DD/MM/YYYY') : '-'),
+      title: renderHeader('STT', 'stt', 'center'),
+      width: colWidths.stt,
+      minWidth: 50,
+      align: 'center',
+      fixed: 'left',
+      className: 'excel-stt-cell',
+      render: (_, __, index) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#64748b' }}>
+          {(pagination.current - 1) * pagination.pageSize + index + 1}
+        </span>
+      ),
     },
     {
-      title: 'Nhân viên',
+      title: renderHeader('Ngày', 'ngayLam', 'center'),
+      dataIndex: 'ngayLam',
+      width: colWidths.ngayLam,
+      minWidth: 95,
+      align: 'center',
+      className: 'excel-date-cell',
+      render: (value) => (
+        value ? (
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {dayjs(value).format('DD/MM/YYYY')}
+          </span>
+        ) : '-'
+      ),
+    },
+    {
+      title: renderHeader('Nhân viên', 'tenNhanVien', 'left'),
       dataIndex: 'tenNhanVien',
+      width: colWidths.tenNhanVien,
+      minWidth: 160,
       render: (text, row) => (
-        <div>
-          <strong style={{ color: '#0f172a' }}>{text}</strong>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+          <strong
+            style={{ color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            title={text}
+          >
+            {text}
+          </strong>
           {(row.chucDanh || row.tenKhoa) && (
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-              {row.chucDanh ? `${row.chucDanh}` : ''}
-              {row.chucDanh && row.tenKhoa ? ' • ' : ''}
-              {row.tenKhoa ? <Tag color="blue" style={{ fontSize: 11, padding: '0 4px', margin: 0 }}>{row.tenKhoa}</Tag> : null}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 11, color: '#64748b' }}>
+              {row.chucDanh && <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.chucDanh}</span>}
+              {row.chucDanh && row.tenKhoa && <span>•</span>}
+              {row.tenKhoa && (
+                <Tag
+                  color="cyan"
+                  style={{
+                    fontSize: 10,
+                    padding: '0 4px',
+                    margin: 0,
+                    borderRadius: 3,
+                    lineHeight: '18px',
+                    border: '1px solid #a5f3fc',
+                    background: '#ecfeff',
+                    color: '#0e7490',
+                    maxWidth: 120,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {row.tenKhoa}
+                </Tag>
+              )}
             </div>
           )}
         </div>
       ),
     },
     {
-      title: 'Ca làm việc',
+      title: renderHeader('Ca làm việc', 'tenCa', 'left'),
+      width: colWidths.tenCa,
+      minWidth: 140,
       render: (_, row) => (
-        <span>
-          {row.tenCa}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <strong
+            style={{ color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            title={row.tenCa}
+          >
+            {row.tenCa}
+          </strong>
           {row.thoiGianBatDau && row.thoiGianKetThuc ? (
-            <span style={{ color: '#64748b', marginLeft: 4 }}>
-              ({row.thoiGianBatDau.substring(0, 5)} - {row.thoiGianKetThuc.substring(0, 5)})
+            <span style={{ color: '#64748b', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
+              {row.thoiGianBatDau.substring(0, 5)} - {row.thoiGianKetThuc.substring(0, 5)}
             </span>
           ) : null}
-        </span>
+        </div>
       ),
     },
     {
-      title: 'Check-in',
+      title: renderHeader('Check-in', 'checkIn', 'center'),
+      width: colWidths.checkIn,
+      minWidth: 85,
+      align: 'center',
+      className: 'excel-date-cell',
       render: (_, row) =>
         row.attendance?.checkIn ? (
-          <span style={{ fontWeight: 600, color: '#059669' }}>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#047857' }}>
             {dayjs(row.attendance.checkIn).format('HH:mm:ss')}
           </span>
         ) : (
@@ -241,10 +345,14 @@ export const AttendanceManagement = ({
         ),
     },
     {
-      title: 'Check-out',
+      title: renderHeader('Check-out', 'checkOut', 'center'),
+      width: colWidths.checkOut,
+      minWidth: 85,
+      align: 'center',
+      className: 'excel-date-cell',
       render: (_, row) =>
         row.attendance?.checkOut ? (
-          <span style={{ fontWeight: 600, color: '#2563eb' }}>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#0284c7' }}>
             {dayjs(row.attendance.checkOut).format('HH:mm:ss')}
           </span>
         ) : (
@@ -252,118 +360,205 @@ export const AttendanceManagement = ({
         ),
     },
     {
-      title: 'Trạng thái',
+      title: renderHeader('Trạng thái', 'trangThai', 'center'),
+      width: colWidths.trangThai,
+      minWidth: 120,
+      align: 'center',
       render: (_, row) => {
         const status = row.attendance?.trangThai || (row.trangThaiLich === 'NGHI' ? 'NGHI_PHEP' : 'CHUA_CHAM_CONG');
-        const colors = {
-          DI_DUNG_GIO: 'green',
-          DI_MUON: 'orange',
-          VE_SOM: 'orange',
-          DI_MUON_VE_SOM: 'orange',
-          THIEU_CHECK_OUT: 'orange',
-          THIEU_CHECKOUT: 'orange',
-          CHO_XAC_NHAN: 'purple',
-          NGHI_PHEP: 'gold',
-          VANG_MAT: 'red',
-          CHUA_CHAM_CONG: 'default',
-        };
         const label = attendanceLabels[status] || (status === 'CHUA_CHAM_CONG' ? 'Chưa chấm công' : status);
         const isMissingCheckout = status === 'THIEU_CHECK_OUT' || status === 'THIEU_CHECKOUT';
         const violationMinutes = (row.attendance?.phutDiMuon || 0) + (row.attendance?.phutVeSom || 0);
+
+        let badgeStyle = {
+          padding: '2px 8px',
+          borderRadius: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          border: '1px solid',
+          whiteSpace: 'nowrap',
+          display: 'inline-block',
+        };
+
+        switch (status) {
+          case 'DI_DUNG_GIO':
+            badgeStyle = { ...badgeStyle, background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' };
+            break;
+          case 'DI_MUON':
+          case 'VE_SOM':
+          case 'DI_MUON_VE_SOM':
+            badgeStyle = { ...badgeStyle, background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' };
+            break;
+          case 'THIEU_CHECK_OUT':
+          case 'THIEU_CHECKOUT':
+            badgeStyle = { ...badgeStyle, background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' };
+            break;
+          case 'VANG_MAT':
+            badgeStyle = { ...badgeStyle, background: '#fff1f2', color: '#be123c', borderColor: '#fecdd3' };
+            break;
+          case 'NGHI_PHEP':
+            badgeStyle = { ...badgeStyle, background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' };
+            break;
+          default:
+            badgeStyle = { ...badgeStyle, background: '#f8fafc', color: '#64748b', borderColor: '#e2e8f0' };
+            break;
+        }
+
         return (
-          <Space size={4} wrap>
-            <Tag
-              color={colors[status] || 'blue'}
-              style={isMissingCheckout ? {
-                background: '#fffbeb',
-                color: '#92400e',
-                borderColor: '#fde68a',
-              } : undefined}
-            >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <span style={badgeStyle}>
               {isMissingCheckout ? 'Thiếu check-out' : label}
-            </Tag>
+            </span>
             {status === 'DI_MUON_VE_SOM' && violationMinutes > 0 && (
-              <span style={{ color: '#92400e', fontFamily: 'monospace', fontSize: 12 }}>
-                {violationMinutes} phút
+              <span style={{ color: '#b45309', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
+                {violationMinutes}p
               </span>
             )}
-          </Space>
+          </div>
         );
       },
     },
     {
-      title: 'Đi muộn',
-      width: 90,
+      title: renderHeader('Đi muộn', 'diMuon', 'right'),
+      width: colWidths.diMuon,
+      minWidth: 75,
+      align: 'right',
+      className: 'excel-num-cell',
       render: (_, row) =>
         row.attendance?.phutDiMuon > 0 ? (
-          <span style={{ color: '#d97706', fontWeight: 600 }}>{row.attendance.phutDiMuon}p</span>
+          <span style={{ color: '#b45309', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+            {row.attendance.phutDiMuon}p
+          </span>
         ) : (
           <span style={{ color: '#94a3b8' }}>0p</span>
         ),
     },
     {
-      title: 'Về sớm',
-      width: 90,
+      title: renderHeader('Về sớm', 'veSom', 'right'),
+      width: colWidths.veSom,
+      minWidth: 75,
+      align: 'right',
+      className: 'excel-num-cell',
       render: (_, row) =>
         row.attendance?.phutVeSom > 0 ? (
-          <span style={{ color: '#d97706', fontWeight: 600 }}>{row.attendance.phutVeSom}p</span>
+          <span style={{ color: '#b45309', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+            {row.attendance.phutVeSom}p
+          </span>
         ) : (
           <span style={{ color: '#94a3b8' }}>0p</span>
         ),
     },
     {
-      title: 'Giờ thực tế',
-      width: 100,
+      title: renderHeader('Giờ thực tế', 'gioThucTe', 'right'),
+      width: colWidths.gioThucTe,
+      minWidth: 90,
+      align: 'right',
+      className: 'excel-num-cell',
       render: (_, row) =>
-        row.attendance?.checkOut ? `${row.attendance.gioLamThucTe} giờ` : (
-          row.attendance?.trangThai === 'THIEU_CHECK_OUT' || row.attendance?.trangThai === 'THIEU_CHECKOUT'
-            ? <span style={{ color: '#b45309', fontWeight: 600 }}>0.0 (Chưa chốt)</span>
-            : '-'
+        row.attendance?.checkOut ? (
+          <span style={{ fontWeight: 600, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>
+            {Number(row.attendance.gioLamThucTe || 0).toFixed(1)}h
+          </span>
+        ) : (
+          row.attendance?.trangThai === 'THIEU_CHECK_OUT' || row.attendance?.trangThai === 'THIEU_CHECKOUT' ? (
+            <span style={{ color: '#b45309', fontWeight: 600, fontSize: 11 }}>0.0 (Chưa chốt)</span>
+          ) : (
+            <span style={{ color: '#94a3b8' }}>-</span>
+          )
         ),
     },
     {
-      title: 'Điều chỉnh',
+      title: renderHeader('Điều chỉnh', 'dieuChinh', 'center'),
+      width: colWidths.dieuChinh,
+      minWidth: 120,
+      align: 'center',
       render: (_, row) => {
-        if (!row.attendance) return '-';
+        if (!row.attendance) return <span style={{ color: '#94a3b8' }}>-</span>;
         const request = adjustments.find((item) => item.maChamCong === row.attendance?.id);
-        if (request?.trangThai === 'CHO_DUYET') return <Tag color="gold">Chờ duyệt</Tag>;
+        if (request?.trangThai === 'CHO_DUYET') {
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Tag style={{ margin: 0, fontSize: 11, padding: '1px 6px', background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' }}>
+                Chờ duyệt
+              </Tag>
+            </div>
+          );
+        }
         const missingCheckout = row.attendance.trangThai === 'THIEU_CHECK_OUT'
           || row.attendance.trangThai === 'THIEU_CHECKOUT';
+        if (missingCheckout) {
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Tooltip title="Duyệt bổ sung giờ ra ca chuẩn">
+                <Button
+                  size="small"
+                  type="primary"
+                  style={{
+                    background: '#f59e0b',
+                    borderColor: '#f59e0b',
+                    color: '#fff',
+                    fontSize: 11,
+                    padding: '0 8px',
+                    height: 24,
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={() => handleQuickApproveCheckOut(row)}
+                >
+                  Bổ sung giờ ra
+                </Button>
+              </Tooltip>
+            </div>
+          );
+        }
         return (
-          <Button
-            size="small"
-            onClick={() => {
-              adjustmentForm.setFieldsValue({
-                checkIn: row.attendance.checkIn ? dayjs(row.attendance.checkIn) : null,
-                checkOut: row.attendance.checkOut ? dayjs(row.attendance.checkOut) : null,
-                lyDo: '',
-              });
-              setAdjustmentRow(row);
-            }}
-          >
-            {missingCheckout ? 'Giải trình giờ' : 'Điều chỉnh'}
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Button
+              size="small"
+              style={{ fontSize: 11, padding: '0 8px', height: 24, whiteSpace: 'nowrap' }}
+              onClick={() => openAdjustmentModal(row)}
+            >
+              Điều chỉnh
+            </Button>
+          </div>
         );
       },
     },
     {
-      title: 'Thao tác',
+      title: renderHeader('Thao tác', 'thaoTac', 'center'),
+      width: colWidths.thaoTac,
+      minWidth: 120,
+      align: 'center',
       render: (_, row) => {
         const item = row.attendance;
-        if (row.trangThaiLich === 'NGHI' || item?.trangThai === 'NGHI_PHEP' || item?.trangThai === 'VANG_MAT') return '-';
+        if (row.trangThaiLich === 'NGHI' || item?.trangThai === 'NGHI_PHEP' || item?.trangThai === 'VANG_MAT') {
+          return <span style={{ color: '#94a3b8' }}>-</span>;
+        }
         return (
-          <Space>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, whiteSpace: 'nowrap' }}>
             {!item?.checkIn && (
-              <Button size="small" type="primary" onClick={() => checkIn({ maNhanVien: row.maNhanVien })}>
+              <Button
+                size="small"
+                type="primary"
+                style={{ background: '#10b981', borderColor: '#10b981', fontSize: 11, height: 24, padding: '0 8px' }}
+                onClick={() => checkIn({ maNhanVien: row.maNhanVien })}
+              >
                 Check-in
               </Button>
             )}
             {item?.checkIn && !item?.checkOut && (
-              <Button size="small" onClick={() => checkOut({ maNhanVien: row.maNhanVien })}>
+              <Button
+                size="small"
+                type="primary"
+                style={{ background: '#0284c7', borderColor: '#0284c7', fontSize: 11, height: 24, padding: '0 8px' }}
+                onClick={() => checkOut({ maNhanVien: row.maNhanVien })}
+              >
                 Check-out
               </Button>
             )}
-          </Space>
+            {item?.checkIn && item?.checkOut && (
+              <span style={{ color: '#64748b', fontSize: 11 }}>Đã hoàn thành</span>
+            )}
+          </div>
         );
       },
     },
@@ -415,298 +610,85 @@ export const AttendanceManagement = ({
         </div>
       )}
 
-      {/* BẢNG QUÉT CHẤM CÔNG TỰ ĐỘNG KHỚP CA */}
-      <div
-        style={{
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          {/* Đồng hồ số thời gian thực */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 10,
-                background: '#e0f2fe',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#0284c7',
-              }}
-            >
-              <Clock size={24} />
-            </div>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'monospace', color: '#0f172a', letterSpacing: 1 }}>
-                {now.format('HH:mm:ss')}
-              </div>
-              <div style={{ fontSize: 13, color: '#64748b' }}>
-                {now.format('dddd, DD/MM/YYYY')}
-              </div>
-            </div>
-          </div>
-
-          {/* Chọn nhân viên & 2 Nút Check-in / Check-out */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
-            <Select
-              style={{ width: 260 }}
-              placeholder="Chọn nhân viên chấm công"
-              value={selectedEmployeeId}
-              onChange={setSelectedEmployeeId}
-              options={employeeOptions}
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-            />
-            <Button
-              type="primary"
-              size="middle"
-              loading={actionLoading}
-              icon={<LogIn size={16} />}
-              onClick={handleQuickCheckIn}
-              style={{
-                background: '#10b981',
-                borderColor: '#10b981',
-                fontWeight: 600,
-                borderRadius: 8,
-              }}
-            >
-              Check-in
-            </Button>
-            <Button
-              type="primary"
-              size="middle"
-              loading={actionLoading}
-              icon={<LogOut size={16} />}
-              onClick={handleQuickCheckOut}
-              style={{
-                background: '#2563eb',
-                borderColor: '#2563eb',
-                fontWeight: 600,
-                borderRadius: 8,
-              }}
-            >
-              Check-out
-            </Button>
-          </div>
-        </div>
-
-        {/* Thông báo kết quả khớp ca tự động hoặc báo lỗi ngoài giờ */}
-        {recentMatch && (
-          <div style={{ marginTop: 14 }}>
-            {recentMatch.success ? (
-              <Alert
-                type="success"
-                showIcon
-                icon={<CheckCircle2 size={18} style={{ color: '#10b981' }} />}
-                message={
-                  <span style={{ fontWeight: 600 }}>
-                    {recentMatch.type === 'check-in' ? 'Check-in thành công' : 'Check-out thành công'} ({recentMatch.time})
-                  </span>
-                }
-                description={
-                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span>Nhân viên: <strong>{recentMatch.tenNhanVien}</strong></span>
-                    {recentMatch.tenCa ? (
-                      <Tag color="green" style={{ fontSize: 13, padding: '2px 8px' }}>
-                        {recentMatch.type === 'check-in'
-                          ? `Đã vào ${recentMatch.tenCa}: ${recentMatch.thoiGianBatDau || ''} - ${recentMatch.thoiGianKetThuc || ''} (${recentMatch.trangThai === 'DI_MUON' || recentMatch.trangThai === 'DI_MUON_VE_SOM' ? 'Đi muộn' : 'Đúng giờ'})`
-                          : `Đã hoàn thành ${recentMatch.tenCa} (Giờ thực tế: ${recentMatch.gioLamThucTe || 0} giờ)`}
-                      </Tag>
-                    ) : (
-                      <Tag color="blue">Tự động khớp ca</Tag>
-                    )}
-                  </div>
-                }
-                closable
-                onClose={() => setRecentMatch(null)}
-              />
-            ) : (
-              <Alert
-                type="error"
-                showIcon
-                icon={<AlertCircle size={18} style={{ color: '#ef4444' }} />}
-                message={<span style={{ fontWeight: 600 }}>Chấm công không thành công ({recentMatch.time})</span>}
-                description={recentMatch.message}
-                closable
-                onClose={() => setRecentMatch(null)}
-              />
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* THANH BỘ LỌC NỘI BỘ TAB CHẤM CÔNG & NÚT THAO TÁC */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 14,
-          flexWrap: 'wrap',
-          gap: 10,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <Input
-            placeholder="Tìm theo tên nhân viên, ca..."
-            prefix={<Search size={15} style={{ color: '#94a3b8' }} />}
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            allowClear
-            style={{ width: 220, borderRadius: 8 }}
-          />
-          <Select
-            placeholder="Khoa phòng"
-            allowClear
-            value={deptFilter}
-            onChange={setDeptFilter}
-            style={{ width: 200 }}
-            options={[
-              { value: undefined, label: 'Tất cả khoa phòng' },
-              ...khoas.map((k) => ({ value: k.id, label: k.ten })),
-            ]}
-          />
-          <Select
-            placeholder="Trạng thái"
-            allowClear
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: 170 }}
-            options={[
-              { value: undefined, label: 'Tất cả trạng thái' },
-              { value: 'DA_CHECK_IN', label: 'Đã check-in' },
-              { value: 'DA_CHECK_OUT', label: 'Đã check-out' },
-              { value: 'DI_DUNG_GIO', label: 'Đúng giờ' },
-              { value: 'DI_MUON', label: 'Đi muộn' },
-              { value: 'DI_MUON_VE_SOM', label: 'Đi muộn & về sớm' },
-              { value: 'THIEU_CHECK_OUT', label: 'Thiếu check-out' },
-              { value: 'CHUA_CHAM_CONG', label: 'Chưa chấm công' },
-              { value: 'VANG_MAT', label: 'Vắng mặt' },
-              { value: 'NGHI_PHEP', label: 'Nghỉ phép' },
-            ]}
-          />
-          <Button
-            type={statusFilter === 'ABNORMAL' ? 'primary' : 'default'}
-            onClick={() => setStatusFilter(statusFilter === 'ABNORMAL' ? undefined : 'ABNORMAL')}
-            style={statusFilter === 'ABNORMAL' ? { background: '#b45309', borderColor: '#b45309' } : undefined}
-          >
-            Ca bất thường cần xử lý ({abnormalCount})
-          </Button>
-          <span style={{ fontSize: 13, color: '#64748b', marginLeft: 4 }}>
-            Hiển thị <strong>{rows.length}</strong> bản ghi
-          </span>
-        </div>
-
-        <Space wrap>
-          <Button onClick={() => setPeriodOpen(true)} style={{ borderRadius: 8 }}>
-            Quản lý kỳ chấm công
-          </Button>
-          <Button onClick={exportCsv} disabled={!rows.length} style={{ borderRadius: 8 }}>
-            Xuất báo cáo CSV
-          </Button>
-        </Space>
-      </div>
-
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={rows}
-        columns={columns}
-        pagination={{ pageSize: 15, showSizeChanger: true }}
-        locale={{ emptyText: 'Chưa có dữ liệu chấm công hoặc ca làm việc phù hợp.' }}
-        style={{ border: '1px solid #e9edf4', borderRadius: 10, overflow: 'hidden' }}
+      {/* BẢNG QUÉT CHẤM CÔNG TỰ ĐỘNG KHỚP CA & ĐỒNG HỒ SỐ */}
+      <AttendanceQuickClock
+        employees={employees}
+        schedules={schedules}
+        checkIn={checkIn}
+        checkOut={checkOut}
       />
 
-      <Modal
-        title={`Điều chỉnh chấm công - ${adjustmentRow?.tenNhanVien || ''}`}
+      {/* THANH BỘ LỌC NỘI BỘ TAB CHẤM CÔNG & NÚT THAO TÁC */}
+      <AttendanceFilterToolbar
+        searchKeyword={searchKeyword}
+        setSearchKeyword={setSearchKeyword}
+        deptFilter={deptFilter}
+        setDeptFilter={setDeptFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        khoas={khoas}
+        abnormalCount={abnormalCount}
+        totalRows={rows.length}
+        pendingAdjustmentsCount={pendingAdjustmentsCount}
+        onOpenAdjustmentsModal={() => setAdjustmentsModalOpen(true)}
+        onOpenPeriodModal={() => setPeriodOpen(true)}
+        onExportCsv={exportCsv}
+      />
+
+      {/* BẢNG DỮ LIỆU EXCEL DATA GRID */}
+      <div style={{ width: '100%', overflowX: 'auto' }}>
+        <Table
+          rowKey="id"
+          loading={loading}
+          dataSource={rows}
+          columns={columns}
+          className="excel-data-grid"
+          tableLayout="fixed"
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['15', '30', '50', '100'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dòng`,
+          }}
+          onChange={(p) => setPagination({ current: p.current || 1, pageSize: p.pageSize || 15 })}
+          locale={{ emptyText: 'Chưa có dữ liệu chấm công hoặc ca làm việc phù hợp.' }}
+          style={{ border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}
+          scroll={{ x: totalTableWidth }}
+        />
+      </div>
+
+      {/* MODAL 1: ĐIỀU CHỈNH CHẤM CÔNG — TOÀN MÀN HÌNH */}
+      <AttendanceAdjustmentModal
         open={!!adjustmentRow}
-        okText="Gửi yêu cầu"
-        cancelText="Hủy"
-        onCancel={() => setAdjustmentRow(null)}
-        onOk={async () => {
-          const values = await adjustmentForm.validateFields();
-          await requestAdjustment({
-            maChamCong: adjustmentRow.attendance.id,
-            checkIn: values.checkIn?.toISOString() || null,
-            checkOut: values.checkOut?.toISOString() || null,
-            lyDo: values.lyDo,
-          });
+        adjustmentRow={adjustmentRow}
+        adjustmentDefaults={adjustmentDefaults}
+        attendanceLabels={attendanceLabels}
+        onClose={() => setAdjustmentRow(null)}
+        onSubmit={async (payload) => {
+          await requestAdjustment(payload);
           setAdjustmentRow(null);
         }}
-      >
-        <Form form={adjustmentForm} layout="vertical">
-          <Form.Item name="checkIn" label="Check-in mới">
-            <DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="checkOut" label="Check-out mới">
-            <DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="lyDo" label="Lý do" rules={[{ required: true, message: 'Vui lòng nhập lý do.' }]}>
-            <Input.TextArea rows={3} maxLength={500} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      />
 
-      <Modal
-        title="Kỳ chấm công"
+      {/* MODAL 2: DANH SÁCH ĐƠN DUYỆT ĐIỀU CHỈNH CHẤM CÔNG */}
+      <AttendanceAdjustmentsListModal
+        open={adjustmentsModalOpen}
+        adjustments={adjustments}
+        employees={employees}
+        pendingCount={pendingAdjustmentsCount}
+        onClose={() => setAdjustmentsModalOpen(false)}
+        onReview={reviewAdjustment}
+      />
+
+      {/* MODAL 3: KỲ CHẤM CÔNG */}
+      <AttendancePeriodModal
         open={periodOpen}
-        footer={null}
-        onCancel={() => setPeriodOpen(false)}
-        width={720}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Form form={periodForm} layout="inline" onFinish={async (values) => {
-            await createPeriod({
-              tuNgay: values.range[0].startOf('day').toISOString(),
-              denNgay: values.range[1].endOf('day').toISOString(),
-              ghiChu: values.ghiChu,
-            });
-            periodForm.resetFields();
-          }}>
-            <Form.Item name="range" rules={[{ required: true, message: 'Chọn khoảng kỳ.' }]}>
-              <DatePicker.RangePicker format="DD/MM/YYYY" presets={dateRangePresets} />
-            </Form.Item>
-            <Form.Item name="ghiChu"><Input placeholder="Ghi chú" /></Form.Item>
-            <Button type="primary" htmlType="submit">Tạo kỳ</Button>
-          </Form>
-          <Table
-            rowKey="id"
-            size="small"
-            dataSource={periods}
-            pagination={false}
-            columns={[
-              { title: 'Từ ngày', render: (_, item) => dayjs(item.tuNgay).format('DD/MM/YYYY') },
-              { title: 'Đến ngày', render: (_, item) => dayjs(item.denNgay).format('DD/MM/YYYY') },
-              { title: 'Trạng thái', render: (_, item) => <Tag color={item.daKhoa ? 'red' : 'green'}>{item.daKhoa ? 'Đã khóa' : 'Đang mở'}</Tag> },
-              { title: 'Thao tác', render: (_, item) => <Button size="small" onClick={() => togglePeriod(item)}>{item.daKhoa ? 'Mở khóa' : 'Khóa kỳ'}</Button> },
-            ]}
-          />
-          {adjustments.length > 0 && (
-            <Table
-              rowKey="id"
-              size="small"
-              dataSource={adjustments}
-              pagination={{ pageSize: 5 }}
-              title={() => 'Yêu cầu điều chỉnh gần đây'}
-              columns={[
-                { title: 'Mã chấm công', dataIndex: 'maChamCong' },
-                { title: 'Lý do', dataIndex: 'lyDo' },
-                { title: 'Trạng thái', dataIndex: 'trangThai' },
-                { title: 'Thao tác', render: (_, item) => item.trangThai === 'CHO_DUYET' ? <Space><Button size="small" type="primary" onClick={() => reviewAdjustment(item.id, true)}>Duyệt</Button><Button size="small" danger onClick={() => reviewAdjustment(item.id, false)}>Từ chối</Button></Space> : '-' },
-              ]}
-            />
-          )}
-        </Space>
-      </Modal>
+        periods={periods}
+        onClose={() => setPeriodOpen(false)}
+        onCreatePeriod={createPeriod}
+        onTogglePeriod={togglePeriod}
+      />
     </>
   );
 };

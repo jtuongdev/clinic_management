@@ -51,6 +51,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
             builder.Property(n => n.LyDoNghiViec)
                 .HasMaxLength(500);
             builder.Property(n => n.LuongCoBan).HasPrecision(18, 2);
+            builder.Property(n => n.ThuLaoMoiLuot).HasPrecision(18, 2).IsRequired(false);
             builder.HasIndex(n => n.SoHanhNghe)
                 .IsUnique()
                 .HasFilter("[SoHanhNghe] IS NOT NULL");

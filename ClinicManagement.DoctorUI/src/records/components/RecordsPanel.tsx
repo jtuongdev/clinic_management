@@ -86,12 +86,12 @@ const RecordsPanel: React.FC = () => {
     return Math.abs(ageDate.getUTCFullYear() - 1970);
   };
 
-  const getInitials = (fullName?: string) => {
-    if (!fullName) return 'BN';
-    const parts = fullName.trim().split(' ');
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
+  // const getInitials = (fullName?: string) => {
+  //   if (!fullName) return 'BN';
+  //   const parts = fullName.trim().split(' ');
+  //   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  //   return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+  // };
 
   const activeInsurance = patientDetail?.baoHiems?.find(b => b.isValid) || patientDetail?.baoHiems?.[0];
   const allergies = patientDetail?.tienSuBenhs?.filter(t => t.loaiTienSu?.toLowerCase().includes('dị ứng') || t.loaiTienSu?.toLowerCase().includes('diung')) || [];
@@ -124,7 +124,7 @@ const RecordsPanel: React.FC = () => {
               Không tìm thấy hồ sơ phù hợp.
             </div>
           ) : (
-            patients.map(p => {
+            patients.map((p, index) => {
               const age = calculateAge(p.ngaySinh);
               const isSelected = selectedPatientId === p.id;
               const genderLabel = p.gioiTinh === 'M' ? 'Nam' : p.gioiTinh === 'F' ? 'Nữ' : p.gioiTinh || 'Khác';
@@ -135,7 +135,7 @@ const RecordsPanel: React.FC = () => {
                   className={`records-patient-item ${isSelected ? 'active' : ''}`}
                   onClick={() => setSelectedPatientId(p.id)}
                 >
-                  <div className="avatar-sm">{getInitials(p.hoTen)}</div>
+                  <div className="stt-cell">{index + 1}</div>
                   <div className="pbody">
                     <div className="pname">{p.hoTen}</div>
                     <div className="pcode">{p.maBenhNhanNoiBo || `BN-${p.id}`} · {genderLabel} · {age} tuổi</div>
@@ -184,7 +184,7 @@ const RecordsPanel: React.FC = () => {
             </button>
           ))}
         </div>
-
+        {/* tabs records-wor */}
         <div className="records-workspace">
           {activeTab === 'overview' && (
             <div className="tab-content active">
@@ -195,6 +195,7 @@ const RecordsPanel: React.FC = () => {
                       <h3><i className="fa-solid fa-circle-info"></i> Thông tin hồ sơ</h3>
                       <span className="badge green">Đang hoạt động</span>
                     </div>
+                    {/* thông tin hồ sơ bệnh nhân */}
                     <div className="record-card-body">
                       <div className="form-grid">
                         <div className="field"><label>Mã bệnh nhân</label><input className="readonly" value={selectedPatient?.maBenhNhanNoiBo || (selectedPatient ? `BN-${selectedPatient.id}` : '---')} readOnly /></div>
@@ -208,7 +209,7 @@ const RecordsPanel: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
+                  {/* Lươt khám gần nhất */}
                   <div className="record-card">
                     <div className="record-card-head">
                       <h3><i className="fa-solid fa-stethoscope"></i> Lượt khám gần nhất</h3>
@@ -228,7 +229,7 @@ const RecordsPanel: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
+                {/* //Cảnh báo an toàn y tế */}
                 <div>
                   <div className="record-card">
                     <div className="record-card-head"><h3><i className="fa-solid fa-triangle-exclamation"></i> Cảnh báo an toàn y tế</h3></div>

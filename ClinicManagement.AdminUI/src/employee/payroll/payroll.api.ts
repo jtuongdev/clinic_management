@@ -10,6 +10,7 @@ export interface PayrollPeriod {
   maKyChamCong?: number;
   trangThai: string;
   soBangLuong: number;
+  isPublished: boolean;
 }
 
 export interface ChiTietBangLuong {
@@ -78,6 +79,11 @@ export interface PayrollLine {
   tienTangCa: number;
   khauTruDiMuonVeSom: number;
   tienBaoHiem: number;
+  tienThuLaoKham?: number;
+  tienHoaHongCls?: number;
+  tongThuNhap?: number;
+  tongGiamTru?: number;
+  tongThuLaoHis?: number;
   soCaBatThuong?: number;
   soCaThieuCheckOut?: number;
   soCaVangMat?: number;
@@ -89,6 +95,13 @@ export interface PayrollDetail extends PayrollPeriod {
   soNhanVienPhatSinhNo?: number;
   tongTienNoKyNay?: number;
   kpi?: PayrollSummaryKpi;
+}
+
+export interface HisSummaryData {
+  soLuotKhamHoanThanh: number;
+  tienThuLaoKham: number;
+  soDichVuClsChiDinh: number;
+  tongHoaHongCls: number;
 }
 
 export interface AttendancePeriodOption {
@@ -109,6 +122,9 @@ export const payrollApi = {
   approve: (id: number) => api.post<ApiResponse<PayrollPeriod>>(`/payroll/periods/${id}/approve`),
   close: (id: number) => api.post<ApiResponse<PayrollPeriod>>(`/payroll/periods/${id}/close`),
   pay: (id: number) => api.post<ApiResponse<PayrollPeriod>>(`/payroll/periods/${id}/pay`),
+  publish: (id: number) => api.post<ApiResponse<PayrollPeriod>>(`/payroll/periods/${id}/publish`),
+  unpublish: (id: number) => api.post<ApiResponse<PayrollPeriod>>(`/payroll/periods/${id}/unpublish`),
+  getHisSummary: (bangLuongId: number) => api.get<ApiResponse<HisSummaryData>>(`/payroll/bang-luong/${bangLuongId}/his-summary`),
   addItem: (bangLuongId: number, data: AddItemRequest) =>
     api.post<ApiResponse<PayrollLine>>(`/payroll/bang-luong/${bangLuongId}/items`, data),
   removeItem: (bangLuongId: number, itemId: number) =>

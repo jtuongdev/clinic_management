@@ -72,16 +72,8 @@ export const PayslipPrintModal: React.FC<PayslipPrintModalProps> = ({
     window.print();
   };
 
-  const tongThuNhap =
-    Number(line.luongTheoNgayCong || 0) +
-    Number(line.tienTangCa || 0) +
-    Number(line.tongPhuCap || 0);
-
-  const tongKhauTru =
-    Number(line.tienBaoHiem || 0) +
-    Number(line.khauTruNghiKhongLuong || 0) +
-    Number(line.khauTruDiMuonVeSom || 0) +
-    Number(line.tongKhauTru || 0);
+  const tongThuNhap = Number(line.tongThuNhap || 0);
+  const tongKhauTru = Number(line.tongGiamTru || 0);
 
   const hasDebt = Number(line.tienNoKyNay || 0) > 0;
 
@@ -258,7 +250,7 @@ export const PayslipPrintModal: React.FC<PayslipPrintModalProps> = ({
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ padding: '6px 10px', borderBottom: '1px solid #f1f5f9' }}>3. Khấu trừ đi muộn / về sớm</td>
+                      <td style={{ padding: '6px 10px', borderBottom: '1px solid #f1f5f9' }}>3. Phạt đi muộn (50k/lượt)</td>
                       <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid #f1f5f9', color: '#ea580c' }}>
                         -{money(line.khauTruDiMuonVeSom)}
                       </td>

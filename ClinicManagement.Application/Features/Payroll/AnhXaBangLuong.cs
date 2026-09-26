@@ -14,7 +14,8 @@ public static class AnhXaBangLuong
         DenNgay = x.DenNgay,
         MaKyChamCong = x.MaKyChamCong,
         TrangThai = x.TrangThai,
-        SoBangLuong = x.BangLuongs?.Count ?? 0
+        SoBangLuong = x.BangLuongs?.Count ?? 0,
+        IsPublished = x.IsPublished
     };
 
     public static PayrollDetailDto Detail(KyLuong x)
@@ -23,13 +24,13 @@ public static class AnhXaBangLuong
         var kpi = new PayrollSummaryKpiDto
         {
             SoNhanVien = lines.Count,
-            TongQuyLuong = lines.Sum(l => l.LuongTheoNgayCong + l.TienTangCa + l.TongPhuCap),
+            TongQuyLuong = lines.Sum(l => l.TongThuNhap),
             TongLuongCoBan = lines.Sum(l => l.LuongCoBan),
             TongLamThemOT = lines.Sum(l => l.TienTangCa),
             TongBaoHiem = lines.Sum(l => l.TienBaoHiem),
             TongThucLinh = lines.Sum(l => l.ThucLinh),
             TongPhuCap = lines.Sum(l => l.TongPhuCap),
-            TongKhauTru = lines.Sum(l => l.TongKhauTru + l.KhauTruNghiKhongLuong + l.KhauTruDiMuonVeSom + l.TienBaoHiem),
+            TongKhauTru = lines.Sum(l => l.TongGiamTru),
             SoNhanVienPhatSinhNo = lines.Count(l => l.TienNoKyNay > 0),
             TongTienNoKyNay = lines.Sum(l => l.TienNoKyNay)
         };
@@ -44,6 +45,7 @@ public static class AnhXaBangLuong
             MaKyChamCong = x.MaKyChamCong,
             TrangThai = x.TrangThai,
             SoBangLuong = x.BangLuongs.Count,
+            IsPublished = x.IsPublished,
             SoNhanVienPhatSinhNo = kpi.SoNhanVienPhatSinhNo,
             TongTienNoKyNay = kpi.TongTienNoKyNay,
             BangLuongs = lines,
@@ -75,6 +77,11 @@ public static class AnhXaBangLuong
         TienTangCa = b.TienTangCa,
         KhauTruDiMuonVeSom = b.KhauTruDiMuonVeSom,
         TienBaoHiem = b.TienBaoHiem,
+        TienThuLaoKham = b.TienThuLaoKham,
+        TienHoaHongCls = b.TienHoaHongCls,
+        TongThuNhap = b.TongThuNhap,
+        TongGiamTru = b.TongGiamTru,
+        TongThuLaoHis = b.TongThuLaoHis,
         ChiTiets = b.ChiTiets?.Select(c => new ChiTietBangLuongDto
         {
             Id = c.Id,

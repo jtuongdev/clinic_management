@@ -129,6 +129,7 @@ export const EmployeeManagement = () => {
   };
 
   useEffect(() => {
+    if (activeTab === 'payroll') return;
     let active = true;
     const fetchInitial = async () => {
       setLoading(true);
@@ -156,7 +157,7 @@ export const EmployeeManagement = () => {
     return () => {
       active = false;
     };
-  }, [message, pagination.pageSize]);
+  }, [message, pagination.pageSize, activeTab]);
 
   const handleSearch = () => {
     loadEmployees(1, pagination.pageSize, statusFilter, keyword);
@@ -783,70 +784,80 @@ export const EmployeeManagement = () => {
   );
 
   return (
-    <div className="employee-management">
-      {/* Top Header */}
-      <div className="employee-header">
-        <div className="employee-header-left">
-          <h1>
-            <UsersRound size={22} color="#0b4f6c" />
-            Quản lý Nhân sự & Lịch làm việc
-          </h1>
-          <p>
-            Quản lý hồ sơ nhân viên, phân công vai trò, lịch trực ca và đồng bộ tính lương
-          </p>
-        </div>
-      </div>
-
-      {/* KPI Overview Cards */}
-      <div className="employee-kpi-grid">
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-icon" style={{ background: '#ecf3fa', color: '#0b4f6c' }}>
-            <UsersRound size={22} />
-          </div>
-          <div className="employee-kpi-info">
-            <div className="employee-kpi-label">Tổng nhân sự</div>
-            <div className="employee-kpi-value">{pagination.total || employees.length}</div>
-          </div>
-        </div>
-
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-icon" style={{ background: '#e8f5ee', color: '#16834f' }}>
-            <UserCheck size={22} />
-          </div>
-          <div className="employee-kpi-info">
-            <div className="employee-kpi-label">Đang hoạt động</div>
-            <div className="employee-kpi-value" style={{ color: '#16834f' }}>
-              {activeCount}
+    <div
+      className={`employee-management ${activeTab === 'payroll' ? 'employee-management--payroll' : ''}`}
+      style={activeTab === 'payroll' ? { padding: '8px 12px', height: '100%', overflow: 'hidden' } : undefined}
+    >
+      {/* Top Header & KPI Overview Cards - Chỉ hiển thị khi ở tab Quản lý nhân sự */}
+      {activeTab !== 'payroll' && (
+        <>
+          <div className="employee-header">
+            <div className="employee-header-left">
+              <h1>
+                <UsersRound size={22} color="#0b4f6c" />
+                Quản lý Nhân sự & Lịch làm việc
+              </h1>
+              <p>
+                Quản lý hồ sơ nhân viên, phân công vai trò, lịch trực ca và đồng bộ tính lương
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-icon" style={{ background: '#fcecec', color: '#bd3f3f' }}>
-            <UserX size={22} />
-          </div>
-          <div className="employee-kpi-info">
-            <div className="employee-kpi-label">Đã tạm khóa</div>
-            <div className="employee-kpi-value" style={{ color: '#bd3f3f' }}>
-              {inactiveCount}
+          {/* KPI Overview Cards */}
+          <div className="employee-kpi-grid">
+            <div className="employee-kpi-card">
+              <div className="employee-kpi-icon" style={{ background: '#ecf3fa', color: '#0b4f6c' }}>
+                <UsersRound size={22} />
+              </div>
+              <div className="employee-kpi-info">
+                <div className="employee-kpi-label">Tổng nhân sự</div>
+                <div className="employee-kpi-value">{pagination.total || employees.length}</div>
+              </div>
+            </div>
+
+            <div className="employee-kpi-card">
+              <div className="employee-kpi-icon" style={{ background: '#e8f5ee', color: '#16834f' }}>
+                <UserCheck size={22} />
+              </div>
+              <div className="employee-kpi-info">
+                <div className="employee-kpi-label">Đang hoạt động</div>
+                <div className="employee-kpi-value" style={{ color: '#16834f' }}>
+                  {activeCount}
+                </div>
+              </div>
+            </div>
+
+            <div className="employee-kpi-card">
+              <div className="employee-kpi-icon" style={{ background: '#fcecec', color: '#bd3f3f' }}>
+                <UserX size={22} />
+              </div>
+              <div className="employee-kpi-info">
+                <div className="employee-kpi-label">Đã tạm khóa</div>
+                <div className="employee-kpi-value" style={{ color: '#bd3f3f' }}>
+                  {inactiveCount}
+                </div>
+              </div>
+            </div>
+
+            <div className="employee-kpi-card">
+              <div className="employee-kpi-icon" style={{ background: '#edf4ff', color: '#2a64ad' }}>
+                <Stethoscope size={22} />
+              </div>
+              <div className="employee-kpi-info">
+                <div className="employee-kpi-label">Bác sĩ & Chuyên môn</div>
+                <div className="employee-kpi-value" style={{ color: '#2a64ad' }}>
+                  {specialistCount}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </>
+      )}
 
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-icon" style={{ background: '#edf4ff', color: '#2a64ad' }}>
-            <Stethoscope size={22} />
-          </div>
-          <div className="employee-kpi-info">
-            <div className="employee-kpi-label">Bác sĩ & Chuyên môn</div>
-            <div className="employee-kpi-value" style={{ color: '#2a64ad' }}>
-              {specialistCount}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="employee-tab-content">
+      <div
+        className="employee-tab-content"
+        style={activeTab === 'payroll' ? { height: '100%', flex: 1, padding: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' } : undefined}
+      >
         {activeTab === 'payroll' ? <PayrollManagement /> : null}
         {activeTab === 'employees' ? employeeContent : null}
       </div>

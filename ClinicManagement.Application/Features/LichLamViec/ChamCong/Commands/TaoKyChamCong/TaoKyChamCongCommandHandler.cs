@@ -14,8 +14,8 @@ public class TaoKyChamCongCommandHandler : IRequestHandler<TaoKyChamCongCommand,
     {
         var x = new KyChamCong
         {
-            TuNgay = c.Request.TuNgay.Date,
-            DenNgay = c.Request.DenNgay.Date,
+            TuNgay = DongHoChamCong.Normalize(c.Request.TuNgay).Date,
+            DenNgay = DongHoChamCong.Normalize(c.Request.DenNgay).Date,
             GhiChu = c.Request.GhiChu?.Trim() ?? ""
         };
         x.Lock(0);

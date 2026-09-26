@@ -54,6 +54,7 @@ namespace ClinicManagement.Application.Features.NhanVien
                 TenChucVu = employee.ChucVu?.TenChucVu,
                 ChuyenKhoa = employee.ChuyenKhoa,
                 IsActive = employee.IsActive,
+                LuongCoBan = employee.LuongCoBan,
                 LastLogin = employee.LastLogin
             };
         }

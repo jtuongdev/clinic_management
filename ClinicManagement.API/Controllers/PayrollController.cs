@@ -59,6 +59,48 @@ public sealed class PayrollController(IMediator mediator) : BaseController
         Success(await mediator.Send(new TinhLaiBangLuongNhanVienCommand(bangLuongId), ct), "Đã tính lại lương nhân viên.");
 
     [HttpGet("bang-luong/{bangLuongId:int}/attendance-drilldown")]
+    [AllowSelf]
     public async Task<IActionResult> AttendanceDrilldown(int bangLuongId, CancellationToken ct) =>
         Success(await mediator.Send(new LayChiTietChamCongBangLuongQuery(bangLuongId), ct));
+
+    [HttpPost("periods/{id:int}/publish")]
+    public async Task<IActionResult> Publish(int id, CancellationToken ct) =>
+        Success(await mediator.Send(new CongBoKyLuongCommand(id), ct), "Đã công bố kỳ lương cho nhân viên.");
+
+    [HttpPost("periods/{id:int}/unpublish")]
+    public async Task<IActionResult> Unpublish(int id, CancellationToken ct) =>
+        Success(await mediator.Send(new HuyPublishKyLuongCommand(id), ct), "Đã hủy công bố kỳ lương.");
+
+    [HttpGet("bang-luong/{bangLuongId:int}/his-summary")]
+    [AllowSelf]
+    public async Task<IActionResult> HisSummary(int bangLuongId, CancellationToken ct) =>
+        Success(await mediator.Send(new HisSummaryBangLuongQuery(bangLuongId), ct));
+
+    [HttpGet("config/chuc-vu")]
+    public async Task<IActionResult> GetChucVuRates(CancellationToken ct) =>
+        Success(await mediator.Send(new LayDanhSachDinhMucChucVuQuery(), ct));
+
+    [HttpPut("config/chuc-vu/{id:int}")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.SUA, PhamViDuLieu.TOAN_HE_THONG)]
+    public async Task<IActionResult> UpdateChucVuRate(int id, [FromBody] UpdateChucVuRateRequest request, CancellationToken ct) =>
+        Success(await mediator.Send(new CapNhatDinhMucChucVuCommand(id, request.ThuLaoMoiLuot), ct), "Đã cập nhật định mức thù lao chức vụ.");
+
+    [HttpGet("config/hoa-hong-loai-dich-vu")]
+    public async Task<IActionResult> GetHoaHongLoaiDichVu(CancellationToken ct) =>
+        Success(await mediator.Send(new LayDanhSachHoaHongLoaiDichVuQuery(), ct));
+
+    [HttpPut("config/hoa-hong-loai-dich-vu")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.SUA, PhamViDuLieu.TOAN_HE_THONG)]
+    public async Task<IActionResult> UpdateHoaHongLoaiDichVu([FromBody] BatchUpdateHoaHongLoaiDichVuRequest request, CancellationToken ct) =>
+        Success(await mediator.Send(new CapNhatHoaHongLoaiDichVuCommand(request.Items), ct), "Đã cập nhật tỷ lệ hoa hồng theo loại dịch vụ.");
+
+    [HttpPut("config/nhan-vien/{id:int}/rate")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.SUA, PhamViDuLieu.TOAN_HE_THONG)]
+    public async Task<IActionResult> UpdateEmployeeRate(int id, [FromBody] UpdateEmployeeRateRequest request, CancellationToken ct) =>
+        Success(await mediator.Send(new CapNhatDinhMucNhanVienCommand(id, request.ThuLaoMoiLuot), ct), "Đã cập nhật thù lao nhân viên.");
+
+    [HttpPut("config/dich-vu/{id:int}/rate")]
+    [ClinicalAuthorize("hr", HanhDongQuyen.SUA, PhamViDuLieu.TOAN_HE_THONG)]
+    public async Task<IActionResult> UpdateServiceRate(int id, [FromBody] UpdateServiceRateRequest request, CancellationToken ct) =>
+        Success(await mediator.Send(new CapNhatHoaHongDichVuCommand(id, request.TyLeHoaHong), ct), "Đã cập nhật tỷ lệ hoa hồng dịch vụ.");
 }

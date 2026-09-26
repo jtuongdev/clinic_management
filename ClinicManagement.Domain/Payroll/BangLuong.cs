@@ -22,6 +22,11 @@ namespace ClinicManagement.Domain.Payroll
         public decimal KhauTruDiMuonVeSom { get; private set; }
         public decimal TienBaoHiem { get; private set; }
         public decimal TienNoKyNay { get; private set; }
+        public decimal TienThuLaoKham { get; private set; }
+        public decimal TienHoaHongCls { get; private set; }
+        public decimal TongThuNhap => LuongTheoNgayCong + TienTangCa + TongPhuCap + TienThuLaoKham + TienHoaHongCls;
+        public decimal TongGiamTru => KhauTruNghiKhongLuong + KhauTruDiMuonVeSom + TienBaoHiem + TongKhauTru;
+        public decimal TongThuLaoHis => TienThuLaoKham + TienHoaHongCls;
 
         public virtual KyLuong KyLuong { get; private set; } = null!;
         public virtual NhanVien NhanVien { get; private set; } = null!;
@@ -100,6 +105,15 @@ namespace ClinicManagement.Domain.Payroll
             Recalculate();
         }
 
+        public void SetHisSnapshot(decimal tienThuLaoKham, decimal tienHoaHongCls)
+        {
+            if (tienThuLaoKham < 0) throw new ArgumentOutOfRangeException(nameof(tienThuLaoKham));
+            if (tienHoaHongCls < 0) throw new ArgumentOutOfRangeException(nameof(tienHoaHongCls));
+            TienThuLaoKham = tienThuLaoKham;
+            TienHoaHongCls = tienHoaHongCls;
+            Recalculate();
+        }
+
         private void Recalculate()
         {
             TongPhuCap = 0;
@@ -113,7 +127,7 @@ namespace ClinicManagement.Domain.Payroll
                     TongKhauTru += item.SoTien;
             }
 
-            decimal tongThuNhap = LuongTheoNgayCong + TienTangCa + TongPhuCap;
+            decimal tongThuNhap = LuongTheoNgayCong + TienTangCa + TongPhuCap + TienThuLaoKham + TienHoaHongCls;
             decimal tongGiamTru = KhauTruNghiKhongLuong + KhauTruDiMuonVeSom + TienBaoHiem + TongKhauTru;
             decimal net = tongThuNhap - tongGiamTru;
 

@@ -18,5 +18,12 @@ namespace ClinicManagement.Application.DTOs.LuotKham.ChanDoan
         public string MaICD { get; set; } = string.Empty;
         public string TenICD { get; set; } = string.Empty;
         public string Chuong { get; set; } = string.Empty;
+
+        // Aliases to guarantee compatibility across all frontend components and queries
+        public string Ma => MaICD;
+        public string Code => MaICD;
+        public string Ten => TenICD;
+        public string Name => TenICD;
+        public string TenChanDoan => TenICD;
     }
 }
