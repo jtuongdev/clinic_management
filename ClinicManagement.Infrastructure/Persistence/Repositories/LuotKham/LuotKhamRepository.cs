@@ -383,6 +383,13 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
 
         public async Task<IReadOnlyList<ICD>> SearchICDAsync(string? keyword, CancellationToken cancellationToken = default)
         {
+            if (!await _context.ICDs.AnyAsync(cancellationToken))
+            {
+                var defaultIcds = GetDefaultICDList();
+                await _context.ICDs.AddRangeAsync(defaultIcds, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
             var query = _context.ICDs.AsNoTracking().AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -393,8 +400,61 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
 
             return await query
                 .OrderBy(x => x.MaICD)
-                .Take(50)
+                .Take(500)
                 .ToListAsync(cancellationToken);
+        }
+
+        private static List<ICD> GetDefaultICDList()
+        {
+            return new List<ICD>
+            {
+                new ICD { MaICD = "A09", TenICD = "Tiêu chảy và viêm dạ dày-ruột có nguồn gốc nhiễm khuẩn", Chuong = "Chương I: Bệnh nhiễm trùng và ký sinh trùng" },
+                new ICD { MaICD = "B01", TenICD = "Bệnh thủy đậu [Varicella]", Chuong = "Chương I: Bệnh nhiễm trùng và ký sinh trùng" },
+                new ICD { MaICD = "B15", TenICD = "Viêm gan virus A cấp tính", Chuong = "Chương I: Bệnh nhiễm trùng và ký sinh trùng" },
+                new ICD { MaICD = "B16", TenICD = "Viêm gan virus B cấp tính", Chuong = "Chương I: Bệnh nhiễm trùng và ký sinh trùng" },
+                new ICD { MaICD = "B18.1", TenICD = "Viêm gan virus B mạn tính", Chuong = "Chương I: Bệnh nhiễm trùng và ký sinh trùng" },
+                new ICD { MaICD = "B18.2", TenICD = "Viêm gan virus C mạn tính", Chuong = "Chương I: Bệnh nhiễm trùng và ký sinh trùng" },
+                new ICD { MaICD = "E11", TenICD = "Đái tháo đường không phụ thuộc insulin (Type 2)", Chuong = "Chương IV: Bệnh nội tiết, dinh dưỡng và chuyển hóa" },
+                new ICD { MaICD = "E10", TenICD = "Đái tháo đường phụ thuộc insulin (Type 1)", Chuong = "Chương IV: Bệnh nội tiết, dinh dưỡng và chuyển hóa" },
+                new ICD { MaICD = "E05", TenICD = "Nhiễm độc giáp [Cường giáp]", Chuong = "Chương IV: Bệnh nội tiết, dinh dưỡng và chuyển hóa" },
+                new ICD { MaICD = "E03", TenICD = "Suy giáp khác", Chuong = "Chương IV: Bệnh nội tiết, dinh dưỡng và chuyển hóa" },
+                new ICD { MaICD = "E78", TenICD = "Rối loạn chuyển hóa lipoprotein và tăng lipid máu", Chuong = "Chương IV: Bệnh nội tiết, dinh dưỡng và chuyển hóa" },
+                new ICD { MaICD = "E66", TenICD = "Béo phì", Chuong = "Chương IV: Bệnh nội tiết, dinh dưỡng và chuyển hóa" },
+                new ICD { MaICD = "I10", TenICD = "Bệnh tăng huyết áp vô căn (nguyên phát)", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "I11", TenICD = "Bệnh tim do tăng huyết áp", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "I20", TenICD = "Cơn đau thắt ngực", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "I21", TenICD = "Nhồi máu cơ tim cấp", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "I25", TenICD = "Bệnh tim thiếu máu cục bộ mạn tính", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "I50", TenICD = "Suy tim", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "I63", TenICD = "Nhồi máu não", Chuong = "Chương IX: Bệnh hệ tuần hoàn" },
+                new ICD { MaICD = "J00", TenICD = "Viêm mũi họng cấp tính [Cảm thường]", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J02", TenICD = "Viêm họng cấp", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J03", TenICD = "Viêm amiđan cấp", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J06", TenICD = "Nhiễm khuẩn đường hô hấp trên cấp tính", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J18", TenICD = "Viêm phổi, không xác định vi sinh vật", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J20", TenICD = "Viêm phế quản cấp", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J44", TenICD = "Bệnh phổi tắc nghẽn mạn tính [COPD]", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "J45", TenICD = "Hen phế quản", Chuong = "Chương X: Bệnh hệ hô hấp" },
+                new ICD { MaICD = "K21", TenICD = "Bệnh trào ngược dạ dày - thực quản [GERD]", Chuong = "Chương XI: Bệnh hệ tiêu hóa" },
+                new ICD { MaICD = "K25", TenICD = "Loét dạ dày", Chuong = "Chương XI: Bệnh hệ tiêu hóa" },
+                new ICD { MaICD = "K26", TenICD = "Loét tá tràng", Chuong = "Chương XI: Bệnh hệ tiêu hóa" },
+                new ICD { MaICD = "K29", TenICD = "Viêm dạ dày và tá tràng", Chuong = "Chương XI: Bệnh hệ tiêu hóa" },
+                new ICD { MaICD = "K58", TenICD = "Hội chứng ruột kích thích [IBS]", Chuong = "Chương XI: Bệnh hệ tiêu hóa" },
+                new ICD { MaICD = "K76", TenICD = "Bệnh gan khác (Gan nhiễm mỡ)", Chuong = "Chương XI: Bệnh hệ tiêu hóa" },
+                new ICD { MaICD = "M10", TenICD = "Bệnh gút [Gout]", Chuong = "Chương XIII: Bệnh hệ cơ-xương-khớp và mô liên kết" },
+                new ICD { MaICD = "M15", TenICD = "Thoái hóa đa khớp", Chuong = "Chương XIII: Bệnh hệ cơ-xương-khớp và mô liên kết" },
+                new ICD { MaICD = "M17", TenICD = "Thoái hóa khớp gối", Chuong = "Chương XIII: Bệnh hệ cơ-xương-khớp và mô liên kết" },
+                new ICD { MaICD = "M54.5", TenICD = "Đau lưng dưới", Chuong = "Chương XIII: Bệnh hệ cơ-xương-khớp và mô liên kết" },
+                new ICD { MaICD = "M50", TenICD = "Thoái hóa đĩa đệm cột sống cổ", Chuong = "Chương XIII: Bệnh hệ cơ-xương-khớp và mô liên kết" },
+                new ICD { MaICD = "N18", TenICD = "Bệnh thận mạn tính", Chuong = "Chương XIV: Bệnh hệ sinh dục - tiết niệu" },
+                new ICD { MaICD = "N20", TenICD = "Sỏi thận và sỏi niệu quản", Chuong = "Chương XIV: Bệnh hệ sinh dục - tiết niệu" },
+                new ICD { MaICD = "N39.0", TenICD = "Nhiễm khuẩn đường tiết niệu", Chuong = "Chương XIV: Bệnh hệ sinh dục - tiết niệu" },
+                new ICD { MaICD = "R05", TenICD = "Ho", Chuong = "Chương XVIII: Triệu chứng và dấu hiệu lâm sàng" },
+                new ICD { MaICD = "R07", TenICD = "Đau họng và đau ngực", Chuong = "Chương XVIII: Triệu chứng và dấu hiệu lâm sàng" },
+                new ICD { MaICD = "R10", TenICD = "Đau bụng và vùng chậu", Chuong = "Chương XVIII: Triệu chứng và dấu hiệu lâm sàng" },
+                new ICD { MaICD = "R50", TenICD = "Sốt không rõ nguyên nhân khác", Chuong = "Chương XVIII: Triệu chứng và dấu hiệu lâm sàng" },
+                new ICD { MaICD = "R51", TenICD = "Đau đầu", Chuong = "Chương XVIII: Triệu chứng và dấu hiệu lâm sàng" }
+            };
         }
 
         public async Task<LuotKham?> GetChiTietHoSoDieuTriAsync(int luotKhamId, CancellationToken cancellationToken = default)

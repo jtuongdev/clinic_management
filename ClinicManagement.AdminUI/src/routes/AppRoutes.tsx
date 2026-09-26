@@ -14,6 +14,7 @@ import { MainLayout } from '../shared/components/layouts/MainLayout';
 import { patientRoutes } from '../patient/routes';
 import { examinationRoutes } from '../examination/routes';
 import { employeeRoutes } from '../employee/routes';
+import { appointmentRoutes } from '../appointment/routes';
 import { inventoryRoutes } from '../inventory/routes';
 import { billingRoutes } from '../billing/routes';
 import { settingsRoutes } from '../settings/routes';
@@ -27,6 +28,7 @@ const protectedRoutes = [
   ...dashboardRoutes,
   ...patientRoutes,
   ...examinationRoutes,
+  ...appointmentRoutes,
   ...employeeRoutes,
   ...inventoryRoutes,
   ...billingRoutes,

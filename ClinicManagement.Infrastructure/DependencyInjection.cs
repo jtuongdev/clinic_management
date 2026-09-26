@@ -39,6 +39,7 @@ namespace ClinicManagement.Infrastructure
             services.AddScoped<IPhongKhamRepository, PhongKhamRepository>();
 
             services.AddScoped<ILuotKhamRepository, LuotKhamRepository>();
+            services.AddScoped<ILichHenRepository, LichHenRepository>();
             services.AddScoped<ILichLamViecRepository, LichLamViecRepository>();
             services.AddScoped<IChamCongRepository, ChamCongRepository>();
             services.AddScoped<IPayrollRepository, PayrollRepository>();

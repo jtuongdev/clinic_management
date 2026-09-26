@@ -1,0 +1,366 @@
+/* =========================================================================
+   PATIENT MASTER-DETAIL SPLIT-VIEW LAYOUT
+   File CSS hợp nhất — đã gộp, loại bỏ trùng lặp, giữ nguyên toàn bộ hành vi
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1) SPLIT CONTAINER & 2 PANEL CHÍNH
+   ------------------------------------------------------------------------- */
+.patient-split-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 170px);
+  overflow: hidden;
+  gap: 12px;
+}
+
+/* Master Panel (Left ~340px) */
+.patient-master-panel {
+  width: 340px;
+  flex: 0 0 340px;
+  min-width: 300px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.patient-master-header {
+  padding: 8px 10px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.patient-master-table-wrapper {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Detail Panel (Right flex-1) */
+.patient-detail-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.patient-detail-header {
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.patient-detail-body {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+/* -------------------------------------------------------------------------
+   2) MASTER TABLE (bảng danh sách bệnh nhân bên trái)
+   ------------------------------------------------------------------------- */
+.patient-master-table {
+  width: 100%;
+}
+.patient-master-table .ant-table {
+  background: #ffffff;
+}
+.patient-master-table .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  padding: 8px 8px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  white-space: nowrap !important;
+}
+.patient-master-table .ant-table-tbody > tr > td {
+  padding: 7px 8px !important;
+  font-size: 12px !important;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6 !important;
+  vertical-align: middle !important;
+  line-height: 1.3 !important;
+}
+
+/* Dòng đang chọn trong bảng master */
+.patient-master-table .master-row-selected > td {
+  background: #eff6ff !important;
+  color: #0f172a !important;
+}
+.patient-master-table .master-row-selected > td:first-child {
+  border-left: 3px solid #0284c7 !important;
+}
+
+/* --- BỎ HIỆU ỨNG HOVER Ở BẢNG MASTER (chống nhấp nháy) --- */
+.patient-master-table .ant-table-tbody > tr:hover > td,
+.patient-master-table .ant-table-tbody > tr.ant-table-row:hover > td,
+.patient-master-table .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+  background: transparent !important;
+}
+.patient-master-table .ant-table-tbody > tr.master-row-selected:hover > td {
+  background: #eff6ff !important;
+}
+/* Vẫn giữ con trỏ pointer để biết bấm được */
+.patient-master-table .ant-table-tbody > tr {
+  cursor: pointer;
+}
+
+/* -------------------------------------------------------------------------
+   3) SUB-TABLE trong panel phải (Lượt khám / Hóa đơn / Tiền sử / BHYT)
+   ------------------------------------------------------------------------- */
+.patient-sub-table .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  padding: 7px 10px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  white-space: nowrap !important;
+}
+.patient-sub-table .ant-table-tbody > tr > td {
+  padding: 7px 10px !important;
+  font-size: 12px !important;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6 !important;
+  background: #ffffff !important;
+  transition: none !important;
+}
+
+/* BỎ HIỆU ỨNG HOVER — mọi biến thể */
+.patient-sub-table .ant-table-tbody > tr:hover > td,
+.patient-sub-table .ant-table-tbody > tr.ant-table-row:hover > td,
+.patient-sub-table .ant-table-tbody > tr.ant-table-row-hover > td,
+.patient-sub-table .ant-table-tbody > tr.ant-table-row-selected > td {
+  background: #ffffff !important;
+}
+.patient-sub-table .ant-table-tbody > tr {
+  cursor: default !important;
+}
+
+/* -------------------------------------------------------------------------
+   4) CORPORATE BUTTONS
+   ------------------------------------------------------------------------- */
+.corporate-action-btn {
+  border: 1px solid #e5e7eb !important;
+  color: #4b5563 !important;
+  background: #ffffff !important;
+  border-radius: 3px !important;
+  transition: all 0.15s ease-in-out;
+}
+.corporate-action-btn:hover {
+  border-color: #9ca3af !important;
+  color: #111827 !important;
+  background: #f9fafb !important;
+}
+
+/* -------------------------------------------------------------------------
+   5) KHỐI "THÔNG TIN ĐỊNH DANH & HÀNH CHÍNH"
+      — căn trái toàn bộ nhãn & giá trị (Mã BN / Họ và tên / ...)
+   ------------------------------------------------------------------------- */
+
+/* 5.1) Ô grid info: mọi ô con align trái, không kéo giãn */
+.patient-detail-panel div[style*="grid-template-columns"] > div {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  min-width: 0;
+}
+
+/* 5.2) Nhãn (label) — không co giãn, không căn phải, 1 dòng */
+.patient-detail-panel div[style*="grid-template-columns"] > div > span:first-child {
+  flex-shrink: 0;
+  text-align: left !important;
+  white-space: nowrap;
+}
+
+/* 5.3) Giá trị (value) — bắt đầu ngay sau nhãn, cho phép wrap */
+.patient-detail-panel div[style*="grid-template-columns"] > div > span:not(:first-child) {
+  text-align: left !important;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 5.4) Nếu value lồng <strong>/<b> — vẫn căn trái */
+.patient-detail-panel div[style*="grid-template-columns"] > div > span > strong,
+.patient-detail-panel div[style*="grid-template-columns"] > div > span > b {
+  text-align: left !important;
+}
+
+/* -------------------------------------------------------------------------
+   6) THANH TAB "Lượt khám / Hóa đơn / Tiền sử / BHYT"
+      — bỏ thụt, thẳng hàng với khối trên, gạch chân 2px khi active
+   ------------------------------------------------------------------------- */
+
+/* 6.1) Nav tổng: bỏ thụt, kẻ dưới mảnh, căn giữa theo trục dọc */
+.patient-detail-panel .ant-tabs-nav {
+  margin: 0 0 10px 0 !important;   /* khớp với tabBarStyle marginBottom: 10 */
+  padding: 0 !important;
+  align-items: center;
+}
+.patient-detail-panel .ant-tabs-nav::before {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* 6.2) Nav wrap & list: bỏ mọi padding/margin mặc định */
+.patient-detail-panel .ant-tabs-nav-wrap,
+.patient-detail-panel .ant-tabs-nav-list {
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0;                          /* dùng padding của .ant-tabs-tab để điều nhịp */
+}
+
+/* 6.3) Từng tab: cao đều, chữ gọn, bo góc nhẹ, có hover nhẹ */
+.patient-detail-panel .ant-tabs-tab {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 !important;            /* xoá margin mặc định 32px của Antd */
+  padding: 8px 16px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  border-radius: 6px 6px 0 0 !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  line-height: 1.4 !important;
+}
+
+/* Tab đầu tiên sát lề trái — khớp với padding của khối trên */
+.patient-detail-panel .ant-tabs-tab:first-child {
+  padding-left: 8px !important;
+  margin-left: 0 !important;
+}
+.patient-detail-panel .ant-tabs-tab:last-child {
+  padding-right: 8px !important;
+  margin-right: 0 !important;
+}
+
+/* 6.4) Hover nhẹ — nền xám nhạt, chữ xanh chủ đạo */
+.patient-detail-panel .ant-tabs-tab:hover {
+  color: #0b4f6c !important;
+  background: #f8fafc !important;
+}
+.patient-detail-panel .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #0b4f6c !important;
+}
+
+/* 6.5) Tab đang active — chữ đậm, gạch chân xanh, không nền */
+.patient-detail-panel .ant-tabs-tab-active {
+  background: transparent !important;
+}
+.patient-detail-panel .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #0b4f6c !important;
+  font-weight: 700 !important;
+}
+.patient-detail-panel .ant-tabs-tab-active .ant-tabs-tab-btn * {
+  color: #0b4f6c !important;       /* icon bên trong cũng đổi màu */
+}
+
+/* 6.6) Gạch chân active: dày 2px, màu xanh chủ đạo */
+.patient-detail-panel .ant-tabs-ink-bar {
+  background: #0b4f6c !important;
+  height: 2px !important;
+  border-radius: 2px 2px 0 0 !important;
+}
+
+/* 6.7) Icon trong tab: khoảng cách đều với chữ */
+.patient-detail-panel .ant-tabs-tab .anticon {
+  font-size: 13px !important;
+  vertical-align: middle;
+  margin-right: 6px !important;
+}
+
+/* 6.8) Vùng content bên dưới tab: không padding thụt */
+.patient-detail-panel .ant-tabs-content-holder,
+.patient-detail-panel .ant-tabs-content,
+.patient-detail-panel .ant-tabs-tabpane {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 6.9) Wrapper tổng của Tabs: bỏ margin để không thụt lề so với khối trên */
+.patient-detail-panel .ant-tabs {
+  margin: 0 !important;
+}
+
+/* -------------------------------------------------------------------------
+   7) RESPONSIVE
+   ------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .patient-split-container {
+    flex-direction: column;
+    height: auto;
+  }
+  .patient-master-panel {
+    width: 100%;
+    flex: 1 1 auto;
+    max-width: none;
+    min-height: 280px;
+  }
+  .patient-detail-panel {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .patient-detail-panel .ant-tabs-nav-wrap {
+    flex-wrap: wrap;
+  }
+  .patient-detail-panel .ant-tabs-tab {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+}
+/* =========================================================================
+   A) THU NHỎ PANEL TRÁI (danh sách bệnh nhân)
+   ========================================================================= */
+.patient-master-panel {
+  width: 290px;         /* 340 → 290 */
+  flex: 0 0 290px;
+  min-width: 260px;     /* 300 → 260 */
+  max-width: 310px;     /* 360 → 310 */
+}
+
+/* =========================================================================
+   B) ĐẨY CỘT "HỌ VÀ TÊN" TRONG BẢNG MASTER SANG PHẢI
+   ========================================================================= */
+/* Cột thứ 2 trong bảng — giả định: [Mã BN] | [Họ và tên] | [Tuổi] | [GT] | ...
+   Nếu cấu trúc cột khác, đổi nth-child(N) cho đúng vị trí cột Họ và tên. */
+.patient-master-table .ant-table-thead > tr > th:nth-child(2),
+.patient-master-table .ant-table-tbody > tr > td:nth-child(2) {
+  padding-left: 18px !important;   /* đẩy nội dung sang phải */
+}
+
+/* Bù lại: thu hẹp padding phải của cột 1 để không bị đẩy cột 3 ra ngoài */
+.patient-master-table .ant-table-thead > tr > th:nth-child(1),
+.patient-master-table .ant-table-tbody > tr > td:nth-child(1) {
+  padding-right: 4px !important;
+}
+
+/* (Tuỳ chọn) Nếu muốn cột "Họ và tên" nổi bật hơn — tăng đậm nhẹ */
+.patient-master-table .ant-table-tbody > tr > td:nth-child(2) {
+  font-weight: 500;
+}

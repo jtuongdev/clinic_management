@@ -6,7 +6,7 @@ import {
   HandCoins,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import '../billing.css';
+import './style/Billing.css';
 
 const { Title } = Typography;
 

@@ -261,7 +261,7 @@ export const DebtsTable: React.FC = () => {
       {/* Table */}
       <Table<DebtRow>
         rowKey="rowKey"
-        columns={columns}
+        columns={columns as any}
         dataSource={debts}
         loading={loading}
         size="middle"
