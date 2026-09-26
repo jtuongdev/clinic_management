@@ -7,7 +7,6 @@ import {
   Button,
   Space,
   Typography,
-  Tooltip,
   Modal,
   App,
 } from 'antd';
@@ -19,9 +18,6 @@ import {
   MedicineBoxOutlined,
   ExperimentOutlined,
   CheckCircleOutlined,
-  EyeOutlined,
-  PlayCircleOutlined,
-  StopOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -32,6 +28,32 @@ import { examinationApi } from '../api/examination.api';
 
 const { Text } = Typography;
 
+/* =========================================================
+   CSS: đồng bộ chiều cao cell + ellipsis + tắt hover xám
+   ========================================================= */
+const tableCss = `
+  .exam-list-table .ant-table-tbody > tr > td {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    vertical-align: middle !important;
+    transition: none !important;
+  }
+  .exam-list-table .ant-table-thead > tr > th {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    vertical-align: middle !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  .exam-list-table .ant-table-cell-ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
 const ExaminationList: React.FC = () => {
   const { message } = App.useApp();
   const {
@@ -39,7 +61,6 @@ const ExaminationList: React.FC = () => {
     luotKhamTotal,
     thongKeKhamBenh,
     loadingLuotKham,
-    loadingThongKeKhamBenh,
     fetchLuotKhamList,
     fetchThongKeKhamBenh,
     filters,
@@ -54,7 +75,7 @@ const ExaminationList: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // State ActionBar
+  // State ActionBar (chỉ hiện khi click dòng)
   const [selectedItem, setSelectedItem] = useState<LuotKhamItemDto | null>(null);
 
   // Tải danh sách lượt khám
@@ -91,42 +112,38 @@ const ExaminationList: React.FC = () => {
         title: 'Tổng lượt',
         value: total,
         color: '#0b4f6c',
-        bgColor: '#e8f4f7',
-        icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#0b4f6c' }} />,
+        icon: <MedicineBoxOutlined style={{ fontSize: 16, color: '#0b4f6c' }} />,
       },
       {
         title: 'Chờ khám',
         value: cho,
         color: '#f59e0b',
-        bgColor: '#fffbeb',
-        icon: <ClockCircleOutlined style={{ fontSize: 20, color: '#f59e0b' }} />,
+        icon: <ClockCircleOutlined style={{ fontSize: 16, color: '#f59e0b' }} />,
       },
       {
         title: 'Đang khám',
         value: dangKham,
         color: '#0284c7',
-        bgColor: '#e0f2fe',
-        icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#0284c7' }} />,
+        icon: <MedicineBoxOutlined style={{ fontSize: 16, color: '#0284c7' }} />,
       },
       {
         title: 'Chờ kết quả CLS',
         value: choCLS,
         color: '#8b5cf6',
-        bgColor: '#f3e8ff',
-        icon: <ExperimentOutlined style={{ fontSize: 20, color: '#8b5cf6' }} />,
+        icon: <ExperimentOutlined style={{ fontSize: 16, color: '#8b5cf6' }} />,
       },
       {
         title: 'Đã hoàn tất',
         value: hoanThanh,
         color: '#10b981',
-        bgColor: '#ecfdf5',
-        icon: <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} />,
+        icon: <CheckCircleOutlined style={{ fontSize: 16, color: '#10b981' }} />,
       },
     ];
   }, [thongKeKhamBenh]);
 
+  // Click dòng → mở ActionBar dưới góc màn hình
   const handleRowClick = (item: LuotKhamItemDto) => {
-    setSelectedItem(item);
+    setSelectedItem((prev) => (prev?.id === item.id ? null : item));
   };
 
   const closeActionBar = () => {
@@ -191,7 +208,7 @@ const ExaminationList: React.FC = () => {
     });
   };
 
-  // Định nghĩa actions cho ActionBar
+  // Actions cho ActionBar (hiện ở góc dưới màn hình khi click dòng)
   const examActions = [
     {
       label: 'Xem chi tiết',
@@ -227,25 +244,46 @@ const ExaminationList: React.FC = () => {
     },
   ];
 
-  // Table columns definition
+  /* =========================================================
+     Cột: đã căn chỉnh width + ellipsis — KHÔNG còn cột Thao tác
+     Tổng width cố định ~ 780px + cột Bệnh nhân flex
+     ========================================================= */
   const columns: ColumnsType<LuotKhamItemDto> = [
+    {
+      title: 'STT',
+      key: 'idx',
+      width: 56,
+      align: 'center',
+      fixed: 'left',
+      render: (_, __, index) => (
+        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
+          {(pageIndex - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Mã BN',
       dataIndex: 'maBenhNhanNoiBo',
       key: 'maBenhNhanNoiBo',
       width: 120,
-      render: (text) => <Text code strong>{text}</Text>,
+      align: 'left',
+      ellipsis: { showTitle: false },
+      render: (text: string) => (
+        <Text code strong style={{ fontSize: 12 }}>{text}</Text>
+      ),
     },
     {
       title: 'Bệnh nhân',
       dataIndex: 'tenBenhNhan',
       key: 'tenBenhNhan',
-      render: (text, record) => (
-        <div>
-          <Text strong style={{ color: '#0b4f6c' }}>{text}</Text>
-          <div style={{ fontSize: 12, color: '#6a7f96' }}>
+      width: 220,
+      align: 'left',
+      render: (text: string, record) => (
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <Text strong style={{ color: '#0b4f6c', fontSize: 13 }} ellipsis>{text}</Text>
+          <span style={{ fontSize: 11, color: '#6a7f96' }}>
             {record.tuoi} tuổi · {record.gioiTinh === 'M' ? 'Nam' : 'Nữ'}
-          </div>
+          </span>
         </div>
       ),
     },
@@ -253,97 +291,75 @@ const ExaminationList: React.FC = () => {
       title: 'Khoa',
       dataIndex: 'tenKhoa',
       key: 'tenKhoa',
-      width: 140,
+      width: 150,
+      align: 'left',
+      ellipsis: { showTitle: false },
+      render: (text: string) => (
+        <Text style={{ fontSize: 13 }} ellipsis>{text}</Text>
+      ),
     },
     {
       title: 'Bác sĩ phụ trách',
       dataIndex: 'tenBacSi',
       key: 'tenBacSi',
-      width: 160,
+      width: 170,
+      align: 'left',
+      ellipsis: { showTitle: false },
+      render: (text: string) => (
+        <Text style={{ fontSize: 13 }} ellipsis>{text}</Text>
+      ),
     },
     {
       title: 'Phòng khám',
       dataIndex: 'tenPhongKham',
       key: 'tenPhongKham',
       width: 120,
-      render: (text) => <Tag color="blue">{text}</Tag>,
+      align: 'center',
+      render: (text: string) =>
+        text ? (
+          <Tag color="blue" style={{ fontSize: 11, margin: 0, whiteSpace: 'nowrap' }}>{text}</Tag>
+        ) : (
+          <span style={{ color: '#94a3b8' }}>--</span>
+        ),
     },
     {
       title: 'Bắt đầu',
       dataIndex: 'thoiGianBatDauKham',
       key: 'thoiGianBatDauKham',
-      width: 110,
-      render: (time) =>
-        time ? new Date(time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '--',
+      width: 100,
+      align: 'center',
+      render: (time: string) => (
+        <span style={{ fontSize: 12, color: '#475569', whiteSpace: 'nowrap' }}>
+          {time
+            ? new Date(time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+            : '--'}
+        </span>
+      ),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'trangThai',
       key: 'trangThai',
       width: 130,
+      align: 'center',
       render: (status: string) => {
         switch (status) {
           case 'Cho':
           case 'CHO_KHAM':
-            return <Tag color="warning">Chờ khám</Tag>;
+            return <Tag color="warning" style={{ margin: 0, whiteSpace: 'nowrap' }}>Chờ khám</Tag>;
           case 'DangKham':
           case 'DANG_KHAM':
-            return <Tag color="processing">Đang khám</Tag>;
+            return <Tag color="processing" style={{ margin: 0, whiteSpace: 'nowrap' }}>Đang khám</Tag>;
           case 'ChoCLS':
           case 'CHO_CLS':
-            return <Tag color="purple">Chờ CLS</Tag>;
+            return <Tag color="purple" style={{ margin: 0, whiteSpace: 'nowrap' }}>Chờ CLS</Tag>;
           case 'HoanThanh':
           case 'HOAN_THANH':
-            return <Tag color="success">Hoàn tất</Tag>;
+            return <Tag color="success" style={{ margin: 0, whiteSpace: 'nowrap' }}>Hoàn tất</Tag>;
           default:
-            return <Tag color="default">{status || 'Chờ'}</Tag>;
+            return <Tag color="default" style={{ margin: 0 }}>{status || 'Chờ'}</Tag>;
         }
       },
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 130,
-      align: 'center',
-      render: (_, record) => (
-        <Space size={4} onClick={(e) => e.stopPropagation()}>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetail(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Bắt đầu khám">
-            <Button
-              type="text"
-              size="small"
-              icon={<PlayCircleOutlined style={{ color: '#10b981' }} />}
-              onClick={() => handleStartExam(record)}
-            />
-          </Tooltip>
-          {record.trangThai === 'DANG_KHAM' && (
-           <Tooltip title="Hoàn tất và lập hóa đơn">
-             <Button
-               type="text"
-               size="small"
-               icon={<CheckCircleOutlined style={{ color: '#2563eb' }} />}
-               onClick={() => handleCompleteExam(record)}
-             />
-           </Tooltip>
-          )}
-          <Tooltip title="Hủy lượt khám">
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<StopOutlined />}
-              onClick={() => handleCancelExam(record)}
-            />
-          </Tooltip>
-        </Space>
-      ),
     },
   ];
 
@@ -369,6 +385,8 @@ const ExaminationList: React.FC = () => {
         background: '#ffffff',
       }}
     >
+      <style>{tableCss}</style>
+
       {/* Metric Ribbon / Stat Bar */}
       {!isFullscreen && (
         <div
@@ -480,13 +498,14 @@ const ExaminationList: React.FC = () => {
       </div>
 
       {/* Edge-to-Edge Data Grid */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+      <div className="exam-list-table" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         <Table<LuotKhamItemDto>
           rowKey="id"
           columns={columns}
           dataSource={filteredList}
           loading={loadingLuotKham}
           size="middle"
+          tableLayout="fixed"
           onRow={(record) => ({
             onClick: () => handleRowClick(record),
             style: {
@@ -507,11 +526,11 @@ const ExaminationList: React.FC = () => {
             showTotal: (total, range) => `Hiển thị ${range[0]} - ${range[1]} / ${total} lượt khám`,
             style: { padding: '8px 16px', margin: 0 },
           }}
-          scroll={{ y: 'calc(100vh - 235px)' }}
+          scroll={{ x: 1086, y: 'calc(100vh - 235px)' }}
         />
       </div>
 
-      {/* Modernized ActionBar */}
+      {/* ActionBar — chỉ hiện khi click vào dòng, ở góc dưới màn hình */}
       <ActionBar
         isVisible={!!selectedItem}
         onClose={closeActionBar}

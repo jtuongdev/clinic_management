@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tabs, Row, Col, message } from 'antd';
 
 import { usePatientData } from '../hook/usePatientData';
@@ -11,6 +11,8 @@ import { PatientFilters } from '../components/PatientFilters';
 import { PatientTable } from '../components/PatientTable';
 import { PatientRightSidebar } from '../components/PatientRightSidebar';
 import { AddPatientForm } from '../components/AddPatientForm';
+import { PatientSplitList } from '../components/PatientSplitList';
+import '../styles/patient.css';
 
 const patientManagementStyles = `
 /* ===== COMMON UTILS & VARIABLES ===== */
@@ -212,11 +214,31 @@ export const PatientManagement = () => {
     daHuy: 0,
   };
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'overview');
   const [refreshKey, setRefreshKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [genderFilter, setGenderFilter] = useState<string | undefined>();
   const [deptFilter, setDeptFilter] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', key);
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   const handleFilter = () => {
     message.info('Đã áp dụng bộ lọc');
@@ -236,14 +258,14 @@ export const PatientManagement = () => {
   };
 
   const handleAddPatient = () => {
-    setActiveTab('add');
+    handleTabChange('add');
   };
 
   const handleAddSuccess = () => {
     message.success('Thêm bệnh nhân thành công!');
     setRefreshKey(prev => prev + 1);
     refetch();
-    setActiveTab('overview');
+    handleTabChange('list');
   };
 
   const tabItems = [
@@ -316,10 +338,7 @@ export const PatientManagement = () => {
       key: 'list',
       label: <span><i className="fas fa-list" /> Danh sách</span>,
       children: (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#94a3b8' }}>
-          <i className="fas fa-list" style={{ fontSize: 32, marginRight: 12, color: '#cbd5e1' }} />
-          Danh sách bệnh nhân đầy đủ với bộ lọc nâng cao.
-        </div>
+        <PatientSplitList onAddPatient={handleAddPatient} />
       ),
     },
     {
@@ -329,7 +348,7 @@ export const PatientManagement = () => {
         <AddPatientForm
           defaultCoSoId={1}
           onSuccess={handleAddSuccess}
-          onCancel={() => setActiveTab('overview')}
+          onCancel={() => handleTabChange('overview')}
         />
       ),
     },
@@ -349,13 +368,15 @@ export const PatientManagement = () => {
     <>
       <style>{patientManagementStyles}</style>
       <div className="patient-management">
-        <div className="kpi-grid-wrapper">
-          <KPIGrid stats={thongKeData ?? defaultStats} loading={thongKeLoading} />
-        </div>
+        {activeTab === 'overview' && (
+          <div className="kpi-grid-wrapper">
+            <KPIGrid stats={thongKeData ?? defaultStats} loading={thongKeLoading} />
+          </div>
+        )}
 
         <Tabs
           activeKey={activeTab}
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           className="patient-tabs"
           items={tabItems}
         />
