@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Alert, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag } from 'antd';
-import { Clock, LogIn, LogOut, CheckCircle2, AlertCircle, Search, Filter } from 'lucide-react';
+import { Clock, LogIn, LogOut, CheckCircle2, AlertCircle, Search } from 'lucide-react';
 import dayjs from 'dayjs';
 import { dateRangePresets } from '../../../shared/utils/datePresets';
 
@@ -176,6 +176,7 @@ export const AttendanceManagement = ({
       if (deptFilter && row.maKhoa && row.maKhoa !== deptFilter) return false;
       if (statusFilter) {
         const rowStatus = row.attendance?.trangThai || (row.trangThaiLich === 'NGHI' ? 'NGHI_PHEP' : 'CHUA_CHAM_CONG');
+        if (statusFilter === 'ABNORMAL' && !['THIEU_CHECK_OUT', 'THIEU_CHECKOUT', 'VANG_MAT', 'DI_MUON_VE_SOM'].includes(rowStatus)) return false;
         if (statusFilter === 'CHUA_CHAM_CONG' && rowStatus !== 'CHUA_CHAM_CONG') return false;
         if (statusFilter === 'DA_CHECK_IN' && !row.attendance?.checkIn) return false;
         if (statusFilter === 'DA_CHECK_OUT' && !row.attendance?.checkOut) return false;
@@ -259,14 +260,35 @@ export const AttendanceManagement = ({
           DI_MUON: 'orange',
           VE_SOM: 'orange',
           DI_MUON_VE_SOM: 'orange',
-          THIEU_CHECK_OUT: 'volcano',
+          THIEU_CHECK_OUT: 'orange',
+          THIEU_CHECKOUT: 'orange',
           CHO_XAC_NHAN: 'purple',
           NGHI_PHEP: 'gold',
           VANG_MAT: 'red',
           CHUA_CHAM_CONG: 'default',
         };
         const label = attendanceLabels[status] || (status === 'CHUA_CHAM_CONG' ? 'Chưa chấm công' : status);
-        return <Tag color={colors[status] || 'blue'}>{label}</Tag>;
+        const isMissingCheckout = status === 'THIEU_CHECK_OUT' || status === 'THIEU_CHECKOUT';
+        const violationMinutes = (row.attendance?.phutDiMuon || 0) + (row.attendance?.phutVeSom || 0);
+        return (
+          <Space size={4} wrap>
+            <Tag
+              color={colors[status] || 'blue'}
+              style={isMissingCheckout ? {
+                background: '#fffbeb',
+                color: '#92400e',
+                borderColor: '#fde68a',
+              } : undefined}
+            >
+              {isMissingCheckout ? 'Thiếu check-out' : label}
+            </Tag>
+            {status === 'DI_MUON_VE_SOM' && violationMinutes > 0 && (
+              <span style={{ color: '#92400e', fontFamily: 'monospace', fontSize: 12 }}>
+                {violationMinutes} phút
+              </span>
+            )}
+          </Space>
+        );
       },
     },
     {
@@ -293,7 +315,11 @@ export const AttendanceManagement = ({
       title: 'Giờ thực tế',
       width: 100,
       render: (_, row) =>
-        row.attendance?.checkOut ? `${row.attendance.gioLamThucTe} giờ` : '-',
+        row.attendance?.checkOut ? `${row.attendance.gioLamThucTe} giờ` : (
+          row.attendance?.trangThai === 'THIEU_CHECK_OUT' || row.attendance?.trangThai === 'THIEU_CHECKOUT'
+            ? <span style={{ color: '#b45309', fontWeight: 600 }}>0.0 (Chưa chốt)</span>
+            : '-'
+        ),
     },
     {
       title: 'Điều chỉnh',
@@ -301,6 +327,8 @@ export const AttendanceManagement = ({
         if (!row.attendance) return '-';
         const request = adjustments.find((item) => item.maChamCong === row.attendance?.id);
         if (request?.trangThai === 'CHO_DUYET') return <Tag color="gold">Chờ duyệt</Tag>;
+        const missingCheckout = row.attendance.trangThai === 'THIEU_CHECK_OUT'
+          || row.attendance.trangThai === 'THIEU_CHECKOUT';
         return (
           <Button
             size="small"
@@ -313,7 +341,7 @@ export const AttendanceManagement = ({
               setAdjustmentRow(row);
             }}
           >
-            Điều chỉnh
+            {missingCheckout ? 'Giải trình giờ' : 'Điều chỉnh'}
           </Button>
         );
       },
@@ -366,6 +394,12 @@ export const AttendanceManagement = ({
     link.click();
     URL.revokeObjectURL(url);
   };
+
+  const abnormalCount = rows.filter((row) => {
+    const status = row.attendance?.trangThai;
+    return status === 'THIEU_CHECK_OUT' || status === 'THIEU_CHECKOUT'
+      || status === 'VANG_MAT' || status === 'DI_MUON_VE_SOM';
+  }).length;
 
   return (
     <>
@@ -553,12 +587,20 @@ export const AttendanceManagement = ({
               { value: 'DA_CHECK_OUT', label: 'Đã check-out' },
               { value: 'DI_DUNG_GIO', label: 'Đúng giờ' },
               { value: 'DI_MUON', label: 'Đi muộn' },
+              { value: 'DI_MUON_VE_SOM', label: 'Đi muộn & về sớm' },
               { value: 'THIEU_CHECK_OUT', label: 'Thiếu check-out' },
               { value: 'CHUA_CHAM_CONG', label: 'Chưa chấm công' },
               { value: 'VANG_MAT', label: 'Vắng mặt' },
               { value: 'NGHI_PHEP', label: 'Nghỉ phép' },
             ]}
           />
+          <Button
+            type={statusFilter === 'ABNORMAL' ? 'primary' : 'default'}
+            onClick={() => setStatusFilter(statusFilter === 'ABNORMAL' ? undefined : 'ABNORMAL')}
+            style={statusFilter === 'ABNORMAL' ? { background: '#b45309', borderColor: '#b45309' } : undefined}
+          >
+            Ca bất thường cần xử lý ({abnormalCount})
+          </Button>
           <span style={{ fontSize: 13, color: '#64748b', marginLeft: 4 }}>
             Hiển thị <strong>{rows.length}</strong> bản ghi
           </span>

@@ -118,6 +118,21 @@ namespace ClinicManagement.API.Controllers
             return Success<object>(null, "Cập nhật trạng thái nhân viên thành công.");
         }
 
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(
+            int id,
+            [FromBody] DeleteEmployeeRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (request == null || request.NgayNghiViec == default)
+                return Failure("Ngày nghỉ việc là bắt buộc.");
+
+            var result = await _mediator.Send(
+                new XoaMemNhanVienCommand(id, request.NgayNghiViec, request.LyDo, CurrentUserId),
+                cancellationToken);
+            return Success(result, "Đã xoá mềm nhân viên và thu hồi các quyền liên quan.");
+        }
+
         [HttpGet("bac-si")]
         public async Task<IActionResult> GetBacSiByKhoa(
             [FromQuery] int maKhoa,
@@ -151,5 +166,7 @@ namespace ClinicManagement.API.Controllers
             var result = await _mediator.Send(query);
             return Success(result);
         }
+
+        public sealed record DeleteEmployeeRequest(DateTime NgayNghiViec, string LyDo);
     }
 }

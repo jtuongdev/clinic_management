@@ -1,6 +1,6 @@
 namespace ClinicManagement.Application.Features.LichLamViec;
 
-internal static class DongHoChamCong
+public static class DongHoChamCong
 {
     public static TimeZoneInfo GetTimeZone()
     {

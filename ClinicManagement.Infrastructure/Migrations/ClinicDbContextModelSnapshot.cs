@@ -1593,6 +1593,11 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("LyDoNghiViec")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int?>("MaChucVu")
                         .HasColumnType("int");
 

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ClinicManagement.Domain.Identity;
 using ClinicManagement.Domain.Repositories;
 using ClinicManagement.Domain.System;
+using ClinicManagement.Domain.Common.Enums;
 
 
 namespace ClinicManagement.Infrastructure.Persistence.Repositories
@@ -121,6 +122,58 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             => await _dbSet
                 .Include(employee => employee.NhanVienVaiTro)
                 .FirstOrDefaultAsync(employee => employee.Id == id && !employee.IsDeleted, cancellationToken);
+
+        public async Task<int> CloseActiveRolesAsync(int employeeId, DateTime effectiveDate, CancellationToken cancellationToken = default)
+        {
+            var roles = await _context.Set<NhanVienVaiTro>()
+                .Where(item => item.MaNhanVien == employeeId &&
+                    item.NgayBatDau.Date <= effectiveDate.Date &&
+                    (item.NgayKetThuc == null || item.NgayKetThuc.Value.Date >= effectiveDate.Date))
+                .ToListAsync(cancellationToken);
+            foreach (var role in roles) role.NgayKetThuc = effectiveDate.Date.AddDays(-1);
+            return roles.Count;
+        }
+
+        public async Task<int> CloseDepartmentAssignmentsAsync(int employeeId, DateTime effectiveDate, CancellationToken cancellationToken = default)
+        {
+            var assignments = await _context.Set<NhanVienKhoa>()
+                .Where(item => item.MaNhanVien == employeeId &&
+                    item.TuNgay.Date <= effectiveDate.Date &&
+                    (item.DenNgay == null || item.DenNgay.Value.Date >= effectiveDate.Date))
+                .ToListAsync(cancellationToken);
+            foreach (var assignment in assignments) assignment.DenNgay = effectiveDate.Date.AddDays(-1);
+            return assignments.Count;
+        }
+
+        public async Task<int> RevokePermissionsAsync(int employeeId, int deletedBy, CancellationToken cancellationToken = default)
+        {
+            var permissions = await _context.PhanQuyenCoSos
+                .Where(item => item.MaNhanVien == employeeId && !item.IsDeleted)
+                .ToListAsync(cancellationToken);
+            foreach (var permission in permissions) permission.SoftDelete(deletedBy);
+            return permissions.Count;
+        }
+
+        public async Task<int> CancelFutureSchedulesAsync(int employeeId, DateTime effectiveDate, int deletedBy, CancellationToken cancellationToken = default)
+        {
+            var schedules = await _context.LichLamViecs
+                .Where(item => item.MaNhanVien == employeeId &&
+                    item.NgayLam.Date >= effectiveDate.Date &&
+                    item.TrangThai != TrangThaiLichLamViec.HUY &&
+                    !item.IsDeleted &&
+                    !_context.ChamCongs.Any(attendance => attendance.MaLichLamViec == item.Id &&
+                        (attendance.CheckIn.HasValue || attendance.CheckOut.HasValue)))
+                .ToListAsync(cancellationToken);
+            foreach (var schedule in schedules)
+            {
+                schedule.TrangThai = TrangThaiLichLamViec.HUY;
+                schedule.GhiChu = string.IsNullOrWhiteSpace(schedule.GhiChu)
+                    ? "Huỷ do nhân viên nghỉ việc."
+                    : $"{schedule.GhiChu} | Huỷ do nhân viên nghỉ việc.";
+                schedule.SoftDelete(deletedBy);
+            }
+            return schedules.Count;
+        }
 
         public async Task<List<MaTranPhanQuyen>> GetPermissionsByUserIdAsync(int userId)
         {

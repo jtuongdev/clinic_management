@@ -9,6 +9,8 @@ export const employeeApi = {
   create: (data: CreateEmployeeRequest) => api.post<ApiResponse<Employee>>('/NhanVien', data),
   update: (id: number, data: UpdateEmployeeRequest) => api.put<ApiResponse<Employee>>(`/NhanVien/${id}`, data),
   setStatus: (id: number, isActive: boolean) => api.patch<ApiResponse<null>>(`/NhanVien/${id}/status`, { id, isActive }),
+  delete: (id: number, data: { ngayNghiViec: string; lyDo: string }) =>
+    api.delete<ApiResponse<null>>(`/NhanVien/${id}`, { data }),
   getRoles: () => api.get<ApiResponse<Role[]>>('/NhanVien/roles'),
   getPermissions: (id: number) => api.get<ApiResponse<Permission[]>>(`/NhanVien/${id}/permissions`),
   updateRoles: (id: number, roleIds: number[]) => api.put<ApiResponse<null>>(`/NhanVien/${id}/roles`, {

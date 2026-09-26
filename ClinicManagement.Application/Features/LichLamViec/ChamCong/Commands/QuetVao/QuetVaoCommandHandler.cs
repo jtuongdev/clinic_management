@@ -22,6 +22,10 @@ public class QuetVaoCommandHandler : IRequestHandler<QuetVaoCommand, ChamCongDto
         if (await repository.HasApprovedLeaveAsync(command.MaNhanVien, scanTime.Date, cancellationToken))
             throw new InvalidOperationException("Nhân viên có đơn nghỉ phép đã được duyệt trong ngày này.");
 
+        if (await repository.GetOpenAttendanceAsync(command.MaNhanVien, scanTime, cancellationToken) is not null)
+            throw new InvalidOperationException(
+                "Nhân viên còn một ca chưa check-out. Vui lòng hoàn tất bằng check-out hoặc gửi yêu cầu điều chỉnh trước khi check-in ca mới.");
+
         var candidateSchedules = await repository.GetCandidateSchedulesAsync(command.MaNhanVien, scanTime, cancellationToken);
         if (candidateSchedules.Count == 0)
             throw new InvalidOperationException("Bạn không có lịch làm việc trong khung giờ này. Vui lòng liên hệ quản trị phòng khám.");

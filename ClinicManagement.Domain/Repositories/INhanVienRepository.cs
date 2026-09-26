@@ -37,6 +37,10 @@ namespace ClinicManagement.Domain.Repositories
         Task<List<VaiTro>> GetAllRolesAsync(CancellationToken cancellationToken = default);
         Task<List<VaiTro>> GetRolesByIdsAsync(IEnumerable<int> roleIds, CancellationToken cancellationToken = default);
         Task<NhanVien?> GetDetailForUpdateAsync(int id, CancellationToken cancellationToken = default);
+        Task<int> CloseActiveRolesAsync(int employeeId, DateTime effectiveDate, CancellationToken cancellationToken = default);
+        Task<int> CloseDepartmentAssignmentsAsync(int employeeId, DateTime effectiveDate, CancellationToken cancellationToken = default);
+        Task<int> RevokePermissionsAsync(int employeeId, int deletedBy, CancellationToken cancellationToken = default);
+        Task<int> CancelFutureSchedulesAsync(int employeeId, DateTime effectiveDate, int deletedBy, CancellationToken cancellationToken = default);
 
         Task<List<MaTranPhanQuyen>> GetPermissionsByUserIdAsync(int userId);
 

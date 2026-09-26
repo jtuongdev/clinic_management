@@ -165,6 +165,17 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             => context.LichLamViecs.AnyAsync(item => item.MaNhanVien == maNhanVien &&
                 item.MaCaTruc == maCaTruc && item.NgayLam == ngayLam.Date, cancellationToken);
 
+        public Task<bool> EmployeeHasScheduleAsync(int maNhanVien, DateTime ngayLam, CancellationToken cancellationToken = default)
+            => context.LichLamViecs.AnyAsync(item => item.MaNhanVien == maNhanVien &&
+                item.NgayLam == ngayLam.Date &&
+                item.TrangThai != TrangThaiLichLamViec.HUY, cancellationToken);
+
+        public Task<bool> HasApprovedLeaveAsync(int maNhanVien, DateTime date, CancellationToken cancellationToken = default)
+            => context.NghiPheps.AnyAsync(item => item.MaNhanVien == maNhanVien &&
+                item.TrangThai == TrangThaiNghiPhep.DA_DUYET &&
+                item.TuNgay.Date <= date.Date && item.DenNgay.Date >= date.Date,
+                cancellationToken);
+
         public Task<bool> HasAttendanceAsync(int scheduleId, CancellationToken cancellationToken = default)
             => context.ChamCongs.AnyAsync(item => item.MaLichLamViec == scheduleId, cancellationToken);
 
@@ -212,7 +223,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 .Include(item => item.Khoa)
                 .Include(item => item.CaTruc)
                 .Include(item => item.PhongKham)
-                .Where(item => item.IsActive && !item.IsDeleted);
+                .Where(item => item.IsActive && !item.IsDeleted && item.NhanVien.IsActive);
 
             if (maNhanVien.HasValue) query = query.Where(item => item.MaNhanVien == maNhanVien.Value);
             if (maKhoa.HasValue) query = query.Where(item => item.MaKhoa == maKhoa.Value);

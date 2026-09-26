@@ -78,6 +78,9 @@ export interface PayrollLine {
   tienTangCa: number;
   khauTruDiMuonVeSom: number;
   tienBaoHiem: number;
+  soCaBatThuong?: number;
+  soCaThieuCheckOut?: number;
+  soCaVangMat?: number;
   chiTiets?: ChiTietBangLuong[];
 }
 

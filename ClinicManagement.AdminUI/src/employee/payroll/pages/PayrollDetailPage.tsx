@@ -153,6 +153,13 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
     ];
   }, [detail.bangLuongs]);
 
+  const abnormalLines = useMemo(
+    () => detail.bangLuongs.filter((line) => Number(line.soCaBatThuong || 0) > 0
+      || Number(line.soCaThieuCheckOut || 0) > 0
+      || Number(line.soCaVangMat || 0) > 0),
+    [detail.bangLuongs],
+  );
+
   // Lọc dữ liệu bảng
   const filteredLines = useMemo(() => {
     return detail.bangLuongs.filter((line) => {
@@ -173,10 +180,11 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
       if (quickFilter === 'HAS_OT' && Number(line.tienTangCa || 0) <= 0) return false;
       if (quickFilter === 'HAS_LATE' && Number(line.khauTruDiMuonVeSom || 0) <= 0) return false;
       if (quickFilter === 'HAS_DEBT' && Number(line.tienNoKyNay || 0) <= 0) return false;
+      if (quickFilter === 'ABNORMAL' && !abnormalLines.some((item) => item.id === line.id)) return false;
 
       return true;
     });
-  }, [detail.bangLuongs, searchKeyword, selectedKhoa, quickFilter]);
+  }, [detail.bangLuongs, searchKeyword, selectedKhoa, quickFilter, abnormalLines]);
 
   const exportCsv = () => {
     if (!detail.bangLuongs?.length) return;
@@ -273,6 +281,16 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
           render: (_: any, row: PayrollLine) => (
             <div>
               <span style={{ fontWeight: 600, color: '#2563eb' }}>{row.soNgayCong}</span>/26
+              {Number(row.soCaThieuCheckOut || 0) > 0 && (
+                <div style={{ color: '#b45309', fontSize: 11, fontWeight: 600 }}>
+                  {Number(row.soCaThieuCheckOut)} ca chưa chốt
+                </div>
+              )}
+              {Number(row.soCaVangMat || 0) > 0 && (
+                <div style={{ color: '#991b1b', fontSize: 11 }}>
+                  Vắng: {Number(row.soCaVangMat)} ca
+                </div>
+              )}
               {row.soNgayNghiKhongLuong > 0 && (
                 <div style={{ fontSize: 11, color: '#dc2626' }}>Nghỉ: {row.soNgayNghiKhongLuong}d</div>
               )}
@@ -565,6 +583,7 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
               onChange={setQuickFilter}
               options={[
                 { value: 'ALL', label: 'Tất cả trạng thái công' },
+                { value: 'ABNORMAL', label: `Ca bất thường cần xử lý (${abnormalLines.length})` },
                 { value: 'HAS_OT', label: 'Nhân viên có làm thêm OT' },
                 { value: 'HAS_LATE', label: 'Nhân viên bị trừ trễ/sớm' },
                 { value: 'HAS_DEBT', label: 'Nhân viên phát sinh nợ lương' },

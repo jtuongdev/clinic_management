@@ -29,6 +29,8 @@ namespace ClinicManagement.Domain.Repositories
         void UpdateFixedSchedule(LichLamViecCoDinh entity);
         void SoftDeleteFixedSchedule(LichLamViecCoDinh entity, int deletedBy);
         Task<bool> DailyScheduleExistsAsync(int maNhanVien, int maCaTruc, DateTime ngayLam, CancellationToken cancellationToken = default);
+        Task<bool> EmployeeHasScheduleAsync(int maNhanVien, DateTime ngayLam, CancellationToken cancellationToken = default);
+        Task<bool> HasApprovedLeaveAsync(int maNhanVien, DateTime date, CancellationToken cancellationToken = default);
         Task<bool> HasAttendanceAsync(int scheduleId, CancellationToken cancellationToken = default);
         Task<bool> IsPeriodLockedAsync(DateTime date, CancellationToken cancellationToken = default);
         Task<bool> HasFixedScheduleConflictAsync(int maNhanVien, DayOfWeek thuTrongTuan, int maCaTruc,
