@@ -13,3 +13,5 @@ dist/
 .nuget/
 .local/
 Library/
+.dotnet/
+.dotnet_temp/
