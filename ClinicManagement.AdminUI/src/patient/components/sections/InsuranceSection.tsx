@@ -72,23 +72,24 @@ export const InsuranceSection = ({
                 label="Ngày bắt đầu"
                 name={['baoHiem', 'ngayBatDau']}
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày bắt đầu" />
               </Form.Item>
             </Col>
             <Col xs={24} md={6}>
               <Form.Item
-                label="Ngày kết thúc"
+                label="Ngày kết thúc (Hạn dùng)"
                 name={['baoHiem', 'ngayKetThuc']}
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày kết thúc" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
-                label="Mức hưởng (%)"
+                label="Mức hưởng theo thẻ BHYT (%)"
                 name={['baoHiem', 'mucHuong']}
+                tooltip="Mức hưởng được in trên thẻ BHYT (ví dụ: 80%, 95%, 100%). Hệ thống sẽ tự động trừ viện phí theo mức này."
               >
-                <Input type="number" min={0} max={100} />
+                <Input type="number" min={0} max={100} placeholder="Nhập mức hưởng theo thẻ (VD: 80, 95, 100)" />
               </Form.Item>
             </Col>
           </Row>

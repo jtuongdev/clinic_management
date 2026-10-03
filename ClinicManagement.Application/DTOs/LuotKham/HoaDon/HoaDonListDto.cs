@@ -19,5 +19,8 @@ namespace ClinicManagement.Application.DTOs.LuotKham
         public int MaCoSo { get; set; }
         public decimal SoTienBaoHiemChiTra { get; set; }
         public string? GhiChu { get; set; }
+        public string? SoTheBHYT { get; set; }
+        public decimal? MucHuongBHYT { get; set; }
+        public bool? BHYTConHan { get; set; }
     }
 }

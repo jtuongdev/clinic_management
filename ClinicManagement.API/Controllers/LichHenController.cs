@@ -90,15 +90,17 @@ namespace ClinicManagement.API.Controllers
             return Success(result);
         }
 
-        // GET: api/LichHen/thong-ke?maCoSo=1&ngay=2026-09-24
+        // GET: api/LichHen/thong-ke?maCoSo=1&maBacSi=12&ngay=2026-09-24
         [HttpGet("thong-ke")]
         public async Task<IActionResult> GetThongKe(
             [FromQuery] int? maCoSo,
+            [FromQuery] int? maBacSi,
             [FromQuery] DateTime? ngay)
         {
             var query = new LayThongKeLichHenQuery
             {
                 MaCoSo = maCoSo,
+                MaBacSi = maBacSi,
                 Ngay = ngay
             };
 

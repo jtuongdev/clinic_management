@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   App,
   Button,
@@ -14,6 +14,7 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
+import { HolderOutlined } from '@ant-design/icons';
 import {
   ArrowLeft,
   FileSpreadsheet,
@@ -36,12 +37,38 @@ import { PayrollKpiDashboard } from '../components/PayrollKpiDashboard';
 import { PayslipDrawer } from '../components/PayslipDrawer';
 import { PayslipPrintModal } from '../components/PayslipPrintModal';
 
+interface ColumnDef {
+  key: string;
+  label: string;
+  align: 'left' | 'center' | 'right';
+  isFixed?: boolean;
+}
+
+const ALL_COLUMNS: ColumnDef[] = [
+  { key: 'stt', label: 'STT', align: 'center', isFixed: true },
+  { key: 'maNhanVien', label: 'Mã NV', align: 'left' },
+  { key: 'tenNhanVien', label: 'Họ tên nhân viên', align: 'left' },
+  { key: 'chucDanh', label: 'Chức danh', align: 'left' },
+  { key: 'khoa', label: 'Khoa / Phòng', align: 'left' },
+  { key: 'luongCoBan', label: 'Lương cơ bản', align: 'right' },
+  { key: 'ngayCong', label: 'Ngày công', align: 'center' },
+  { key: 'luongTheoNgayCong', label: 'Lương ngày công', align: 'right' },
+  { key: 'tienTangCa', label: 'Tăng ca OT', align: 'right' },
+  { key: 'tongPhuCap', label: 'Phụ cấp', align: 'right' },
+  { key: 'tienThuLaoHis', label: 'Thù lao HIS', align: 'right' },
+  { key: 'tienBaoHiem', label: 'Bảo hiểm (10.5%)', align: 'right' },
+  { key: 'khauTru', label: 'Khấu trừ', align: 'right' },
+  { key: 'thucLinh', label: 'Thực lĩnh', align: 'right' },
+  { key: 'thaoTac', label: '•••', align: 'center', isFixed: true },
+];
+
 interface PayrollDetailPageProps {
   periodId: number;
   initialDetail: PayrollDetail;
   onBack: () => void;
   onPeriodUpdated: () => void;
 }
+
 
 const statusLabels: Record<string, string> = {
   NHAP: 'Nháp',
@@ -104,6 +131,41 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
     thucLinh: 135,
     thaoTac: 65,
   });
+
+  const [colOrder, setColOrder] = useState<string[]>(ALL_COLUMNS.map((c) => c.key));
+  const [draggedCol, setDraggedCol] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  const handleColDragStart = (e: React.DragEvent, colKey: string) => {
+    if (colKey === 'stt' || colKey === 'thaoTac') return;
+    setDraggedCol(colKey);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleColDragOver = (e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    if (colKey === 'stt' || colKey === 'thaoTac' || !draggedCol || draggedCol === colKey) return;
+    setDragOverCol(colKey);
+  };
+
+  const handleColDrop = (e: React.DragEvent, targetCol: string) => {
+    e.preventDefault();
+    if (!draggedCol || draggedCol === targetCol || targetCol === 'stt' || targetCol === 'thaoTac') {
+      setDraggedCol(null);
+      setDragOverCol(null);
+      return;
+    }
+    const newOrder = [...colOrder];
+    const fromIdx = newOrder.indexOf(draggedCol);
+    const toIdx = newOrder.indexOf(targetCol);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, draggedCol);
+      setColOrder(newOrder);
+    }
+    setDraggedCol(null);
+    setDragOverCol(null);
+  };
 
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
 
@@ -270,11 +332,46 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
     });
   }, [detail.bangLuongs, searchKeyword, selectedKhoa, quickFilter, abnormalLines]);
 
+  // Row reordering
+  const [orderedLines, setOrderedLines] = useState<PayrollLine[]>([]);
+  const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setOrderedLines(filteredLines);
+  }, [filteredLines]);
+
+  const handleRowDragStart = (e: React.DragEvent, id: number) => {
+    setDraggedRowId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleRowDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleRowDrop = (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (!draggedRowId || draggedRowId === targetId) {
+      setDraggedRowId(null);
+      return;
+    }
+    const current = [...orderedLines];
+    const fromIdx = current.findIndex((i) => i.id === draggedRowId);
+    const toIdx = current.findIndex((i) => i.id === targetId);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const [moved] = current.splice(fromIdx, 1);
+      current.splice(toIdx, 0, moved);
+      setOrderedLines(current);
+    }
+    setDraggedRowId(null);
+  };
+
   // Phân trang danh sách hiển thị
   const paginatedLines = useMemo(() => {
     const start = (pagination.current - 1) * pagination.pageSize;
-    return filteredLines.slice(start, start + pagination.pageSize);
-  }, [filteredLines, pagination]);
+    return orderedLines.slice(start, start + pagination.pageSize);
+  }, [orderedLines, pagination]);
+
 
   const exportCsv = () => {
     if (!detail.bangLuongs?.length) return;
@@ -344,6 +441,457 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
         return 0;
     }
   }, [detail.trangThai, detail.bangLuongs.length, detail.isPublished]);
+
+  const renderCell = (
+    colKey: string,
+    row: PayrollLine,
+    globalIndex: number,
+    rHeight: number,
+    index: number
+  ) => {
+    const hisTotal = Number(row.tongThuLaoHis || 0);
+    const deductTotal = Math.max(0, Number(row.tongGiamTru || 0) - Number(row.tienBaoHiem || 0));
+    const debt = Number(row.tienNoKyNay || 0);
+
+    switch (colKey) {
+      case 'stt':
+        return (
+          <td
+            key="stt"
+            className="w-12 min-w-[48px] max-w-[48px] text-center font-mono font-semibold bg-slate-100 text-slate-700 sticky left-0 z-30 border-r border-slate-300"
+            style={{
+              height: rHeight,
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              fontWeight: 600,
+              backgroundColor: index % 2 === 0 ? '#f8fafc' : '#f1f5f9',
+              color: '#64748b',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              position: 'sticky',
+              left: 0,
+              zIndex: 25,
+              verticalAlign: 'middle',
+              padding: 0,
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 2, width: '100%' }}>
+              <span title="Kéo thả đổi vị trí dòng" style={{ cursor: 'grab', color: '#94a3b8' }}>
+                <HolderOutlined style={{ fontSize: 10 }} />
+              </span>
+              <span>{globalIndex}</span>
+            </div>
+          </td>
+        );
+
+      case 'maNhanVien':
+        return (
+          <td
+            key="maNhanVien"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontWeight: 600,
+              color: '#0369a1',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
+              title={`#${row.maNhanVien}`}
+            >
+              #{row.maNhanVien}
+            </div>
+          </td>
+        );
+
+      case 'tenNhanVien':
+        return (
+          <td
+            key="tenNhanVien"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontWeight: 600,
+              color: '#0f172a',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
+              title={row.tenNhanVien}
+            >
+              {row.tenNhanVien}
+            </div>
+          </td>
+        );
+
+      case 'chucDanh':
+        return (
+          <td
+            key="chucDanh"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              color: '#475569',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
+              title={row.chucDanh || ''}
+            >
+              {row.chucDanh || '—'}
+            </div>
+          </td>
+        );
+
+      case 'khoa':
+        return (
+          <td
+            key="khoa"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              color: '#475569',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
+              title={row.tenKhoa || ''}
+            >
+              {row.tenKhoa || '—'}
+            </div>
+          </td>
+        );
+
+      case 'luongCoBan':
+        return (
+          <td
+            key="luongCoBan"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#1e293b',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={money(row.luongCoBan)}
+            >
+              {money(row.luongCoBan)}
+            </div>
+          </td>
+        );
+
+      case 'ngayCong':
+        return (
+          <td
+            key="ngayCong"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 text-center"
+              title={`${row.soNgayCong}/26 công`}
+            >
+              <strong style={{ color: '#0f172a' }}>{row.soNgayCong}</strong>/26
+            </div>
+          </td>
+        );
+
+      case 'luongTheoNgayCong':
+        return (
+          <td
+            key="luongTheoNgayCong"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#1e293b',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={money(row.luongTheoNgayCong)}
+            >
+              {money(row.luongTheoNgayCong)}
+            </div>
+          </td>
+        );
+
+      case 'tienTangCa':
+        return (
+          <td
+            key="tienTangCa"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#1e293b',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={row.tienTangCa > 0 ? `+${money(row.tienTangCa)}` : '0 đ'}
+            >
+              {row.tienTangCa > 0 ? `+${money(row.tienTangCa)}` : '—'}
+            </div>
+          </td>
+        );
+
+      case 'tongPhuCap':
+        return (
+          <td
+            key="tongPhuCap"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#1e293b',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={row.tongPhuCap > 0 ? `+${money(row.tongPhuCap)}` : '0 đ'}
+            >
+              {row.tongPhuCap > 0 ? `+${money(row.tongPhuCap)}` : '—'}
+            </div>
+          </td>
+        );
+
+      case 'tienThuLaoHis':
+        return (
+          <td
+            key="tienThuLaoHis"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#1e293b',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={hisTotal > 0 ? `+${money(hisTotal)} (Khám: ${money(row.tienThuLaoKham)} | CLS: ${money(row.tienHoaHongCls)})` : '0 đ'}
+            >
+              {hisTotal > 0 ? `+${money(hisTotal)}` : '—'}
+            </div>
+          </td>
+        );
+
+      case 'tienBaoHiem':
+        return (
+          <td
+            key="tienBaoHiem"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#be123c',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={`-${money(row.tienBaoHiem)}`}
+            >
+              -{money(row.tienBaoHiem)}
+            </div>
+          </td>
+        );
+
+      case 'khauTru':
+        return (
+          <td
+            key="khauTru"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#be123c',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={deductTotal > 0 ? `-${money(deductTotal)}` : '0 đ'}
+            >
+              {deductTotal > 0 ? `-${money(deductTotal)}` : '—'}
+            </div>
+          </td>
+        );
+
+      case 'thucLinh':
+        return (
+          <td
+            key="thucLinh"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              borderRight: '1px solid #cbd5e1',
+              borderBottom: '1px solid #e2e8f0',
+              fontFamily: 'monospace',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 700,
+              color: '#0f172a',
+              padding: 0,
+            }}
+          >
+            <div
+              className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
+              title={debt > 0 ? `0 đ (Nợ: -${money(debt)})` : money(row.thucLinh)}
+            >
+              {debt > 0 ? (
+                <span>
+                  0 đ <span style={{ color: '#be123c', fontSize: 11 }}>(Nợ: -{money(debt)})</span>
+                </span>
+              ) : (
+                money(row.thucLinh)
+              )}
+            </div>
+          </td>
+        );
+
+      case 'thaoTac':
+        return (
+          <td
+            key="thaoTac"
+            style={{
+              height: rHeight,
+              verticalAlign: 'middle',
+              textAlign: 'center',
+              borderBottom: '1px solid #e2e8f0',
+              padding: 0,
+            }}
+          >
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'details',
+                    icon: <FileText size={14} />,
+                    label: 'Xem chi tiết phiếu lương',
+                    onClick: () => {
+                      setDrawerLine(row);
+                      setDrawerOpen(true);
+                    },
+                  },
+                  ...((detail.trangThai === 'NHAP' || detail.trangThai === 'DA_DUYET')
+                    ? [
+                        {
+                          key: 'recalculate',
+                          icon: <RefreshCw size={14} />,
+                          label: 'Tính lại lương',
+                          onClick: () => handleRecalculateSingle(row.id),
+                        },
+                      ]
+                    : []),
+                  {
+                    key: 'lock',
+                    icon: <Lock size={14} />,
+                    label: detail.trangThai === 'DA_CHOT' ? 'Đã khóa sổ' : 'Khóa bảng lương',
+                    disabled: detail.trangThai === 'DA_CHOT',
+                    onClick: () => {
+                      if (detail.trangThai !== 'DA_CHOT') {
+                        handlePeriodAction('close', 'Đã chốt sổ kỳ lương.');
+                      }
+                    },
+                  },
+                  {
+                    type: 'divider',
+                  },
+                  {
+                    key: 'print',
+                    icon: <Printer size={14} />,
+                    label: 'In phiếu lương A4',
+                    onClick: () => {
+                      setPrintLine(row);
+                      setPrintModalOpen(true);
+                    },
+                  },
+                ],
+              }}
+              trigger={['click']}
+              placement="bottomRight"
+            >
+              <button
+                type="button"
+                className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-200 text-slate-600 font-bold text-sm tracking-widest mx-auto"
+                style={{
+                  width: 28,
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 4,
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  letterSpacing: '0.12em',
+                  cursor: 'pointer',
+                  margin: '0 auto',
+                  lineHeight: 1,
+                }}
+                title="Tùy chọn thao tác"
+              >
+                •••
+              </button>
+            </Dropdown>
+          </td>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div style={{ padding: '4px 0 24px 0' }}>
@@ -596,376 +1144,135 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
             backgroundColor: '#ffffff',
           }}
         >
-          {/* CẤU TRÚC ĐỘ RỘNG CỘT CỐ ĐỊNH CHỐNG PHÌNH VỠ */}
+          {/* CẤU TRÚC ĐỘ RỘNG CỘT THEO THỨ TỰ colOrder */}
           <colgroup>
-            <col style={{ width: colWidths.stt }} />
-            <col style={{ width: colWidths.maNhanVien }} />
-            <col style={{ width: colWidths.tenNhanVien }} />
-            <col style={{ width: colWidths.chucDanh }} />
-            <col style={{ width: colWidths.khoa }} />
-            <col style={{ width: colWidths.luongCoBan }} />
-            <col style={{ width: colWidths.ngayCong }} />
-            <col style={{ width: colWidths.luongTheoNgayCong }} />
-            <col style={{ width: colWidths.tienTangCa }} />
-            <col style={{ width: colWidths.tongPhuCap }} />
-            <col style={{ width: colWidths.tienThuLaoHis }} />
-            <col style={{ width: colWidths.tienBaoHiem }} />
-            <col style={{ width: colWidths.khauTru }} />
-            <col style={{ width: colWidths.thucLinh }} />
-            <col style={{ width: colWidths.thaoTac }} />
+            {colOrder.map((colKey) => (
+              <col key={colKey} style={{ width: colWidths[colKey] }} />
+            ))}
           </colgroup>
 
-          {/* THEAD CÓ RESIZER TỪNG CỘT (TẦNG 2) */}
+          {/* THEAD CÓ RESIZER TỪNG CỘT & KÉO THẢ ĐỔI THỨ TỰ (TẦNG 2) */}
           <thead style={{ position: 'sticky', top: 0, zIndex: 30 }}>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1' }}>
-              {/* STT (STICKY TRÁI) */}
-              <th
-                className="w-12 min-w-[48px] max-w-[48px] text-center font-mono font-semibold bg-slate-100 text-slate-700 sticky left-0 z-30 border-r border-slate-300"
-                style={{
-                  width: colWidths.stt,
-                  minWidth: 48,
-                  maxWidth: 48,
-                  textAlign: 'center',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  backgroundColor: '#f1f5f9',
-                  color: '#475569',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 40,
-                  padding: '8px 2px',
-                  userSelect: 'none',
-                }}
-              >
-                <span>STT</span>
-              </th>
+              {colOrder.map((colKey) => {
+                const colDef = ALL_COLUMNS.find((c) => c.key === colKey);
+                if (!colDef) return null;
+                const isDragging = draggedCol === colKey;
+                const isDragOver = dragOverCol === colKey;
+                const isFixed = colDef.isFixed;
 
-              {/* MÃ NV */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.maNhanVien,
-                  textAlign: 'left',
-                  padding: '8px 8px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#475569',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">Mã NV</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('maNhanVien', e)}
-                />
-              </th>
+                if (colKey === 'stt') {
+                  return (
+                    <th
+                      key="stt"
+                      className="w-12 min-w-[48px] max-w-[48px] text-center font-mono font-semibold bg-slate-100 text-slate-700 sticky left-0 z-30 border-r border-slate-300"
+                      style={{
+                        width: colWidths.stt,
+                        minWidth: 48,
+                        maxWidth: 48,
+                        textAlign: 'center',
+                        fontFamily: 'monospace',
+                        fontWeight: 600,
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        borderRight: '1px solid #cbd5e1',
+                        borderBottom: '1px solid #cbd5e1',
+                        position: 'sticky',
+                        left: 0,
+                        zIndex: 40,
+                        padding: '8px 2px',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span>STT</span>
+                    </th>
+                  );
+                }
 
-              {/* HỌ VÀ TÊN */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.tenNhanVien,
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  fontWeight: 700,
-                  color: '#0f172a',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">Họ tên nhân viên</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('tenNhanVien', e)}
-                />
-              </th>
+                if (colKey === 'thaoTac') {
+                  return (
+                    <th
+                      key="thaoTac"
+                      style={{
+                        width: colWidths.thaoTac,
+                        textAlign: 'center',
+                        padding: '8px 2px',
+                        fontWeight: 600,
+                        color: '#475569',
+                        borderBottom: '1px solid #cbd5e1',
+                        backgroundColor: '#f8fafc',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span>•••</span>
+                    </th>
+                  );
+                }
 
-              {/* CHỨC DANH */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.chucDanh,
-                  textAlign: 'left',
-                  padding: '8px 8px',
-                  fontWeight: 600,
-                  color: '#475569',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">Chức danh</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('chucDanh', e)}
-                />
-              </th>
-
-              {/* KHOA / PHÒNG */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.khoa,
-                  textAlign: 'left',
-                  padding: '8px 8px',
-                  fontWeight: 600,
-                  color: '#475569',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">Khoa / Phòng</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('khoa', e)}
-                />
-              </th>
-
-              {/* LƯƠNG CƠ BẢN */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.luongCoBan,
-                  textAlign: 'right',
-                  padding: '8px 10px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Lương cơ bản</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('luongCoBan', e)}
-                />
-              </th>
-
-              {/* NGÀY CÔNG */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.ngayCong,
-                  textAlign: 'center',
-                  padding: '8px 4px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#475569',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-center">Ngày công</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('ngayCong', e)}
-                />
-              </th>
-
-              {/* LƯƠNG THEO CÔNG */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.luongTheoNgayCong,
-                  textAlign: 'right',
-                  padding: '8px 10px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Lương ngày công</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('luongTheoNgayCong', e)}
-                />
-              </th>
-
-              {/* TĂNG CA OT */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.tienTangCa,
-                  textAlign: 'right',
-                  padding: '8px 8px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Tăng ca OT</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('tienTangCa', e)}
-                />
-              </th>
-
-              {/* PHỤ CẤP */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.tongPhuCap,
-                  textAlign: 'right',
-                  padding: '8px 8px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Phụ cấp</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('tongPhuCap', e)}
-                />
-              </th>
-
-              {/* THÙ LAO HIS */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.tienThuLaoHis,
-                  textAlign: 'right',
-                  padding: '8px 8px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Thù lao HIS</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('tienThuLaoHis', e)}
-                />
-              </th>
-
-              {/* BẢO HIỂM */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.tienBaoHiem,
-                  textAlign: 'right',
-                  padding: '8px 8px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#be123c',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Bảo hiểm (10.5%)</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('tienBaoHiem', e)}
-                />
-              </th>
-
-              {/* KHẤU TRỪ */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.khauTru,
-                  textAlign: 'right',
-                  padding: '8px 8px',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: '#be123c',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Khấu trừ</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('khauTru', e)}
-                />
-              </th>
-
-              {/* THỰC LĨNH */}
-              <th
-                style={{
-                  position: 'relative',
-                  width: colWidths.thucLinh,
-                  textAlign: 'right',
-                  padding: '8px 10px',
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  color: '#0f172a',
-                  borderRight: '1px solid #cbd5e1',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <div className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-right">Thực lĩnh</div>
-                <div
-                  className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
-                  style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 20 }}
-                  onMouseDown={(e) => handleColResize('thucLinh', e)}
-                />
-              </th>
-
-              {/* THAO TÁC (•••) */}
-              <th
-                style={{
-                  width: colWidths.thaoTac,
-                  textAlign: 'center',
-                  padding: '8px 2px',
-                  fontWeight: 600,
-                  color: '#475569',
-                  borderBottom: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  userSelect: 'none',
-                }}
-              >
-                <span>•••</span>
-              </th>
+                return (
+                  <th
+                    key={colKey}
+                    style={{
+                      position: 'relative',
+                      width: colWidths[colKey],
+                      textAlign: colDef.align,
+                      padding: '8px 8px',
+                      fontFamily: colKey === 'maNhanVien' || colDef.align === 'right' ? 'monospace' : undefined,
+                      fontWeight: colKey === 'tenNhanVien' ? 700 : 600,
+                      color:
+                        colKey === 'tienBaoHiem' || colKey === 'khauTru'
+                          ? '#be123c'
+                          : colKey === 'tenNhanVien' || colKey === 'thucLinh'
+                          ? '#0f172a'
+                          : '#475569',
+                      borderRight: '1px solid #cbd5e1',
+                      borderBottom: '1px solid #cbd5e1',
+                      backgroundColor: isDragging ? '#e2e8f0' : '#f8fafc',
+                      borderLeft: isDragOver ? '2px solid #2563eb' : undefined,
+                      userSelect: 'none',
+                      cursor: 'grab',
+                    }}
+                    draggable
+                    onDragStart={(e) => handleColDragStart(e, colKey)}
+                    onDragOver={(e) => handleColDragOver(e, colKey)}
+                    onDrop={(e) => handleColDrop(e, colKey)}
+                    title="Bấm giữ và kéo thả để đổi thứ tự cột"
+                  >
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        width: '100%',
+                        justifyContent:
+                          colDef.align === 'center'
+                            ? 'center'
+                            : colDef.align === 'right'
+                            ? 'flex-end'
+                            : 'flex-start',
+                      }}
+                    >
+                      <HolderOutlined style={{ fontSize: 10, color: '#94a3b8', cursor: 'grab' }} />
+                      <span className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                        {colDef.label}
+                      </span>
+                    </div>
+                    <div
+                      className="w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-600 active:bg-blue-700 z-20 select-none"
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 6,
+                        cursor: 'col-resize',
+                        zIndex: 20,
+                      }}
+                      onMouseDown={(e) => handleColResize(colKey, e)}
+                    />
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
@@ -973,13 +1280,13 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={15} style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
+                <td colSpan={colOrder.length} style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
                   Đang tải bảng lương...
                 </td>
               </tr>
             ) : paginatedLines.length === 0 ? (
               <tr>
-                <td colSpan={15} style={{ textAlign: 'center', padding: '50px 0', color: '#94a3b8' }}>
+                <td colSpan={colOrder.length} style={{ textAlign: 'center', padding: '50px 0', color: '#94a3b8' }}>
                   Chưa có bảng lương. Hãy bấm nút "Tính lương" để hệ thống tính toán tự động.
                 </td>
               </tr>
@@ -987,9 +1294,7 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
               paginatedLines.map((row, index) => {
                 const globalIndex = (pagination.current - 1) * pagination.pageSize + index + 1;
                 const rHeight = rowHeights[row.id] || 40;
-                const hisTotal = Number(row.tongThuLaoHis || 0);
-                const deductTotal = Math.max(0, Number(row.tongGiamTru || 0) - Number(row.tienBaoHiem || 0));
-                const debt = Number(row.tienNoKyNay || 0);
+                const isDraggingRow = draggedRowId === row.id;
 
                 return (
                   <tr
@@ -997,394 +1302,17 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
                     style={{
                       position: 'relative',
                       height: rHeight,
-                      backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc',
+                      backgroundColor: isDraggingRow ? '#f0fdf4' : index % 2 === 0 ? '#ffffff' : '#f8fafc',
                       transition: 'background 0.1s ease',
                       borderBottom: '1px solid #e2e8f0',
+                      opacity: isDraggingRow ? 0.4 : 1,
                     }}
+                    draggable
+                    onDragStart={(e) => handleRowDragStart(e, row.id)}
+                    onDragOver={handleRowDragOver}
+                    onDrop={(e) => handleRowDrop(e, row.id)}
                   >
-                    {/* CỘT STT (STICKY TRÁI) */}
-                    <td
-                      className="w-12 min-w-[48px] max-w-[48px] text-center font-mono font-semibold bg-slate-100 text-slate-700 sticky left-0 z-30 border-r border-slate-300"
-                      style={{
-                        height: rHeight,
-                        textAlign: 'center',
-                        fontFamily: 'monospace',
-                        fontWeight: 600,
-                        backgroundColor: index % 2 === 0 ? '#f8fafc' : '#f1f5f9',
-                        color: '#64748b',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        position: 'sticky',
-                        left: 0,
-                        zIndex: 25,
-                        verticalAlign: 'middle',
-                        padding: 0,
-                      }}
-                    >
-                      <div className="w-full text-center">{globalIndex}</div>
-                    </td>
-
-                    {/* MÃ NV */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontWeight: 600,
-                        color: '#0369a1',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
-                        title={`#${row.maNhanVien}`}
-                      >
-                        #{row.maNhanVien}
-                      </div>
-                    </td>
-
-                    {/* HỌ TÊN NHÂN VIÊN */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontWeight: 600,
-                        color: '#0f172a',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
-                        title={row.tenNhanVien}
-                      >
-                        {row.tenNhanVien}
-                      </div>
-                    </td>
-
-                    {/* CHỨC DANH */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        color: '#475569',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
-                        title={row.chucDanh || ''}
-                      >
-                        {row.chucDanh || '—'}
-                      </div>
-                    </td>
-
-                    {/* KHOA / PHÒNG */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        color: '#475569',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2"
-                        title={row.tenKhoa || ''}
-                      >
-                        {row.tenKhoa || '—'}
-                      </div>
-                    </td>
-
-                    {/* LƯƠNG CƠ BẢN */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#1e293b',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={money(row.luongCoBan)}
-                      >
-                        {money(row.luongCoBan)}
-                      </div>
-                    </td>
-
-                    {/* NGÀY CÔNG (CĂN GIỮA) */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        textAlign: 'center',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 text-center"
-                        title={`${row.soNgayCong}/26 công`}
-                      >
-                        <strong style={{ color: '#0f172a' }}>{row.soNgayCong}</strong>/26
-                      </div>
-                    </td>
-
-                    {/* LƯƠNG NGÀY CÔNG */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#1e293b',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={money(row.luongTheoNgayCong)}
-                      >
-                        {money(row.luongTheoNgayCong)}
-                      </div>
-                    </td>
-
-                    {/* TĂNG CA OT */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#1e293b',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={row.tienTangCa > 0 ? `+${money(row.tienTangCa)}` : '0 đ'}
-                      >
-                        {row.tienTangCa > 0 ? `+${money(row.tienTangCa)}` : '—'}
-                      </div>
-                    </td>
-
-                    {/* PHỤ CẤP */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#1e293b',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={row.tongPhuCap > 0 ? `+${money(row.tongPhuCap)}` : '0 đ'}
-                      >
-                        {row.tongPhuCap > 0 ? `+${money(row.tongPhuCap)}` : '—'}
-                      </div>
-                    </td>
-
-                    {/* THÙ LAO HIS */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#1e293b',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={hisTotal > 0 ? `+${money(hisTotal)} (Khám: ${money(row.tienThuLaoKham)} | CLS: ${money(row.tienHoaHongCls)})` : '0 đ'}
-                      >
-                        {hisTotal > 0 ? `+${money(hisTotal)}` : '—'}
-                      </div>
-                    </td>
-
-                    {/* BẢO HIỂM (ROSE-700) */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#be123c',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={`-${money(row.tienBaoHiem)}`}
-                      >
-                        -{money(row.tienBaoHiem)}
-                      </div>
-                    </td>
-
-                    {/* KHẤU TRỪ NGHỈ/TRỄ/KHÁC (ROSE-700) */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        color: '#be123c',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={deductTotal > 0 ? `-${money(deductTotal)}` : '0 đ'}
-                      >
-                        {deductTotal > 0 ? `-${money(deductTotal)}` : '—'}
-                      </div>
-                    </td>
-
-                    {/* THỰC LĨNH (FONT-MONO FONT-BOLD TEXT-SLATE-900) */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        borderRight: '1px solid #cbd5e1',
-                        borderBottom: '1px solid #e2e8f0',
-                        fontFamily: 'monospace',
-                        fontVariantNumeric: 'tabular-nums',
-                        fontWeight: 700,
-                        color: '#0f172a',
-                        padding: 0,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 text-right"
-                        title={debt > 0 ? `0 đ (Nợ: -${money(debt)})` : money(row.thucLinh)}
-                      >
-                        {debt > 0 ? (
-                          <span>
-                            0 đ <span style={{ color: '#be123c', fontSize: 11 }}>(Nợ: -{money(debt)})</span>
-                          </span>
-                        ) : (
-                          money(row.thucLinh)
-                        )}
-                      </div>
-                    </td>
-
-                    {/* THAO TÁC: THU GỌN THÀNH NÚT ••• (DROPDOWN) */}
-                    <td
-                      style={{
-                        height: rHeight,
-                        verticalAlign: 'middle',
-                        textAlign: 'center',
-                        borderBottom: '1px solid #e2e8f0',
-                        padding: 0,
-                      }}
-                    >
-                      <Dropdown
-                        menu={{
-                          items: [
-                            {
-                              key: 'details',
-                              icon: <FileText size={14} />,
-                              label: 'Xem chi tiết phiếu lương',
-                              onClick: () => {
-                                setDrawerLine(row);
-                                setDrawerOpen(true);
-                              },
-                            },
-                            ...((detail.trangThai === 'NHAP' || detail.trangThai === 'DA_DUYET')
-                              ? [
-                                  {
-                                    key: 'recalculate',
-                                    icon: <RefreshCw size={14} />,
-                                    label: 'Tính lại lương',
-                                    onClick: () => handleRecalculateSingle(row.id),
-                                  },
-                                ]
-                              : []),
-                            {
-                              key: 'lock',
-                              icon: <Lock size={14} />,
-                              label: detail.trangThai === 'DA_CHOT' ? 'Đã khóa sổ' : 'Khóa bảng lương',
-                              disabled: detail.trangThai === 'DA_CHOT',
-                              onClick: () => {
-                                if (detail.trangThai !== 'DA_CHOT') {
-                                  handlePeriodAction('close', 'Đã chốt sổ kỳ lương.');
-                                }
-                              },
-                            },
-                            {
-                              type: 'divider',
-                            },
-                            {
-                              key: 'print',
-                              icon: <Printer size={14} />,
-                              label: 'In phiếu lương A4',
-                              onClick: () => {
-                                setPrintLine(row);
-                                setPrintModalOpen(true);
-                              },
-                            },
-                          ],
-                        }}
-                        trigger={['click']}
-                        placement="bottomRight"
-                      >
-                        <button
-                          type="button"
-                          className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-200 text-slate-600 font-bold text-sm tracking-widest mx-auto"
-                          style={{
-                            width: 28,
-                            height: 28,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: 4,
-                            border: '1px solid #cbd5e1',
-                            backgroundColor: '#ffffff',
-                            color: '#475569',
-                            fontWeight: 700,
-                            fontSize: 13,
-                            letterSpacing: '0.12em',
-                            cursor: 'pointer',
-                            margin: '0 auto',
-                            lineHeight: 1,
-                          }}
-                          title="Tùy chọn thao tác"
-                        >
-                          •••
-                        </button>
-                      </Dropdown>
-                    </td>
+                    {colOrder.map((colKey) => renderCell(colKey, row, globalIndex, rHeight, index))}
 
                     {/* TAY NẮM RESIZE CHIỀU CAO HÀNG (TẦNG 3) */}
                     <div
@@ -1428,7 +1356,7 @@ export const PayrollDetailPage: React.FC<PayrollDetailPageProps> = ({
             current={pagination.current}
             pageSize={pagination.pageSize}
             total={filteredLines.length}
-            pageSizeOptions={['15', '20', '50', '100']}
+            pageSizeOptions={['10', '20', '50', '100']}
             showSizeChanger
             onChange={(page, pageSize) => setPagination({ current: page, pageSize })}
           />

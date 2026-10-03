@@ -17,12 +17,18 @@ public class KhoaRepository : Repository<Khoa>, IKhoaRepository
     {
     }
 
-    public async Task<IEnumerable<Khoa>> GetKhoasByCoSoAsync(int maCoSo)
+    public async Task<IEnumerable<Khoa>> GetKhoasByCoSoAsync(int? maCoSo = null)
     {
-        return await _context.CoSos
-            .Where(c => c.Id == maCoSo)
-            .SelectMany(c => c.Khoas)
-            .ToListAsync();
+        var query = _context.Khoas
+            .AsNoTracking()
+            .Where(k => !k.IsDeleted);
+
+        if (maCoSo.HasValue && maCoSo.Value > 0)
+        {
+            query = query.Where(k => k.MaCoSo == maCoSo.Value);
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task<IReadOnlyList<Khoa>> GetKhoasWithDetailsAsync(

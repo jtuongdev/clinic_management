@@ -12,7 +12,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Title } = Typography;
 
-type TabKey = 'items' | 'stock' | 'import' | 'dispense' | 'stocktake' | 'suppliers';
+type TabKey = 'items' | 'stock' | 'import' | 'dispense' | 'dept-dispense' | 'stocktake' | 'suppliers';
 
 const TAB_ITEMS = [
   {
@@ -52,6 +52,15 @@ const TAB_ITEMS = [
     ),
   },
   {
+    key: 'dept-dispense',
+    label: (
+      <Space size={6}>
+        <SendOutlined />
+        Xuất Khoa/Phòng
+      </Space>
+    ),
+  },
+  {
     key: 'stocktake',
     label: (
       <Space size={6}>
@@ -72,12 +81,13 @@ const TAB_ITEMS = [
 ];
 
 const PATH_MAP: Record<TabKey, string> = {
-  items:     '/inventory',
-  stock:     '/inventory/stock',
-  import:    '/inventory/import',
-  dispense:  '/inventory/dispense',
-  stocktake: '/inventory/stocktake',
-  suppliers: '/inventory/suppliers',
+  items:           '/inventory',
+  stock:           '/inventory/stock',
+  import:          '/inventory/import',
+  dispense:        '/inventory/dispense',
+  'dept-dispense': '/inventory/dept-dispense',
+  stocktake:       '/inventory/stocktake',
+  suppliers:       '/inventory/suppliers',
 };
 
 const InventoryManagement: React.FC = () => {
@@ -86,11 +96,12 @@ const InventoryManagement: React.FC = () => {
 
   const activeKey = useMemo((): TabKey => {
     const path = location.pathname;
-    if (path.includes('/stocktake')) return 'stocktake';
-    if (path.includes('/dispense'))  return 'dispense';
-    if (path.includes('/import'))    return 'import';
-    if (path.includes('/stock'))     return 'stock';
-    if (path.includes('/suppliers')) return 'suppliers';
+    if (path.includes('/stocktake'))     return 'stocktake';
+    if (path.includes('/dept-dispense')) return 'dept-dispense';
+    if (path.includes('/dispense'))      return 'dispense';
+    if (path.includes('/import'))        return 'import';
+    if (path.includes('/stock'))         return 'stock';
+    if (path.includes('/suppliers'))     return 'suppliers';
     return 'items';
   }, [location.pathname]);
 
@@ -121,7 +132,7 @@ const InventoryManagement: React.FC = () => {
 
       {/* Routed content */}
       <div className="inventory-content">
-        <div className="inventory-tab-content">
+        <div className={`inventory-tab-content ${activeKey === 'dept-dispense' || activeKey === 'suppliers' || activeKey === 'items' || activeKey === 'stock' || activeKey === 'dispense' ? 'inventory-fullwidth-tab' : ''}`}>
           <Outlet />
         </div>
       </div>

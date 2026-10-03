@@ -30,17 +30,31 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("ChiPhiGiuCho")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(100000m);
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
+                    b.Property<bool>("DaThanhToanGiuCho")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
+
+                    b.Property<string>("GhiChuHuy")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -62,10 +76,20 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int?>("MaKhoa")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("NgayThanhToan")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("NguoiThuTien")
+                        .HasColumnType("int");
+
                     b.Property<string>("NguonDat")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("SoPhieuThu")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("ThoiGianBatDau")
                         .HasColumnType("datetime2");
@@ -2039,6 +2063,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int>("MaChiTietNhap")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MaItemYeuCau")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaPhieuXuat")
                         .HasColumnType("int");
 
@@ -2054,6 +2081,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MaChiTietNhap");
+
+                    b.HasIndex("MaItemYeuCau");
 
                     b.HasIndex("MaPhieuXuat");
 
@@ -2717,6 +2746,9 @@ namespace ClinicManagement.Infrastructure.Migrations
                     b.Property<int>("MaKhoXuat")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MaKhoaNhan")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaNguoiXuat")
                         .HasColumnType("int");
 
@@ -2727,6 +2759,13 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.Property<DateTime>("NgayXuat")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("NguoiNhanId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TrangThaiXuat")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -2744,12 +2783,19 @@ namespace ClinicManagement.Infrastructure.Migrations
 
                     b.HasIndex("MaKhoXuat");
 
+                    b.HasIndex("MaKhoaNhan");
+
                     b.HasIndex("MaNguoiXuat");
 
                     b.HasIndex("MaPhieu")
                         .IsUnique();
 
                     b.HasIndex("NgayXuat");
+
+                    b.HasIndex("NguoiNhanId");
+
+                    b.HasIndex("LoaiXuat", "TrangThaiXuat", "MaKhoaNhan")
+                        .HasDatabaseName("IX_PhieuXuatKho_LoaiXuat_TrangThai_Khoa");
 
                     b.ToTable("PhieuXuatKho", (string)null);
                 });
@@ -4817,6 +4863,11 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Inventory.Item", "ItemYeuCau")
+                        .WithMany()
+                        .HasForeignKey("MaItemYeuCau")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ClinicManagement.Domain.Inventory.PhieuXuatKho", "PhieuXuatKho")
                         .WithMany("ChiTietXuatKhos")
                         .HasForeignKey("MaPhieuXuat")
@@ -4824,6 +4875,8 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ChiTietNhapKho");
+
+                    b.Navigation("ItemYeuCau");
 
                     b.Navigation("PhieuXuatKho");
                 });
@@ -4977,17 +5030,31 @@ namespace ClinicManagement.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Facility.Khoa", "KhoaNhan")
+                        .WithMany()
+                        .HasForeignKey("MaKhoaNhan")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NguoiXuat")
                         .WithMany()
                         .HasForeignKey("MaNguoiXuat")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ClinicManagement.Domain.Identity.NhanVien", "NguoiNhan")
+                        .WithMany()
+                        .HasForeignKey("NguoiNhanId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("DonThuoc");
 
                     b.Navigation("KhoNhan");
 
                     b.Navigation("KhoXuat");
+
+                    b.Navigation("KhoaNhan");
+
+                    b.Navigation("NguoiNhan");
 
                     b.Navigation("NguoiXuat");
                 });

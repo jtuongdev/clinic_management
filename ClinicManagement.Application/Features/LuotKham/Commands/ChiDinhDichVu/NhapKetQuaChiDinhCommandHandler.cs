@@ -88,17 +88,20 @@ namespace ClinicManagement.Application.Features.LuotKham.Commands.ChiDinhDichVu
                     !string.IsNullOrWhiteSpace(item.KetLuan) ? item.KetLuan : "Bình thường",
                     item.UrlKetQua);
 
-                // Tự động trừ vật tư tiêu hao nếu trước đó chưa hoàn thành
-                if (previousStatus != TrangThaiChiDinhDichVu.DaCoKetQua && _khoRepository != null)
-                {
-                    await DinhMucVatTuHelper.DeductSuppliesForServiceAsync(
-                        _khoRepository,
-                        item,
-                        userId,
-                        _inventorySettings?.DefaultWarehouseId ?? 1,
-                        _logger,
-                        cancellationToken);
-                }
+                // ⚠️ AUTO-DEDUCT ĐÃ TẮT — Chuyển sang mô hình xuất cấp phát nội bộ theo Khoa/Phòng.
+                // Vật tư tiêu hao được quản lý qua PhieuXuatKho.LoaiXuat = XUAT_NOI_BO_KHOA_PHONG.
+                // Tham chiếu: CapPhatKhoa.InventoryController.cs / DepartmentDispense.KhoService.cs
+                //
+                // if (previousStatus != TrangThaiChiDinhDichVu.DaCoKetQua && _khoRepository != null)
+                // {
+                //     await DinhMucVatTuHelper.DeductSuppliesForServiceAsync(
+                //         _khoRepository,
+                //         item,
+                //         userId,
+                //         _inventorySettings?.DefaultWarehouseId ?? 1,
+                //         _logger,
+                //         cancellationToken);
+                // }
             }
             else
             {

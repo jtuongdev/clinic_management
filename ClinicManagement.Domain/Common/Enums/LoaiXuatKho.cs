@@ -10,6 +10,8 @@ namespace ClinicManagement.Domain.Common.Enums
         XUAT_DON = 6,
         XUAT_THU_THUAT = 7,
         DIEU_CHINH = 8,
-        HUY = 9
+        HUY = 9,
+        /// <summary>Xuất cấp phát tủ trực cho Khoa/Phòng — có quy trình duyệt và xác nhận nhận hàng.</summary>
+        XUAT_NOI_BO_KHOA_PHONG = 10
     }
 }

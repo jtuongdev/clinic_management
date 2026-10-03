@@ -15,6 +15,7 @@ namespace ClinicManagement.Domain.Patient
         public decimal MucHuong { get; set; }
         public virtual BenhNhan BenhNhan { get; set; } = null!;
 
-        public bool IsValid() => NgayBatDau <= DateTime.UtcNow.Date && NgayKetThuc >= DateTime.UtcNow.Date;
+        public bool IsValid() => NgayBatDau.Date <= DateTime.UtcNow.Date && NgayKetThuc.Date >= DateTime.UtcNow.Date;
+        public bool IsValidAt(DateTime date) => NgayBatDau.Date <= date.Date && NgayKetThuc.Date >= date.Date;
     }
 }

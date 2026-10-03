@@ -5,6 +5,8 @@ namespace ClinicManagement.Domain.Repositories;
 
 public interface IHoaDonRepository
 {
+    IQueryable<HoaDon> GetQueryable();
+    IQueryable<CongNoBenhNhan> GetCongNoQueryable();
     Task<HoaDon?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<HoaDon?> GetBySoHoaDonAsync(string soHoaDon, CancellationToken cancellationToken = default);
     Task<HoaDon?> GetByLuotKhamAsync(int maLuotKham, CancellationToken cancellationToken = default);

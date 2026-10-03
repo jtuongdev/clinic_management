@@ -27,7 +27,7 @@ namespace ClinicManagement.API.Controllers
             return Success(result);
         }
         [HttpGet("dropdown")]
-        public async Task<IActionResult> GetDropdown([FromQuery] int maKhoa)
+        public async Task<IActionResult> GetDropdown([FromQuery] int? maKhoa = null)
         {
             var query = new LayDanhSachPhongKhamDropdownQuery { MaKhoa = maKhoa };
             var result = await _mediator.Send(query);

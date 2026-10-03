@@ -43,6 +43,21 @@ namespace ClinicManagement.Application.Features.NhanVien.Commands
                 request.ChuyenKhoa.Trim(),
                 licenseNumber);
 
+            if (request.MaKhoa.HasValue && request.MaKhoa.Value > 0)
+            {
+                employee.NhanVienKhoa.Add(new ClinicManagement.Domain.Identity.NhanVienKhoa
+                {
+                    MaKhoa = request.MaKhoa.Value,
+                    TuNgay = DateTime.UtcNow.Date,
+                    LaKhoaChinh = true
+                });
+            }
+
+            if (request.LuongCoBan.HasValue && request.LuongCoBan.Value >= 0)
+            {
+                employee.SetSalary(request.LuongCoBan.Value);
+            }
+
             await repository.AddAsync(employee);
             await repository.UnitOfWork.SaveChangesAsync(cancellationToken);
             var result = await repository.GetDetailByIdAsync(employee.Id, cancellationToken);

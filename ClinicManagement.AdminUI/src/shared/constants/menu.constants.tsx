@@ -3,7 +3,6 @@ import {
   Users,
   Stethoscope,
   CalendarCheck,
-  Bed,
   FileText,
   Receipt,
   HandCoins,
@@ -62,14 +61,6 @@ export const menuGroups: MenuGroup[] = [
         icon: <CalendarCheck size={18} />,
         label: 'Lịch hẹn',
         path: '/appointment',
-      },
-      {
-        key: 'inpatient',
-        icon: <Bed size={18} />,
-        label: 'Nội trú',
-        path: '/inpatient',
-        badge: '32',
-        badgeColor: 'blue',
       },
     ],
   },
@@ -175,14 +166,7 @@ export const getSubMenuItems = (key: string): SubMenuItem[] => {
     ],
     
     appointments: [
-      { key: 'appointment-list', label: 'Danh sách', path: '/appointments' },
-      { key: 'appointment-add', label: 'Tạo lịch hẹn', path: '/appointments/add' },
-      { key: 'appointment-doctor', label: 'Lịch bác sĩ', path: '/appointments/doctor' },
-    ],
-    inpatient: [
-      { key: 'inpatient-rooms', label: 'Phòng giường', path: '/inpatient/rooms' },
-      { key: 'inpatient-treatment', label: 'Điều trị', path: '/inpatient/treatment' },
-      { key: 'inpatient-discharge', label: 'Xuất viện', path: '/inpatient/discharge' },
+      { key: 'appointment-list', label: 'Danh sách lịch hẹn', path: '/appointment' },
     ],
     invoices: [
       { key: 'invoice-list', label: 'Danh sách', path: '/invoices' },

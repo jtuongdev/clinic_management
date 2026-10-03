@@ -31,6 +31,8 @@ export const billingRoutes = [
     element: <BillingManagementPage />,
     children: [
       { index: true, element: withSuspense(<DebtManagementPage />) },
+      { path: 'patient', element: withSuspense(<DebtManagementPage />) },
+      { path: 'supplier', element: withSuspense(<DebtManagementPage />) },
     ],
   },
   {
@@ -41,6 +43,8 @@ export const billingRoutes = [
       { path: 'invoices', element: withSuspense(<InvoiceListPage />) },
       { path: 'receipts', element: withSuspense(<ReceiptListPage />) },
       { path: 'debts', element: withSuspense(<DebtManagementPage />) },
+      { path: 'debts/patient', element: withSuspense(<DebtManagementPage />) },
+      { path: 'debts/supplier', element: withSuspense(<DebtManagementPage />) },
     ],
   },
 ];

@@ -20,6 +20,8 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         public Task<LuotKham?> GetForCompletionAsync(
             int id, CancellationToken cancellationToken = default)
             => _context.LuotKhams
+                .Include(l => l.BenhNhan)
+                    .ThenInclude(bn => bn.BaoHiems)
                 .Include(l => l.HoaDons)
                 .Include(l => l.ChanDoans)
                 .Include(l => l.DonThuocs)

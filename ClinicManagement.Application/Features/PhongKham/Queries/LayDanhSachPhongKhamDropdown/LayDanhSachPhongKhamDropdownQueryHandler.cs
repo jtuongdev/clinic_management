@@ -21,13 +21,16 @@ namespace ClinicManagement.Application.Features.PhongKham.Queries
             LayDanhSachPhongKhamDropdownQuery request,
             CancellationToken cancellationToken)
         {
-            var phongKhams = await _phongKhamRepo.GetByKhoaAsync(request.MaKhoa);
+            var phongKhams = request.MaKhoa.HasValue && request.MaKhoa.Value > 0
+                ? await _phongKhamRepo.GetByKhoaAsync(request.MaKhoa.Value)
+                : await _phongKhamRepo.GetActiveAsync();
 
             return phongKhams.Select(p => new PhongKhamDropdownDto
             {
                 Id = p.Id,
                 Ten = p.Ten,
-                Ma = p.Ma
+                Ma = p.Ma,
+                MaKhoa = p.MaKhoa
             }).ToList();
         }
     }

@@ -112,7 +112,7 @@ namespace ClinicManagement.Domain.Billing
             }
 
             // Cập nhật trạng thái thanh toán
-            if (DaThanhToan >= SoTienBenhNhanChiTra && SoTienBenhNhanChiTra > 0)
+            if ((DaThanhToan >= SoTienBenhNhanChiTra && SoTienBenhNhanChiTra > 0) || (SoTienBenhNhanChiTra == 0 && TongTien > 0))
                 TrangThai = TrangThaiHoaDon.DA_THANH_TOAN;
             else if (DaThanhToan > 0)
                 TrangThai = TrangThaiHoaDon.THANH_TOAN_MOT_PHAN;

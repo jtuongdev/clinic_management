@@ -33,6 +33,7 @@ namespace ClinicManagement.Application.Services
                     ["cls"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["inventory"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["billing"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
+                    ["finance"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["audit"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["settings"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["hr"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET]
@@ -190,7 +191,9 @@ namespace ClinicManagement.Application.Services
 
             if (requestedAction.HasValue && permissions.Count > 0)
             {
-                var match = permissions.FirstOrDefault(x => x.PhanHe == normalizedPhanHe && x.HanhDong == requestedAction.Value);
+                var match = permissions.FirstOrDefault(x => 
+                    (x.PhanHe == normalizedPhanHe || (normalizedPhanHe == "finance" && x.PhanHe == "billing")) 
+                    && x.HanhDong == requestedAction.Value);
                 if (match != null)
                 {
                     bool scopeAllowed = IsScopeAllowed(match.PhamViDuLieu, phamViDuLieu);
@@ -203,7 +206,7 @@ namespace ClinicManagement.Application.Services
             return DefaultRoleMatrix
                 .Where(role => roleNames.Any(name => IsRoleMatching(name, role)))
                 .SelectMany(role => role.PhanQuyen)
-                .Any(x => string.Equals(x.Key, normalizedPhanHe, StringComparison.OrdinalIgnoreCase)
+                .Any(x => (string.Equals(x.Key, normalizedPhanHe, StringComparison.OrdinalIgnoreCase) || (normalizedPhanHe == "finance" && string.Equals(x.Key, "billing", StringComparison.OrdinalIgnoreCase)))
                     && x.Value.Any(value => string.Equals(value.ToString(), normalizedHanhDong, StringComparison.OrdinalIgnoreCase)));
         }
 

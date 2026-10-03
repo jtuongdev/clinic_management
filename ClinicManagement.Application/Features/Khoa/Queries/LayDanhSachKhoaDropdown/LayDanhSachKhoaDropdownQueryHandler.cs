@@ -28,7 +28,9 @@ public class LayDanhSachKhoaDropdownQueryHandler
             .Select(x => new KhoaDropdownDto
             {
                 Id = x.Id,
-                Ten = x.Ten
+                Ma = x.Ma ?? string.Empty,
+                Ten = x.Ten,
+                MaCoSo = x.MaCoSo
             })
             .ToList();
     }

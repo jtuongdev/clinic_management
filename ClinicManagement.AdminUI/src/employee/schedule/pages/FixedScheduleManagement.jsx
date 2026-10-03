@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   Alert,
   Button,
@@ -25,7 +25,10 @@ import {
   Sparkles,
   UserCheck
 } from 'lucide-react';
+import { HolderOutlined, SearchOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useExcelGridResizer } from '../../../shared/hooks/useExcelGridResizer';
+import '../../../styles/excel-grid.css';
 
 const dateFormat = 'YYYY-MM-DD';
 const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
@@ -247,77 +250,226 @@ export const FixedScheduleManagement = ({
 
   const getDayName = (value) => (value === 0 ? 'Chủ nhật' : dayNames[value - 1]);
 
-  const fixedColumns = [
-    {
-      title: 'Nhân viên',
-      dataIndex: 'tenNhanVien',
-      render: (val, row) => (
-        <span style={{ fontWeight: 600, color: '#0f172a' }}>
-          {val || `NV #${row.maNhanVien}`}
-        </span>
-      ),
-    },
-    {
-      title: 'Thứ',
-      dataIndex: 'thuTrongTuan',
-      render: (value) => (
-        <Tag color={value === 0 ? 'magenta' : 'geekblue'}>
-          {getDayName(value) || value}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Ca trực',
-      dataIndex: 'tenCa',
-      render: (val) => <Tag color="blue">{val || 'Ca trực'}</Tag>,
-    },
-    {
-      title: 'Phòng khám',
-      dataIndex: 'tenPhongKham',
-      render: (value) => value ? <Tag color="cyan">{value}</Tag> : <span style={{ color: '#94a3b8' }}>-</span>,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      render: (val) => (
-        <Tag color={val !== false ? 'green' : 'default'}>
-          {val !== false ? 'Đang áp dụng' : 'Tạm dừng'}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Hiệu lực',
-      render: (_, row) => (
-        <span style={{ fontSize: 13, color: '#475569' }}>
-          {dayjs(row.tuNgay).format('DD/MM/YYYY')} -{' '}
-          {row.denNgay ? dayjs(row.denNgay).format('DD/MM/YYYY') : 'Vô thời hạn'}
-        </span>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      render: (_, row) => (
-        <Space>
-          <Button size="small" onClick={() => openFixedModal(row)}>
-            Sửa
-          </Button>
-          <Button
-            size="small"
-            icon={<CalendarCheck size={12} />}
-            onClick={() => openWeeklyMatrixModal(row.maNhanVien)}
-          >
-            Lịch tuần
-          </Button>
-          <Button size="small" danger onClick={() => removeFixed(row.id)}>
-            Xóa
-          </Button>
-        </Space>
-      ),
-    },
+  const ALL_COLUMNS = [
+    { key: 'stt', label: 'STT', align: 'center', isFixed: true },
+    { key: 'tenNhanVien', label: 'NHÂN VIÊN', align: 'left' },
+    { key: 'thuTrongTuan', label: 'THỨ', align: 'center' },
+    { key: 'tenCa', label: 'CA TRỰC', align: 'center' },
+    { key: 'tenPhongKham', label: 'PHÒNG KHÁM', align: 'center' },
+    { key: 'isActive', label: 'TRẠNG THÁI', align: 'center' },
+    { key: 'hieuLuc', label: 'HIỆU LỰC', align: 'center' },
+    { key: 'thaoTac', label: 'THAO TÁC', align: 'center', isFixed: true },
   ];
 
+  const DEFAULT_COL_ORDER = [
+    'stt',
+    'tenNhanVien',
+    'thuTrongTuan',
+    'tenCa',
+    'tenPhongKham',
+    'isActive',
+    'hieuLuc',
+    'thaoTac',
+  ];
+
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [keywordInput, setKeywordInput] = useState('');
+  const [dayFilter, setDayFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  const { colWidths, startColResize } = useExcelGridResizer({
+    stt: 50,
+    tenNhanVien: 200,
+    thuTrongTuan: 110,
+    tenCa: 130,
+    tenPhongKham: 160,
+    isActive: 130,
+    hieuLuc: 180,
+    thaoTac: 180,
+  });
+
+  const [colOrder, setColOrder] = useState(DEFAULT_COL_ORDER);
+  const [draggedCol, setDraggedCol] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+
+  const handleColDragStart = (e, colKey) => {
+    if (colKey === 'stt' || colKey === 'thaoTac') return;
+    setDraggedCol(colKey);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleColDragOver = (e, colKey) => {
+    e.preventDefault();
+    if (colKey === 'stt' || colKey === 'thaoTac' || !draggedCol || draggedCol === colKey) return;
+    setDragOverCol(colKey);
+  };
+
+  const handleColDrop = (e, targetCol) => {
+    e.preventDefault();
+    if (!draggedCol || draggedCol === targetCol || targetCol === 'stt' || targetCol === 'thaoTac') {
+      setDraggedCol(null);
+      setDragOverCol(null);
+      return;
+    }
+    const newOrder = [...colOrder];
+    const fromIdx = newOrder.indexOf(draggedCol);
+    const toIdx = newOrder.indexOf(targetCol);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, draggedCol);
+      setColOrder(newOrder);
+    }
+    setDraggedCol(null);
+    setDragOverCol(null);
+  };
+
+  // TDZ-safe: displayedSchedules before orderedSchedules
+  const displayedSchedules = useMemo(() => {
+    let list = fixedSchedules || [];
+    if (dayFilter !== '') {
+      list = list.filter((item) => String(item.thuTrongTuan) === String(dayFilter));
+    }
+    if (statusFilter !== '') {
+      list = list.filter((item) => (statusFilter === 'active' ? item.isActive !== false : item.isActive === false));
+    }
+    if (searchKeyword.trim()) {
+      const q = searchKeyword.toLowerCase().trim();
+      list = list.filter((item) =>
+        item.tenNhanVien?.toLowerCase().includes(q) ||
+        item.tenCa?.toLowerCase().includes(q) ||
+        item.tenPhongKham?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [fixedSchedules, dayFilter, statusFilter, searchKeyword]);
+
+  // Row reordering
+  const [orderedSchedules, setOrderedSchedules] = useState([]);
+  const [draggedRowId, setDraggedRowId] = useState(null);
+
+  useEffect(() => {
+    setOrderedSchedules(displayedSchedules);
+  }, [displayedSchedules]);
+
+  const handleRowDragStart = (e, id) => {
+    setDraggedRowId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleRowDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleRowDrop = (e, targetId) => {
+    e.preventDefault();
+    if (!draggedRowId || draggedRowId === targetId) {
+      setDraggedRowId(null);
+      return;
+    }
+    const current = [...orderedSchedules];
+    const fromIdx = current.findIndex((i) => i.id === draggedRowId);
+    const toIdx = current.findIndex((i) => i.id === targetId);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const [moved] = current.splice(fromIdx, 1);
+      current.splice(toIdx, 0, moved);
+      setOrderedSchedules(current);
+    }
+    setDraggedRowId(null);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearchKeyword(keywordInput);
+    setPageIndex(1);
+  };
+
+  const renderCellContent = (colKey, row, index) => {
+    switch (colKey) {
+      case 'stt':
+        return (
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <span title="Kéo thả đổi vị trí dòng" style={{ cursor: 'grab', color: '#94a3b8' }}>
+              <HolderOutlined style={{ fontSize: 11 }} />
+            </span>
+            <span style={{ fontWeight: 600, color: '#475569' }}>
+              {(pageIndex - 1) * pageSize + index + 1}
+            </span>
+          </div>
+        );
+
+      case 'tenNhanVien':
+        return (
+          <span
+            style={{ fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}
+            title={row.tenNhanVien}
+          >
+            {row.tenNhanVien || `NV #${row.maNhanVien}`}
+          </span>
+        );
+
+      case 'thuTrongTuan':
+        return (
+          <Tag color={row.thuTrongTuan === 0 ? 'magenta' : 'geekblue'} style={{ margin: 0, fontSize: 11 }}>
+            {getDayName(row.thuTrongTuan) || row.thuTrongTuan}
+          </Tag>
+        );
+
+      case 'tenCa':
+        return <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>{row.tenCa || 'Ca trực'}</Tag>;
+
+      case 'tenPhongKham':
+        return row.tenPhongKham ? <Tag color="cyan" style={{ margin: 0, fontSize: 11 }}>{row.tenPhongKham}</Tag> : <span style={{ color: '#94a3b8' }}>-</span>;
+
+      case 'isActive':
+        return (
+          <Tag color={row.isActive !== false ? 'green' : 'default'} style={{ margin: 0, fontSize: 11 }}>
+            {row.isActive !== false ? 'Đang áp dụng' : 'Tạm dừng'}
+          </Tag>
+        );
+
+      case 'hieuLuc':
+        return (
+          <span style={{ fontSize: 12, color: '#475569', whiteSpace: 'nowrap' }}>
+            {dayjs(row.tuNgay).format('DD/MM/YYYY')} -{' '}
+            {row.denNgay ? dayjs(row.denNgay).format('DD/MM/YYYY') : 'Vô thời hạn'}
+          </span>
+        );
+
+      case 'thaoTac':
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Button size="small" style={{ fontSize: 11, height: 24, padding: '0 8px' }} onClick={() => openFixedModal(row)}>
+              Sửa
+            </Button>
+            <Button
+              size="small"
+              icon={<CalendarCheck size={12} />}
+              style={{ fontSize: 11, height: 24, padding: '0 8px' }}
+              onClick={() => openWeeklyMatrixModal(row.maNhanVien)}
+            >
+              Lịch tuần
+            </Button>
+            <Button size="small" danger style={{ fontSize: 11, height: 24, padding: '0 8px' }} onClick={() => removeFixed(row.id)}>
+              Xóa
+            </Button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const totalRecords = displayedSchedules.length;
+  const totalPages = Math.ceil(totalRecords / pageSize) || 1;
+  const paginatedSchedules = orderedSchedules.slice((pageIndex - 1) * pageSize, pageIndex * pageSize);
+  const startItemIdx = totalRecords === 0 ? 0 : (pageIndex - 1) * pageSize + 1;
+  const endItemIdx = Math.min(pageIndex * pageSize, totalRecords);
+
   return (
-    <div className="fixed-schedule-container">
+    <div className="fixed-schedule-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div className="fixed-schedule-header">
         <div className="fixed-schedule-title">
           <strong style={{ fontSize: 16, color: '#0b2a3c', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -423,16 +575,422 @@ export const FixedScheduleManagement = ({
         />
       ) : null}
 
-      <Table
-        className="fixed-schedule-table"
-        rowKey="id"
-        loading={fixedLoading}
-        dataSource={fixedSchedules}
-        columns={fixedColumns}
-        pagination={{ pageSize: 15, showTotal: (t) => `Tổng cộng ${t} lịch cố định` }}
-        locale={{ emptyText: 'Chưa có khuôn mẫu lịch cố định nào cho khoa này.' }}
-        style={{ border: '1px solid #e9edf4', borderRadius: 10, overflow: 'hidden', marginTop: 12 }}
-      />
+      {/* ── HIGH DENSITY TOOLBAR ────────────────────────────────────────────── */}
+      <div
+        style={{
+          minHeight: 44,
+          padding: '6px 14px',
+          borderBottom: '1px solid #e2e8f0',
+          background: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+          flexShrink: 0,
+          marginTop: 8,
+          marginBottom: 10,
+          borderRadius: 6,
+          border: '1px solid #e2e8f0',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <form onSubmit={handleSearchSubmit} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: 5,
+                padding: '0 8px',
+                height: 30,
+                gap: 6,
+                width: 220,
+              }}
+            >
+              <SearchOutlined style={{ fontSize: 13, color: '#94a3b8' }} />
+              <input
+                type="text"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                placeholder="Tìm nhân viên, ca, phòng..."
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  fontSize: 12,
+                  color: '#0f172a',
+                  width: '100%',
+                }}
+              />
+              {keywordInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setKeywordInput('');
+                    setSearchKeyword('');
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Xoá tìm kiếm"
+                >
+                  <CloseOutlined style={{ fontSize: 10 }} />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              style={{
+                height: 30,
+                padding: '0 10px',
+                borderRadius: 5,
+                border: 'none',
+                background: '#0b4f6c',
+                color: '#ffffff',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Lọc
+            </button>
+          </form>
+
+          <select
+            value={dayFilter}
+            onChange={(e) => {
+              setDayFilter(e.target.value);
+              setPageIndex(1);
+            }}
+            style={{
+              height: 30,
+              borderRadius: 5,
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              fontSize: 12,
+              color: '#334155',
+              padding: '0 8px',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="">Tất cả các thứ</option>
+            <option value="1">Thứ 2</option>
+            <option value="2">Thứ 3</option>
+            <option value="3">Thứ 4</option>
+            <option value="4">Thứ 5</option>
+            <option value="5">Thứ 6</option>
+            <option value="6">Thứ 7</option>
+            <option value="0">Chủ nhật</option>
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPageIndex(1);
+            }}
+            style={{
+              height: 30,
+              borderRadius: 5,
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              fontSize: 12,
+              color: '#334155',
+              padding: '0 8px',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang áp dụng</option>
+            <option value="inactive">Tạm dừng</option>
+          </select>
+
+          {(searchKeyword || keywordInput || dayFilter || statusFilter) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchKeyword('');
+                setKeywordInput('');
+                setDayFilter('');
+                setStatusFilter('');
+                setPageIndex(1);
+              }}
+              style={{
+                height: 30,
+                padding: '0 8px',
+                borderRadius: 5,
+                border: '1px dashed #ef4444',
+                background: '#fef2f2',
+                color: '#ef4444',
+                fontSize: 12,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+              title="Khôi phục bộ lọc"
+            >
+              <CloseOutlined style={{ fontSize: 10 }} />
+              <span>Đặt lại</span>
+            </button>
+          )}
+        </div>
+
+        <div>
+          <span
+            style={{
+              fontSize: 12,
+              color: '#475569',
+              background: '#f1f5f9',
+              padding: '3px 8px',
+              borderRadius: 4,
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            Tổng: <strong>{totalRecords}</strong> lịch cố định
+          </span>
+        </div>
+      </div>
+
+      {/* ── EXCEL DATA GRID CONTAINER (RESIZE, REORDER) ───────────────────────── */}
+      <div
+        className="w-full flex-1 min-h-0 bg-white border border-slate-300 rounded-lg shadow-sm overflow-x-auto overflow-y-auto excel-grid-container"
+        style={{ margin: 0 }}
+      >
+        <table className="excel-table w-full min-w-full">
+          <colgroup>
+            {colOrder.map((colKey) => (
+              <col
+                key={colKey}
+                style={{
+                  width: colWidths[colKey] || 100,
+                  minWidth: colKey === 'thaoTac' ? colWidths.thaoTac : undefined,
+                }}
+              />
+            ))}
+          </colgroup>
+
+          {/* Sticky Header */}
+          <thead style={{ position: 'sticky', top: 0, zIndex: 15 }}>
+            <tr className="h-9">
+              {colOrder.map((colKey) => {
+                const colDef = ALL_COLUMNS.find((c) => c.key === colKey);
+                if (!colDef) return null;
+                const isDragging = draggedCol === colKey;
+                const isDragOver = dragOverCol === colKey;
+                const isFixed = colDef.isFixed;
+
+                return (
+                  <th
+                    key={colKey}
+                    className={`${colKey === 'stt' ? 'col-stt' : ''} text-${colDef.align}`}
+                    style={{
+                      width: colWidths[colKey] || 100,
+                      cursor: !isFixed ? 'grab' : 'default',
+                      userSelect: 'none',
+                      backgroundColor: isDragging ? '#e2e8f0' : undefined,
+                      borderLeft: isDragOver ? '2px solid #2563eb' : undefined,
+                    }}
+                    draggable={!isFixed}
+                    onDragStart={(e) => handleColDragStart(e, colKey)}
+                    onDragOver={(e) => handleColDragOver(e, colKey)}
+                    onDrop={(e) => handleColDrop(e, colKey)}
+                    title={!isFixed ? 'Bấm giữ và kéo thả để đổi thứ tự cột' : undefined}
+                  >
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        width: '100%',
+                        justifyContent:
+                          colDef.align === 'center'
+                            ? 'center'
+                            : colDef.align === 'right'
+                            ? 'flex-end'
+                            : 'flex-start',
+                      }}
+                    >
+                      {!isFixed && (
+                        <HolderOutlined style={{ fontSize: 10, color: '#94a3b8', cursor: 'grab' }} />
+                      )}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {colDef.label}
+                      </span>
+                    </div>
+                    <div className="col-resizer" onMouseDown={(e) => startColResize(colKey, e)} />
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+
+          {/* Dữ liệu các dòng */}
+          <tbody>
+            {fixedLoading ? (
+              <tr>
+                <td colSpan={colOrder.length} style={{ padding: 40, textAlign: 'center', background: '#fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#64748b' }}>
+                    <span style={{ fontSize: 18 }}>⏳</span>
+                    <span>Đang nạp dữ liệu lịch cố định...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedSchedules.length === 0 ? (
+              <tr>
+                <td colSpan={colOrder.length} style={{ padding: 40, textAlign: 'center', background: '#fff' }}>
+                  <span style={{ color: '#64748b', fontSize: 13 }}>Chưa có khuôn mẫu lịch cố định nào phù hợp.</span>
+                </td>
+              </tr>
+            ) : (
+              paginatedSchedules.map((row, index) => {
+                const isRowDragging = draggedRowId === row.id;
+                return (
+                  <tr
+                    key={row.id}
+                    className="h-9 hover:bg-slate-50 transition-colors"
+                    style={{
+                      opacity: isRowDragging ? 0.35 : 1,
+                      backgroundColor: isRowDragging ? '#f1f5f9' : undefined,
+                    }}
+                    draggable
+                    onDragStart={(e) => handleRowDragStart(e, row.id)}
+                    onDragOver={handleRowDragOver}
+                    onDrop={(e) => handleRowDrop(e, row.id)}
+                  >
+                    {colOrder.map((colKey) => {
+                      const colDef = ALL_COLUMNS.find((c) => c.key === colKey);
+                      if (!colDef) return null;
+                      return (
+                        <td
+                          key={colKey}
+                          className={`${colKey === 'stt' ? 'col-stt' : ''} text-${colDef.align}`}
+                          style={{
+                            width: colWidths[colKey] || 100,
+                            padding: '4px 8px',
+                            verticalAlign: 'middle',
+                          }}
+                        >
+                          {renderCellContent(colKey, row, index)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── FOOTER PAGINATION BAR ────────────────────────────────────────────── */}
+      <div
+        style={{
+          height: 40,
+          minHeight: 40,
+          borderTop: '1px solid #e2e8f0',
+          background: '#f8fafc',
+          padding: '0 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
+          marginTop: 8,
+          borderRadius: 6,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: '#64748b' }}>
+            Hiển thị <strong>{startItemIdx}</strong> - <strong>{endItemIdx}</strong> /{' '}
+            <strong>{totalRecords}</strong> lịch cố định
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Cỡ trang:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPageIndex(1);
+              }}
+              style={{
+                height: 26,
+                borderRadius: 4,
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                fontSize: 12,
+                color: '#334155',
+                padding: '0 6px',
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <option value={10}>10 dòng</option>
+              <option value={15}>15 dòng</option>
+              <option value={30}>30 dòng</option>
+              <option value={50}>50 dòng</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              disabled={pageIndex <= 1}
+              onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
+              style={{
+                height: 26,
+                padding: '0 8px',
+                borderRadius: 4,
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                fontSize: 12,
+                color: '#334155',
+                cursor: pageIndex <= 1 ? 'not-allowed' : 'pointer',
+                opacity: pageIndex <= 1 ? 0.4 : 1,
+              }}
+              title="Trang trước"
+            >
+              ‹ Trước
+            </button>
+
+            <span style={{ fontSize: 12, color: '#475569' }}>
+              Trang <strong>{pageIndex}</strong> / <strong>{totalPages}</strong>
+            </span>
+
+            <button
+              type="button"
+              disabled={pageIndex >= totalPages}
+              onClick={() => setPageIndex((p) => Math.min(totalPages, p + 1))}
+              style={{
+                height: 26,
+                padding: '0 8px',
+                borderRadius: 4,
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                fontSize: 12,
+                color: '#334155',
+                cursor: pageIndex >= totalPages ? 'not-allowed' : 'pointer',
+                opacity: pageIndex >= totalPages ? 0.4 : 1,
+              }}
+              title="Trang sau"
+            >
+              Sau ›
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* --- MODAL 1: CẤU HÌNH LỊCH TUẦN NHÂN VIÊN (WEEKLY MATRIX) --- */}
       {weeklyModalOpen && (
@@ -754,7 +1312,11 @@ export const FixedScheduleManagement = ({
       >
         <Form form={fixedForm} layout="vertical" onFinish={submitFixed}>
           <Form.Item name="maNhanVien" label="Nhân viên" rules={[{ required: true, message: 'Chọn nhân viên.' }]}>
-            <Select options={employees.map((item) => ({ value: item.id, label: `${item.hoTen} (@${item.username})` }))} />
+            <Select
+              showSearch
+              optionFilterProp="label"
+              options={employees.map((item) => ({ value: item.id, label: `${item.hoTen} (@${item.maNhanVien || item.username}) - ${item.chucVu || 'Nhân viên'}` }))}
+            />
           </Form.Item>
           <Form.Item name="thuTrongTuan" label="Thứ trong tuần" rules={[{ required: true }]}>
             <Select options={dayOptions} />
@@ -786,7 +1348,12 @@ export const FixedScheduleManagement = ({
       <Modal title="Thêm nhiều lịch cố định" open={bulkOpen} onCancel={() => setBulkOpen(false)} footer={null}>
         <Form form={bulkForm} layout="vertical" onFinish={submitBulk}>
           <Form.Item name="maNhanVien" label="Nhân viên" rules={[{ required: true, message: 'Chọn ít nhất một nhân viên.' }]}>
-            <Select mode="multiple" options={employees.map((item) => ({ value: item.id, label: `${item.hoTen} (@${item.username})` }))} />
+            <Select
+              mode="multiple"
+              showSearch
+              optionFilterProp="label"
+              options={employees.map((item) => ({ value: item.id, label: `${item.hoTen} (@${item.maNhanVien || item.username}) - ${item.chucVu || 'Nhân viên'}` }))}
+            />
           </Form.Item>
           <Form.Item name="thuTrongTuan" label="Các thứ áp dụng" rules={[{ required: true, message: 'Chọn ít nhất một thứ.' }]}>
             <Select mode="multiple" options={dayOptions} />

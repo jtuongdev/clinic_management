@@ -17,6 +17,12 @@ namespace ClinicManagement.Application.DTOs.BenhNhan
         public decimal DaThanhToan { get; set; }
         public string TrangThai { get; set; } = string.Empty;
         public string GhiChu { get; set; } = string.Empty;
+        public string? SoTheBHYT { get; set; }
+        public string? TenNhaCungCapBHYT { get; set; }
+        public decimal? MucHuongBHYT { get; set; }
+        public DateTime? NgayBatDauBHYT { get; set; }
+        public DateTime? NgayKetThucBHYT { get; set; }
+        public bool? BHYTConHan { get; set; }
 
         public List<ChiTietHoaDonDto> ChiTiet { get; set; } = new();
         public List<PhieuThuDto> PhieuThus { get; set; } = new();

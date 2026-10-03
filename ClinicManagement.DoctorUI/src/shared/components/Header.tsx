@@ -25,6 +25,7 @@ const Header: React.FC = () => {
   const navItems = [
     { path: '/overview', label: 'Tổng quan', icon: 'fa-gauge-high' },
     { path: '/queue', label: 'Hàng đợi khám', icon: 'fa-list-ol' },
+    { path: '/appointments', label: 'Lịch hẹn', icon: 'fa-calendar-days' },
     { path: '/exam', label: 'Khám bệnh', icon: 'fa-stethoscope' },
     { path: '/schedule', label: 'Lịch & Chấm công', icon: 'fa-calendar-check' },
     { path: '/payslips', label: 'Bảng lương', icon: 'fa-file-invoice-dollar' },

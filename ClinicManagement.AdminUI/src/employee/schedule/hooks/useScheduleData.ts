@@ -24,6 +24,7 @@ export const useScheduleData = () => {
   const { message, modal } = App.useApp();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [coSos, setCoSos] = useState<CoSoDropdownDto[]>([]);
   const [khoas, setKhoas] = useState<KhoaDropdownDto[]>([]);
@@ -98,25 +99,36 @@ export const useScheduleData = () => {
     let active = true;
     const fetchInitialData = async (): Promise<void> => {
       try {
-        const [employeeResponse, shiftResponse] = await Promise.all([
-          scheduleApi.getEmployees(selectedKhoa),
+        const [employeeResponse, shiftResponse, allEmpResponse] = await Promise.all([
+          scheduleApi.getEmployees(selectedKhoa, selectedCoSo),
           scheduleApi.getShifts(),
+          scheduleApi.getEmployees(undefined, selectedCoSo),
         ]);
         if (!active) return;
-        let empList = employeeResponse.data.data?.items || [];
+        const allRaw = allEmpResponse.data?.data;
+        const allList: Employee[] = Array.isArray(allRaw) ? allRaw : ((allRaw as any)?.items || []);
+        const normalizedAll = allList.map((e: any) => ({
+          ...e,
+          username: e.username || e.maNhanVien || '',
+          maNhanVien: e.maNhanVien || e.username || '',
+          chucVu: e.chucVu || e.tenChucVu || 'Nhân viên',
+        }));
+        setAllEmployees(normalizedAll);
+
+        const raw = employeeResponse.data?.data;
+        let empList: Employee[] = Array.isArray(raw) ? raw : ((raw as any)?.items || []);
         if (empList.length === 0 && selectedKhoa) {
-          // Fallback: nếu khoa chưa có nhân viên liên kết qua bảng NhanVienKhoa,
-          // tự động lấy toàn bộ nhân viên hoạt động để người quản lý có thể phân ca
-          try {
-            const allEmpRes = await scheduleApi.getEmployees();
-            if (active && allEmpRes.data.data?.items?.length) {
-              empList = allEmpRes.data.data.items;
-            }
-          } catch {
-            // ignore fallback error
+          if (normalizedAll.length > 0) {
+            empList = normalizedAll;
           }
         }
-        setEmployees(empList);
+        const normalizedEmployees = empList.map((e: any) => ({
+          ...e,
+          username: e.username || e.maNhanVien || '',
+          maNhanVien: e.maNhanVien || e.username || '',
+          chucVu: e.chucVu || e.tenChucVu || 'Nhân viên',
+        }));
+        setEmployees(normalizedEmployees);
         setShifts(shiftResponse.data.data || []);
       } catch (error) {
         if (active) message.error(apiError(error));
@@ -124,7 +136,7 @@ export const useScheduleData = () => {
     };
     fetchInitialData();
     return () => { active = false; };
-  }, [message, selectedKhoa]);
+  }, [message, selectedKhoa, selectedCoSo]);
 
   useEffect(() => {
     let active = true;
@@ -289,6 +301,7 @@ export const useScheduleData = () => {
     activeCell,
     coSos,
     employees,
+    allEmployees,
     editing,
     schedules,
     khoas,

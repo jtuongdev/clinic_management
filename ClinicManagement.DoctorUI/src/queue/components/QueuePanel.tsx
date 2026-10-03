@@ -95,8 +95,17 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_QUEUE_COL_WIDTHS);
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
 
+  // Column and Row Reordering states
+  const [colOrder, setColOrder] = useState<string[]>(() => QUEUE_COLUMNS.map((c) => c.key));
+  const [draggedColKey, setDraggedColKey] = useState<string | null>(null);
+  const [dragOverColKey, setDragOverColKey] = useState<string | null>(null);
+
+  const [customPatients, setCustomPatients] = useState<HangDoiDto[]>([]);
+  const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
+
   // Pagination states
-  const [pageSize, setPageSize] = useState<number>(25);
+  const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const {
@@ -177,16 +186,72 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
     });
   }, [patients, search, statusFilter, priorityFilter]);
 
+  // Sync customPatients with filteredPatients
+  useEffect(() => {
+    setCustomPatients(filteredPatients);
+  }, [filteredPatients]);
 
+  // Column Drop Handler
+  const handleColDrop = (targetColKey: string) => {
+    if (!draggedColKey || draggedColKey === targetColKey) {
+      setDraggedColKey(null);
+      setDragOverColKey(null);
+      return;
+    }
+    if (draggedColKey === 'stt' || draggedColKey === 'thaoTac' || targetColKey === 'stt' || targetColKey === 'thaoTac') {
+      setDraggedColKey(null);
+      setDragOverColKey(null);
+      return;
+    }
+    setColOrder((prev) => {
+      const next = [...prev];
+      const fromIdx = next.indexOf(draggedColKey);
+      const toIdx = next.indexOf(targetColKey);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, draggedColKey);
+      }
+      return next;
+    });
+    setDraggedColKey(null);
+    setDragOverColKey(null);
+  };
 
-  // Pagination calculation
-  const totalFiltered = filteredPatients.length;
+  // Row Drop Handler
+  const handleRowDrop = (targetPatientId: number) => {
+    if (draggedRowId === null || draggedRowId === targetPatientId) {
+      setDraggedRowId(null);
+      setDragOverRowId(null);
+      return;
+    }
+    setCustomPatients((prev) => {
+      const next = [...prev];
+      const fromIdx = next.findIndex((p) => p.id === draggedRowId);
+      const toIdx = next.findIndex((p) => p.id === targetPatientId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, moved);
+      }
+      return next;
+    });
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+  };
+
+  // Ordered columns
+  const orderedColumns = useMemo(() => {
+    const colMap = new Map(QUEUE_COLUMNS.map((c) => [c.key, c]));
+    return colOrder.map((key) => colMap.get(key)).filter(Boolean) as typeof QUEUE_COLUMNS;
+  }, [colOrder]);
+
+  // Pagination calculation based on customPatients
+  const totalFiltered = customPatients.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
 
   const pagedPatients = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredPatients.slice(start, start + pageSize);
-  }, [filteredPatients, currentPage, pageSize]);
+    return customPatients.slice(start, start + pageSize);
+  }, [customPatients, currentPage, pageSize]);
 
   const stats = useMemo(() => {
     const waiting = patients.filter(p => p.trangThai === 'CHO_KHAM').length;
@@ -254,6 +319,8 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
   const handleResetGridSizes = () => {
     setColWidths(DEFAULT_QUEUE_COL_WIDTHS);
     setRowHeights({});
+    setColOrder(QUEUE_COLUMNS.map((c) => c.key));
+    setCustomPatients(filteredPatients);
   };
 
   const callPatient = async (patient: HangDoiDto) => {
@@ -302,6 +369,313 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
     return map[status] || 'wait';
   };
 
+  const renderCell = (
+    colKey: string,
+    patient: HangDoiDto,
+    displayOrder: number,
+    rowHeight: number,
+    statusClass: string,
+    statusLabel: string,
+    isEmergency: boolean,
+    isUrgent: boolean
+  ) => {
+    switch (colKey) {
+      case 'stt':
+        return (
+          <td
+            key="stt"
+            className="w-[54px] min-w-[54px] max-w-[54px] text-center font-mono font-bold text-slate-800 bg-slate-100 align-middle select-none relative"
+            style={{ height: rowHeight }}
+          >
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center font-mono font-bold text-xs"
+              title={`STT: ${displayOrder}`}
+            >
+              <i
+                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[11px] opacity-60 hover:opacity-100"
+                title="Kéo thả để sắp xếp hàng"
+              />
+              {displayOrder}
+            </div>
+            {/* Row Resizer Handle */}
+            <div
+              className="row-resizer"
+              onMouseDown={(e) => handleRowResizeStart(e, patient.id, rowHeight)}
+              title="Kéo chuột để chỉnh chiều cao hàng"
+            />
+          </td>
+        );
+
+      case 'maBenhNhan':
+        return (
+          <td key="maBenhNhan" className="text-center align-middle" style={{ height: rowHeight }}>
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 font-mono text-xs font-semibold text-slate-700"
+              title={patient.maBenhNhanNoiBo}
+            >
+              {patient.maBenhNhanNoiBo}
+            </div>
+          </td>
+        );
+
+      case 'maLuotKham':
+        return (
+          <td key="maLuotKham" className="text-center align-middle" style={{ height: rowHeight }}>
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 font-mono text-xs font-bold text-slate-800"
+              title={formatVisitCode(patient.maLuotKham)}
+            >
+              {formatVisitCode(patient.maLuotKham)}
+            </div>
+          </td>
+        );
+
+      case 'hoTen':
+        return (
+          <td key="hoTen" className="text-left align-middle" style={{ height: rowHeight }}>
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 flex items-center gap-2"
+              title={`${patient.hoTen}${patient.hasAllergy ? ' (Có tiền sử dị ứng)' : ''}`}
+            >
+              <span className="font-semibold text-slate-900 text-sm truncate">
+                {patient.hoTen}
+              </span>
+              {patient.hasAllergy && (
+                <span className="allergy-badge-excel" title="Có tiền sử dị ứng">
+                  <i className="fa-solid fa-triangle-exclamation"></i> Dị ứng
+                </span>
+              )}
+            </div>
+          </td>
+        );
+
+      case 'gioiTinhTuoi':
+        return (
+          <td key="gioiTinhTuoi" className="text-center align-middle" style={{ height: rowHeight }}>
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 text-slate-700 text-xs"
+              title={`${patient.gioiTinh === 'M' ? 'Nam' : 'Nữ'} · ${patient.tuoi} tuổi`}
+            >
+              {patient.gioiTinh === 'M' ? 'Nam' : 'Nữ'} · {patient.tuoi} tuổi
+            </div>
+          </td>
+        );
+
+      case 'khoaPhong':
+        return (
+          <td key="khoaPhong" className="text-left align-middle" style={{ height: rowHeight }}>
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 text-slate-800 text-xs font-medium"
+              title={patient.tenKhoa || 'Chưa phân bổ'}
+            >
+              {patient.tenKhoa || '--'}
+            </div>
+          </td>
+        );
+
+      case 'phanLoai':
+        return (
+          <td key="phanLoai" className="text-center align-middle" style={{ height: rowHeight }}>
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
+              {isEmergency ? (
+                <span className="badge-priority emergency" title="Cấp cứu">
+                  <i className="fa-solid fa-truck-medical"></i> CẤP CỨU
+                </span>
+              ) : isUrgent ? (
+                <span className="badge-priority urgent" title="Ưu tiên">
+                  <i className="fa-solid fa-bolt"></i> ƯU TIÊN
+                </span>
+              ) : (
+                <span className="badge-priority normal" title="Bình thường">
+                  Thường
+                </span>
+              )}
+            </div>
+          </td>
+        );
+
+      case 'sinhHieu': {
+        const vitals = patient.vitals;
+        return (
+          <td key="sinhHieu" className="text-center align-middle" style={{ height: rowHeight }}>
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
+              {vitals ? (
+                <div 
+                  className="vitals-cell-container"
+                  onMouseEnter={() => setHoveredPatientVitals({ id: patient.id, vitals })}
+                  onMouseLeave={() => setHoveredPatientVitals(null)}
+                >
+                  <div className="vitals-chip-excel">
+                    <span style={{ 
+                      color: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? '#dc2626' : 'inherit', 
+                      fontWeight: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? 700 : 500 
+                    }}>
+                      SpO2: {vitals.spo2 ?? '--'}%
+                    </span>
+                    <span style={{ color: '#cbd5e1' }}>|</span>
+                    <span>HA: {vitals.huyetAp || '--'}</span>
+                  </div>
+
+                  {hoveredPatientVitals?.id === patient.id && (
+                    <div className="vitals-popover">
+                      <div className="vitals-popover-title">
+                        <i className="fa-solid fa-heart-pulse" style={{ color: '#f87171' }}></i>
+                        Sinh hiệu tiếp đón
+                      </div>
+                      <div className="vitals-popover-grid">
+                        <div>Mạch: <strong>{vitals.mach || '--'}</strong> bpm</div>
+                        <div>Huyết áp: <strong>{vitals.huyetAp || '--'}</strong> mmHg</div>
+                        <div>SpO2: <strong style={{ color: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? '#f87171' : '#4ade80' }}>{vitals.spo2 ?? '--'}%</strong></div>
+                        <div>Nhiệt độ: <strong>{vitals.nhietDo || '--'}</strong>°C</div>
+                        <div>BMI: <strong>{vitals.bmi || '--'}</strong> kg/m²</div>
+                        <div>Nhịp thở: <strong>{vitals.nhipTho || '--'}</strong> l/p</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Chưa đo</span>
+              )}
+            </div>
+          </td>
+        );
+      }
+
+      case 'thoiGian':
+        return (
+          <td key="thoiGian" className="text-right align-middle" style={{ height: rowHeight }}>
+            <div 
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 font-mono text-xs text-slate-700"
+              title={patient.thoiGianCapNhat ? `Thời gian: ${patient.thoiGianCapNhat}${getWaitDuration(patient.thoiGianCapNhat) ? ` (${getWaitDuration(patient.thoiGianCapNhat)})` : ''}` : 'Chưa có thông tin'}
+            >
+              {formatQueueTime(patient.thoiGianCapNhat)}
+            </div>
+          </td>
+        );
+
+      case 'trangThai':
+        return (
+          <td key="trangThai" className="text-center align-middle" style={{ height: rowHeight }}>
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
+              <span className={`status ${statusClass}`} title={statusLabel}>
+                <i className="fa-solid fa-circle"></i> {statusLabel}
+              </span>
+            </div>
+          </td>
+        );
+
+      case 'thaoTac':
+        return (
+          <td key="thaoTac" className="text-center align-middle" style={{ height: rowHeight, position: 'relative' }}>
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
+              <button
+                type="button"
+                className="action-menu-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenActionMenuId(openActionMenuId === patient.id ? null : patient.id);
+                }}
+                title="Thao tác"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '4px',
+                  padding: '2px 8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  lineHeight: 1,
+                  color: '#475569',
+                }}
+              >
+                <i className="fa-solid fa-ellipsis"></i>
+              </button>
+
+              {openActionMenuId === patient.id && (
+                <div
+                  className="action-menu-dropdown"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    zIndex: 1000,
+                    background: 'white',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    padding: '6px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    minWidth: '150px',
+                    marginTop: '2px',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {patient.trangThai === 'DANG_KHAM' && (
+                    <button
+                      type="button"
+                      className="action exam"
+                      onClick={() => {
+                        handleOpenDetail(patient);
+                        setOpenActionMenuId(null);
+                      }}
+                      style={{ width: '100%', justifyContent: 'flex-start' }}
+                    >
+                      <i className="fa-solid fa-stethoscope"></i> Vào khám
+                    </button>
+                  )}
+                  {patient.trangThai === 'HOAN_THANH' && (
+                    <button
+                      type="button"
+                      className="action"
+                      onClick={() => {
+                        handleOpenDetail(patient);
+                        setOpenActionMenuId(null);
+                      }}
+                      style={{ width: '100%', justifyContent: 'flex-start' }}
+                    >
+                      <i className="fa-regular fa-eye"></i> Xem hồ sơ
+                    </button>
+                  )}
+                  {patient.trangThai !== 'DANG_KHAM' && patient.trangThai !== 'HOAN_THANH' && (
+                    <>
+                      <button
+                        type="button"
+                        className="action"
+                        onClick={() => {
+                          handleOpenDetail(patient);
+                          setOpenActionMenuId(null);
+                        }}
+                        title="Xem nhanh chi tiết"
+                        style={{ width: '100%', justifyContent: 'flex-start' }}
+                      >
+                        <i className="fa-regular fa-eye"></i> Xem
+                      </button>
+                      <button
+                        type="button"
+                        className={`action call ${isEmergency ? 'emergency-cta' : ''}`}
+                        onClick={() => {
+                          callPatient(patient);
+                          setOpenActionMenuId(null);
+                        }}
+                        style={{ width: '100%', justifyContent: 'flex-start' }}
+                      >
+                        <i className={isEmergency ? 'fa-solid fa-truck-medical' : 'fa-solid fa-bullhorn'}></i>
+                        {isEmergency ? 'Khám ngay' : 'Gọi khám'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </td>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="panel-queue">
       {/* KPI Ribbon */}
@@ -342,10 +716,10 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
           <div className="queue-title">
             <i className="fa-solid fa-list-ol"></i>
             <span>Hàng đợi tiếp nhận buồng khám</span>
-            <span className="queue-count">{filteredPatients.length} bệnh nhân</span>
+            <span className="queue-count">{customPatients.length} bệnh nhân</span>
           </div>
           <div className="filters">
-            <div className="search">
+            <div className="search relative flex items-center">
               <i className="fa-solid fa-search"></i>
               <input
                 type="text"
@@ -356,6 +730,19 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                   setCurrentPage(1);
                 }}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none text-xs"
+                  title="Xóa tìm kiếm"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              )}
             </div>
             <select
               className="select"
@@ -389,7 +776,7 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
               type="button"
               className="btn-reset-grid"
               onClick={handleResetGridSizes}
-              title="Khôi phục kích thước cột và hàng về mặc định"
+              title="Khôi phục thứ tự và kích thước các cột, hàng về mặc định"
             >
               <i className="fa-solid fa-arrows-rotate"></i>
               <span>Đặt lại cỡ ô</span>
@@ -430,7 +817,7 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
           ) : (
             <table className="table-fixed w-max min-w-full border-collapse border border-slate-300 divide-x divide-y divide-slate-300 bg-white">
               <colgroup>
-                {QUEUE_COLUMNS.map((col) => (
+                {orderedColumns.map((col) => (
                   <col
                     key={col.key}
                     style={{
@@ -441,19 +828,63 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
               </colgroup>
               <thead>
                 <tr>
-                  {QUEUE_COLUMNS.map((col) => (
-                    <th
-                      key={col.key}
-                      style={{
-                        width: colWidths[col.key] || DEFAULT_QUEUE_COL_WIDTHS[col.key] || 100,
-                      }}
-                      className={`sticky top-0 z-10 bg-slate-100 border-b-2 border-slate-400 text-slate-800 font-bold text-xs uppercase tracking-tight px-2 py-2 select-none relative align-middle ${col.align}`}
-                    >
+                  {orderedColumns.map((col) => {
+                    const canDrag = col.key !== 'stt' && col.key !== 'thaoTac';
+                    const isDragged = draggedColKey === col.key;
+                    const isOver = dragOverColKey === col.key;
+
+                    return (
+                      <th
+                        key={col.key}
+                        draggable={canDrag}
+                        onDragStart={(e) => {
+                          if (canDrag) {
+                            e.dataTransfer.setData('text/plain', col.key);
+                            setDraggedColKey(col.key);
+                          }
+                        }}
+                        onDragOver={(e) => {
+                          if (canDrag) {
+                            e.preventDefault();
+                            setDragOverColKey(col.key);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverColKey === col.key) {
+                            setDragOverColKey(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          if (canDrag) {
+                            e.preventDefault();
+                            handleColDrop(col.key);
+                          }
+                        }}
+                        style={{
+                          width: colWidths[col.key] || DEFAULT_QUEUE_COL_WIDTHS[col.key] || 100,
+                          opacity: isDragged ? 0.4 : 1,
+                        }}
+                        className={`sticky top-0 z-10 bg-slate-100 border-b-2 border-slate-400 text-slate-800 font-bold text-xs uppercase tracking-tight px-2 py-2 select-none relative align-middle ${col.align} ${
+                          isOver ? 'bg-blue-100 border-l-2 border-l-blue-600' : ''
+                        }`}
+                      >
                         <div
-                          className={`w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${col.align}`}
+                          className={`w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center ${
+                            col.align === 'text-center'
+                              ? 'justify-center'
+                              : col.align === 'text-right'
+                              ? 'justify-end'
+                              : 'justify-start'
+                          }`}
                           title={col.label}
                         >
-                          {col.label}
+                          {canDrag && (
+                            <i
+                              className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[10px] opacity-40 hover:opacity-100"
+                              title="Kéo chuột để đổi vị trí cột"
+                            />
+                          )}
+                          <span>{col.label}</span>
                         </div>
                         {/* Resizer Handle */}
                         <div
@@ -462,13 +893,14 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                           title="Kéo chuột để chỉnh độ rộng cột"
                         />
                       </th>
-                  ))}
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {filteredPatients.length === 0 ? (
+                {customPatients.length === 0 ? (
                   <tr>
-                    <td colSpan={QUEUE_COLUMNS.length} className="border border-slate-300 text-center py-8">
+                    <td colSpan={orderedColumns.length} className="border border-slate-300 text-center py-8">
                       <div className="queue-empty-state">
                         <i className="fa-regular fa-folder-open"></i>
                         <p>Không có bệnh nhân nào phù hợp với bộ lọc</p>
@@ -491,272 +923,46 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                       ? 'current' 
                       : '';
 
-                    const vitals = patient.vitals;
                     const rowHeight = rowHeights[patient.id] || DEFAULT_ROW_HEIGHT;
+                    const isRowOver = dragOverRowId === patient.id;
+                    const isRowDragged = draggedRowId === patient.id;
 
                     return (
-                      <tr key={patient.id} className={rowClass} style={{ height: rowHeight }}>
-                        {/* 1. STT Column with Row Resizer */}
-                        <td
-                          className="w-[54px] min-w-[54px] max-w-[54px] text-center font-mono font-bold text-slate-800 bg-slate-100 align-middle select-none relative"
-                          style={{ height: rowHeight }}
-                        >
-                          <div
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center font-mono font-bold text-xs"
-                            title={`STT: ${displayOrder}`}
-                          >
-                            {displayOrder}
-                          </div>
-                          {/* Row Resizer Handle */}
-                          <div
-                            className="row-resizer"
-                            onMouseDown={(e) => handleRowResizeStart(e, patient.id, rowHeight)}
-                            title="Kéo chuột để chỉnh chiều cao hàng"
-                          />
-                        </td>
-
-                        {/* 2. Mã BN */}
-                        <td className="text-center align-middle" style={{ height: rowHeight }}>
-                          <div
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 font-mono text-xs font-semibold text-slate-700"
-                            title={patient.maBenhNhanNoiBo}
-                          >
-                            {patient.maBenhNhanNoiBo}
-                          </div>
-                        </td>
-
-                        {/* 3. Mã LK */}
-                        <td className="text-center align-middle" style={{ height: rowHeight }}>
-                          <div
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 font-mono text-xs font-bold text-slate-800"
-                            title={formatVisitCode(patient.maLuotKham)}
-                          >
-                            {formatVisitCode(patient.maLuotKham)}
-                          </div>
-                        </td>
-
-                        {/* 4. Họ tên Bệnh Nhân */}
-                        <td className="text-left align-middle" style={{ height: rowHeight }}>
-                          <div
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 flex items-center gap-2"
-                            title={`${patient.hoTen}${patient.hasAllergy ? ' (Có tiền sử dị ứng)' : ''}`}
-                          >
-                            <span className="font-semibold text-slate-900 text-sm truncate">
-                              {patient.hoTen}
-                            </span>
-                            {patient.hasAllergy && (
-                              <span className="allergy-badge-excel" title="Có tiền sử dị ứng">
-                                <i className="fa-solid fa-triangle-exclamation"></i> Dị ứng
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* 5. Giới tính / Tuổi */}
-                        <td className="text-center align-middle" style={{ height: rowHeight }}>
-                          <div
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 text-slate-700 text-xs"
-                            title={`${patient.gioiTinh === 'M' ? 'Nam' : 'Nữ'} · ${patient.tuoi} tuổi`}
-                          >
-                            {patient.gioiTinh === 'M' ? 'Nam' : 'Nữ'} · {patient.tuoi} tuổi
-                          </div>
-                        </td>
-
-                        {/* 6. Khoa / Buồng khám */}
-                        <td className="text-left align-middle" style={{ height: rowHeight }}>
-                          <div
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 text-slate-800 text-xs font-medium"
-                            title={patient.tenKhoa || 'Chưa phân bổ'}
-                          >
-                            {patient.tenKhoa || '--'}
-                          </div>
-                        </td>
-
-                        {/* 7. Phân loại (Triage) */}
-                        <td className="text-center align-middle" style={{ height: rowHeight }}>
-                          <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
-                            {isEmergency ? (
-                              <span className="badge-priority emergency" title="Cấp cứu">
-                                <i className="fa-solid fa-truck-medical"></i> CẤP CỨU
-                              </span>
-                            ) : isUrgent ? (
-                              <span className="badge-priority urgent" title="Ưu tiên">
-                                <i className="fa-solid fa-bolt"></i> ƯU TIÊN
-                              </span>
-                            ) : (
-                              <span className="badge-priority normal" title="Bình thường">
-                                Thường
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* 8. Sinh hiệu */}
-                        <td className="text-center align-middle" style={{ height: rowHeight }}>
-                          <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
-                            {vitals ? (
-                              <div 
-                                className="vitals-cell-container"
-                                onMouseEnter={() => setHoveredPatientVitals({ id: patient.id, vitals })}
-                                onMouseLeave={() => setHoveredPatientVitals(null)}
-                              >
-                                <div className="vitals-chip-excel">
-                                  <span style={{ 
-                                    color: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? '#dc2626' : 'inherit', 
-                                    fontWeight: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? 700 : 500 
-                                  }}>
-                                    SpO2: {vitals.spo2 ?? '--'}%
-                                  </span>
-                                  <span style={{ color: '#cbd5e1' }}>|</span>
-                                  <span>HA: {vitals.huyetAp || '--'}</span>
-                                </div>
-
-                                {hoveredPatientVitals?.id === patient.id && (
-                                  <div className="vitals-popover">
-                                    <div className="vitals-popover-title">
-                                      <i className="fa-solid fa-heart-pulse" style={{ color: '#f87171' }}></i>
-                                      Sinh hiệu tiếp đón
-                                    </div>
-                                    <div className="vitals-popover-grid">
-                                      <div>Mạch: <strong>{vitals.mach || '--'}</strong> bpm</div>
-                                      <div>Huyết áp: <strong>{vitals.huyetAp || '--'}</strong> mmHg</div>
-                                      <div>SpO2: <strong style={{ color: (vitals.spo2 ?? 0) > 0 && (vitals.spo2 ?? 0) < 95 ? '#f87171' : '#4ade80' }}>{vitals.spo2 ?? '--'}%</strong></div>
-                                      <div>Nhiệt độ: <strong>{vitals.nhietDo || '--'}</strong>°C</div>
-                                      <div>BMI: <strong>{vitals.bmi || '--'}</strong> kg/m²</div>
-                                      <div>Nhịp thở: <strong>{vitals.nhipTho || '--'}</strong> l/p</div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Chưa đo</span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* 9. Tiếp nhận */}
-                        <td className="text-right align-middle" style={{ height: rowHeight }}>
-                          <div 
-                            className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1 font-mono text-xs text-slate-700"
-                            title={patient.thoiGianCapNhat ? `Thời gian: ${patient.thoiGianCapNhat}${getWaitDuration(patient.thoiGianCapNhat) ? ` (${getWaitDuration(patient.thoiGianCapNhat)})` : ''}` : 'Chưa có thông tin'}
-                          >
-                            {formatQueueTime(patient.thoiGianCapNhat)}
-                          </div>
-                        </td>
-
-                        {/* 10. Trạng thái */}
-                        <td className="text-center align-middle" style={{ height: rowHeight }}>
-                          <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
-                            <span className={`status ${statusClass}`} title={statusLabel}>
-                              <i className="fa-solid fa-circle"></i> {statusLabel}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* 11. Thao tác - dạng menu ... */}
-                        <td className="text-center align-middle" style={{ height: rowHeight, position: 'relative' }}>
-                          <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 flex items-center justify-center">
-                            <button
-                              type="button"
-                              className="action-menu-trigger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenActionMenuId(openActionMenuId === patient.id ? null : patient.id);
-                              }}
-                              title="Thao tác"
-                              style={{
-                                background: 'transparent',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '4px',
-                                padding: '2px 8px',
-                                cursor: 'pointer',
-                                fontSize: '16px',
-                                lineHeight: 1,
-                                color: '#475569',
-                              }}
-                            >
-                              <i className="fa-solid fa-ellipsis"></i>
-                            </button>
-
-                            {openActionMenuId === patient.id && (
-                              <div
-                                className="action-menu-dropdown"
-                                style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  right: 0,
-                                  zIndex: 1000,
-                                  background: 'white',
-                                  border: '1px solid #cbd5e1',
-                                  borderRadius: '4px',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                  padding: '6px',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '6px',
-                                  minWidth: '150px',
-                                  marginTop: '2px',
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {patient.trangThai === 'DANG_KHAM' && (
-                                  <button
-                                    type="button"
-                                    className="action exam"
-                                    onClick={() => {
-                                      handleOpenDetail(patient);
-                                      setOpenActionMenuId(null);
-                                    }}
-                                    style={{ width: '100%', justifyContent: 'flex-start' }}
-                                  >
-                                    <i className="fa-solid fa-stethoscope"></i> Vào khám
-                                  </button>
-                                )}
-                                {patient.trangThai === 'HOAN_THANH' && (
-                                  <button
-                                    type="button"
-                                    className="action"
-                                    onClick={() => {
-                                      handleOpenDetail(patient);
-                                      setOpenActionMenuId(null);
-                                    }}
-                                    style={{ width: '100%', justifyContent: 'flex-start' }}
-                                  >
-                                    <i className="fa-regular fa-eye"></i> Xem hồ sơ
-                                  </button>
-                                )}
-                                {patient.trangThai !== 'DANG_KHAM' && patient.trangThai !== 'HOAN_THANH' && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="action"
-                                      onClick={() => {
-                                        handleOpenDetail(patient);
-                                        setOpenActionMenuId(null);
-                                      }}
-                                      title="Xem nhanh chi tiết"
-                                      style={{ width: '100%', justifyContent: 'flex-start' }}
-                                    >
-                                      <i className="fa-regular fa-eye"></i> Xem
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className={`action call ${isEmergency ? 'emergency-cta' : ''}`}
-                                      onClick={() => {
-                                        callPatient(patient);
-                                        setOpenActionMenuId(null);
-                                      }}
-                                      style={{ width: '100%', justifyContent: 'flex-start' }}
-                                    >
-                                      <i className={isEmergency ? 'fa-solid fa-truck-medical' : 'fa-solid fa-bullhorn'}></i>
-                                      {isEmergency ? 'Khám ngay' : 'Gọi khám'}
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
+                      <tr
+                        key={patient.id}
+                        className={`${rowClass} ${isRowOver ? 'border-t-2 border-t-blue-500 bg-blue-50/50' : ''}`}
+                        style={{ height: rowHeight, opacity: isRowDragged ? 0.4 : 1 }}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', String(patient.id));
+                          setDraggedRowId(patient.id);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverRowId(patient.id);
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverRowId === patient.id) {
+                            setDragOverRowId(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          handleRowDrop(patient.id);
+                        }}
+                      >
+                        {orderedColumns.map((col) =>
+                          renderCell(
+                            col.key,
+                            patient,
+                            displayOrder,
+                            rowHeight,
+                            statusClass,
+                            statusLabel,
+                            isEmergency,
+                            isUrgent
+                          )
+                        )}
                       </tr>
                     );
                   })
@@ -786,8 +992,8 @@ export const QueuePanel: React.FC<QueuePanelProps> = ({ onOpenDetail }) => {
                   setCurrentPage(1);
                 }}
               >
-                <option value={15}>15</option>
-                <option value={25}>25</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>

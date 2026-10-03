@@ -13,6 +13,7 @@ namespace ClinicManagement.Application.Features.LichHen.Queries.LayThongKeLichHe
     public class LayThongKeLichHenQuery : IRequest<ThongKeLichHenDto>
     {
         public int? MaCoSo { get; set; }
+        public int? MaBacSi { get; set; }
         public DateTime? Ngay { get; set; }
     }
 
@@ -32,6 +33,11 @@ namespace ClinicManagement.Application.Features.LichHen.Queries.LayThongKeLichHe
             if (request.MaCoSo.HasValue && request.MaCoSo.Value > 0)
             {
                 query = query.Where(lh => lh.MaCoSo == request.MaCoSo.Value);
+            }
+
+            if (request.MaBacSi.HasValue && request.MaBacSi.Value > 0)
+            {
+                query = query.Where(lh => lh.MaBacSi == request.MaBacSi.Value);
             }
 
             if (request.Ngay.HasValue)

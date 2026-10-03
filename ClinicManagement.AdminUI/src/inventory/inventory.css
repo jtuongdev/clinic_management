@@ -30,6 +30,12 @@
   gap: 12px;
 }
 
+.inventory-tab-content.inventory-fullwidth-tab {
+  padding: 0 !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+}
+
 /* Full-screen Master Table styling for Inventory - Enterprise Neutral Corporate UI */
 .import-master-table {
   width: 100%;

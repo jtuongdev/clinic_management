@@ -6,6 +6,6 @@ namespace ClinicManagement.Application.Features.PhongKham.Queries
 {
     public class LayDanhSachPhongKhamDropdownQuery : IRequest<IEnumerable<PhongKhamDropdownDto>>
     {
-        public int MaKhoa { get; set; }
+        public int? MaKhoa { get; set; }
     }
 }

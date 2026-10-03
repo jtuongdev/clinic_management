@@ -17,6 +17,7 @@ import { employeeRoutes } from '../employee/routes';
 import { appointmentRoutes } from '../appointment/routes';
 import { inventoryRoutes } from '../inventory/routes';
 import { billingRoutes } from '../billing/routes';
+import { financeReportsRoutes } from '../finance-reports/routes';
 import { settingsRoutes } from '../settings/routes';
 
 const protectedRoutes = [
@@ -32,6 +33,7 @@ const protectedRoutes = [
   ...employeeRoutes,
   ...inventoryRoutes,
   ...billingRoutes,
+  ...financeReportsRoutes,
   ...settingsRoutes,
 ];
 

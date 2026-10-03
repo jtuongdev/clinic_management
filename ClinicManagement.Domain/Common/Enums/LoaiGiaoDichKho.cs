@@ -11,5 +11,7 @@ public enum LoaiGiaoDichKho
     /// <summary>Trả hàng cho nhà cung cấp (bao bì lỗi, hàng sai...).</summary>
     TRA_NCC = 7,
     /// <summary>Bệnh nhân hoàn trả thuốc còn nguyên niêm phong, xác định được lô.</summary>
-    NHAP_TRA_BENH_NHAN = 8
+    NHAP_TRA_BENH_NHAN = 8,
+    /// <summary>Xuất cấp phát vật tư tiêu hao cho tủ trực Khoa/Phòng (có quy trình duyệt).</summary>
+    XUAT_CAP_PHAT_KHOA_PHONG = 9
 }

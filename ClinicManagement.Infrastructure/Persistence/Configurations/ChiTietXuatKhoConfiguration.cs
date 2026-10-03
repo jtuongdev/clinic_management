@@ -27,8 +27,16 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(ct => ct.MaChiTietNhap)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // FK tùy chọn: mặt hàng yêu cầu trước khi Admin gán lô FEFO
+            builder.HasOne(ct => ct.ItemYeuCau)
+                .WithMany()
+                .HasForeignKey(ct => ct.MaItemYeuCau)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
             builder.HasIndex(ct => ct.MaPhieuXuat);
             builder.HasIndex(ct => ct.MaChiTietNhap);
+            builder.HasIndex(ct => ct.MaItemYeuCau);
         }
     }
 }

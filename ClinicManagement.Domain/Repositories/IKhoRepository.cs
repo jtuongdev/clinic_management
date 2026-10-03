@@ -1,8 +1,10 @@
 using ClinicManagement.Domain.Billing;
 using ClinicManagement.Domain.Common;
 using ClinicManagement.Domain.Examination;
+using ClinicManagement.Domain.Facility;
 using ClinicManagement.Domain.Inventory;
 using ClinicManagement.Domain.Prescription;
+using ClinicManagement.Domain.Service;
 
 namespace ClinicManagement.Domain.Repositories;
 
@@ -25,7 +27,9 @@ public interface IKhoRepository : IUnitOfWork
     IQueryable<HoaDon> HoaDons { get; }
     IQueryable<Stocktake> Stocktakes { get; }
     IQueryable<StocktakeCount> StocktakeCounts { get; }
-    IQueryable<ClinicManagement.Domain.Service.DinhMucVatTuDichVu> DinhMucVatTuDichVus { get; }
+    IQueryable<DinhMucVatTuDichVu> DinhMucVatTuDichVus { get; }
+    IQueryable<Khoa> Khoas { get; }
+    IQueryable<ChiDinhDichVu> ChiDinhDichVus { get; }
 
     void Add<TEntity>(TEntity entity) where TEntity : class;
     void Remove<TEntity>(TEntity entity) where TEntity : class;

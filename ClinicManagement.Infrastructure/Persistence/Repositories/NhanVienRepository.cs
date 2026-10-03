@@ -60,7 +60,10 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
 
         private IQueryable<NhanVien> BuildEmployeeQuery(string? keyword, int? maChucVu, bool? isActive, int? maKhoa = null, DateTime? ngay = null)
         {
-            var query = _dbSet.AsNoTracking().Include(n => n.ChucVu).Where(n => !n.IsDeleted);
+            var query = _dbSet.AsNoTracking()
+                .Include(n => n.ChucVu)
+                .Include(n => n.NhanVienKhoa).ThenInclude(nk => nk.Khoa)
+                .Where(n => !n.IsDeleted);
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var value = keyword.Trim();
@@ -121,6 +124,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
         public async Task<NhanVien?> GetDetailForUpdateAsync(int id, CancellationToken cancellationToken = default)
             => await _dbSet
                 .Include(employee => employee.NhanVienVaiTro)
+                .Include(employee => employee.NhanVienKhoa)
                 .FirstOrDefaultAsync(employee => employee.Id == id && !employee.IsDeleted, cancellationToken);
 
         public async Task<int> CloseActiveRolesAsync(int employeeId, DateTime effectiveDate, CancellationToken cancellationToken = default)

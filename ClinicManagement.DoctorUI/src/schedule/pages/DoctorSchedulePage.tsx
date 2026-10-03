@@ -34,6 +34,32 @@ const DEFAULT_ATT_COL_WIDTHS: Record<string, number> = {
   ghiChu: 260,
 };
 
+// Column definitions for Schedule tab
+const SCHED_COLUMNS = [
+  { key: 'stt', label: 'STT', align: 'text-center' },
+  { key: 'ngayLam', label: 'Ngày Làm', align: 'text-center' },
+  { key: 'tenCa', label: 'Ca Trực', align: 'text-center' },
+  { key: 'khungGio', label: 'Khung Giờ', align: 'text-center' },
+  { key: 'soGioLam', label: 'Số Giờ', align: 'text-right' },
+  { key: 'khoaPhong', label: 'Khoa / Phòng Khám', align: 'text-left' },
+  { key: 'nguonLich', label: 'Nguồn Lịch', align: 'text-center' },
+  { key: 'trangThai', label: 'Trạng Thái', align: 'text-center' },
+  { key: 'ghiChu', label: 'Ghi Chú', align: 'text-left' },
+];
+
+// Column definitions for Attendance tab
+const ATT_COLUMNS = [
+  { key: 'stt', label: 'STT', align: 'text-center' },
+  { key: 'ngayChamCong', label: 'Ngày Chấm Công', align: 'text-center' },
+  { key: 'tenCa', label: 'Ca Trực', align: 'text-center' },
+  { key: 'checkIn', label: 'Check-in', align: 'text-center' },
+  { key: 'checkOut', label: 'Check-out', align: 'text-center' },
+  { key: 'gioThucTe', label: 'Giờ Thực Tế', align: 'text-right' },
+  { key: 'diMuonVeSom', label: 'Đi Muộn / Về Sớm', align: 'text-center' },
+  { key: 'trangThai', label: 'Trạng Thái', align: 'text-center' },
+  { key: 'ghiChu', label: 'Ghi Chú', align: 'text-left' },
+];
+
 export const DoctorSchedulePage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<'schedule' | 'attendance'>('schedule');
@@ -44,11 +70,29 @@ export const DoctorSchedulePage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [note, setNote] = useState<string>('');
 
+  // Search keyword states
+  const [schedSearch, setSchedSearch] = useState<string>('');
+  const [attSearch, setAttSearch] = useState<string>('');
+
+  // Custom reordered row lists
+  const [customSchedules, setCustomSchedules] = useState<ScheduleItemDto[]>([]);
+  const [customAttendances, setCustomAttendances] = useState<AttendanceItemDto[]>([]);
+
+  // Column Reordering states
+  const [schedColOrder, setSchedColOrder] = useState<string[]>(() => SCHED_COLUMNS.map((c) => c.key));
+  const [attColOrder, setAttColOrder] = useState<string[]>(() => ATT_COLUMNS.map((c) => c.key));
+  const [draggedColKey, setDraggedColKey] = useState<string | null>(null);
+  const [dragOverColKey, setDragOverColKey] = useState<string | null>(null);
+
+  // Row Reordering states
+  const [draggedRowKey, setDraggedRowKey] = useState<string | null>(null);
+  const [dragOverRowKey, setDragOverRowKey] = useState<string | null>(null);
+
   // Pagination states
   const [schedPage, setSchedPage] = useState<number>(1);
-  const [schedPageSize, setSchedPageSize] = useState<number>(25);
+  const [schedPageSize, setSchedPageSize] = useState<number>(20);
   const [attPage, setAttPage] = useState<number>(1);
-  const [attPageSize, setAttPageSize] = useState<number>(25);
+  const [attPageSize, setAttPageSize] = useState<number>(20);
 
   // Column Resizing states (pixel widths)
   const [schedColWidths, setSchedColWidths] = useState<Record<string, number>>(DEFAULT_SCHED_COL_WIDTHS);
@@ -191,15 +235,138 @@ export const DoctorSchedulePage: React.FC = () => {
     document.addEventListener('mouseup', onMouseUp);
   };
 
+  // Filtered schedules & attendances by search keywords
+  const filteredSchedules = useMemo(() => {
+    if (!schedSearch.trim()) return schedules;
+    const q = schedSearch.toLowerCase().trim();
+    return schedules.filter((s) => {
+      return (
+        (s.tenCa && s.tenCa.toLowerCase().includes(q)) ||
+        (s.tenKhoa && s.tenKhoa.toLowerCase().includes(q)) ||
+        (s.tenPhongKham && s.tenPhongKham.toLowerCase().includes(q)) ||
+        (s.ghiChu && s.ghiChu.toLowerCase().includes(q)) ||
+        (s.ngayLam && s.ngayLam.includes(q))
+      );
+    });
+  }, [schedules, schedSearch]);
+
+  const filteredAttendances = useMemo(() => {
+    if (!attSearch.trim()) return attendances;
+    const q = attSearch.toLowerCase().trim();
+    return attendances.filter((a) => {
+      return (
+        (a.tenCa && a.tenCa.toLowerCase().includes(q)) ||
+        (a.ghiChu && a.ghiChu.toLowerCase().includes(q)) ||
+        (a.ngayChamCong && a.ngayChamCong.includes(q)) ||
+        (a.trangThai && a.trangThai.toLowerCase().includes(q))
+      );
+    });
+  }, [attendances, attSearch]);
+
+  // Sync custom reordered lists with filtered data
+  useEffect(() => {
+    setCustomSchedules(filteredSchedules);
+  }, [filteredSchedules]);
+
+  useEffect(() => {
+    setCustomAttendances(filteredAttendances);
+  }, [filteredAttendances]);
+
+  // Column Drop Handlers
+  const handleSchedColDrop = (targetKey: string) => {
+    if (!draggedColKey || draggedColKey === targetKey || draggedColKey === 'stt' || targetKey === 'stt') {
+      setDraggedColKey(null);
+      setDragOverColKey(null);
+      return;
+    }
+    setSchedColOrder((prev) => {
+      const next = [...prev];
+      const fromIdx = next.indexOf(draggedColKey);
+      const toIdx = next.indexOf(targetKey);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, draggedColKey);
+      }
+      return next;
+    });
+    setDraggedColKey(null);
+    setDragOverColKey(null);
+  };
+
+  const handleAttColDrop = (targetKey: string) => {
+    if (!draggedColKey || draggedColKey === targetKey || draggedColKey === 'stt' || targetKey === 'stt') {
+      setDraggedColKey(null);
+      setDragOverColKey(null);
+      return;
+    }
+    setAttColOrder((prev) => {
+      const next = [...prev];
+      const fromIdx = next.indexOf(draggedColKey);
+      const toIdx = next.indexOf(targetKey);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, draggedColKey);
+      }
+      return next;
+    });
+    setDraggedColKey(null);
+    setDragOverColKey(null);
+  };
+
+  // Row Drop Handlers
+  const handleSchedRowDrop = (targetRowKey: string) => {
+    if (!draggedRowKey || draggedRowKey === targetRowKey) {
+      setDraggedRowKey(null);
+      setDragOverRowKey(null);
+      return;
+    }
+    setCustomSchedules((prev) => {
+      const next = [...prev];
+      const fromIdx = next.findIndex((s, idx) => `sched-row-${s.id || idx}` === draggedRowKey);
+      const toIdx = next.findIndex((s, idx) => `sched-row-${s.id || idx}` === targetRowKey);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, moved);
+      }
+      return next;
+    });
+    setDraggedRowKey(null);
+    setDragOverRowKey(null);
+  };
+
+  const handleAttRowDrop = (targetRowKey: string) => {
+    if (!draggedRowKey || draggedRowKey === targetRowKey) {
+      setDraggedRowKey(null);
+      setDragOverRowKey(null);
+      return;
+    }
+    setCustomAttendances((prev) => {
+      const next = [...prev];
+      const fromIdx = next.findIndex((a, idx) => `att-row-${a.id || idx}` === draggedRowKey);
+      const toIdx = next.findIndex((a, idx) => `att-row-${a.id || idx}` === targetRowKey);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, moved);
+      }
+      return next;
+    });
+    setDraggedRowKey(null);
+    setDragOverRowKey(null);
+  };
+
   const handleResetGridSizes = () => {
     if (activeTab === 'schedule') {
       setSchedColWidths(DEFAULT_SCHED_COL_WIDTHS);
       setSchedRowHeights({});
+      setSchedColOrder(SCHED_COLUMNS.map((c) => c.key));
+      setCustomSchedules(filteredSchedules);
     } else {
       setAttColWidths(DEFAULT_ATT_COL_WIDTHS);
       setAttRowHeights({});
+      setAttColOrder(ATT_COLUMNS.map((c) => c.key));
+      setCustomAttendances(filteredAttendances);
     }
-    toast.success('Đã khôi phục kích thước ô lưới mặc định');
+    toast.success('Đã khôi phục kích thước và thứ tự ô lưới mặc định');
   };
 
   // Handle Check-in / Check-out
@@ -297,20 +464,294 @@ export const DoctorSchedulePage: React.FC = () => {
     todayStatus?.shifts?.find((s) => s.isCurrentActive) ||
     todayStatus?.shifts?.[0];
 
-  // Paginated data
-  const schedTotal = schedules.length;
+  // Ordered column lists
+  const orderedSchedColumns = useMemo(() => {
+    const colMap = new Map(SCHED_COLUMNS.map((c) => [c.key, c]));
+    return schedColOrder.map((key) => colMap.get(key)).filter(Boolean) as typeof SCHED_COLUMNS;
+  }, [schedColOrder]);
+
+  const orderedAttColumns = useMemo(() => {
+    const colMap = new Map(ATT_COLUMNS.map((c) => [c.key, c]));
+    return attColOrder.map((key) => colMap.get(key)).filter(Boolean) as typeof ATT_COLUMNS;
+  }, [attColOrder]);
+
+  // Paginated data based on customSchedules and customAttendances
+  const schedTotal = customSchedules.length;
   const schedTotalPages = Math.max(1, Math.ceil(schedTotal / schedPageSize));
   const paginatedSchedules = useMemo(() => {
     const start = (schedPage - 1) * schedPageSize;
-    return schedules.slice(start, start + schedPageSize);
-  }, [schedules, schedPage, schedPageSize]);
+    return customSchedules.slice(start, start + schedPageSize);
+  }, [customSchedules, schedPage, schedPageSize]);
 
-  const attTotal = attendances.length;
+  const attTotal = customAttendances.length;
   const attTotalPages = Math.max(1, Math.ceil(attTotal / attPageSize));
   const paginatedAttendances = useMemo(() => {
     const start = (attPage - 1) * attPageSize;
-    return attendances.slice(start, start + attPageSize);
-  }, [attendances, attPage, attPageSize]);
+    return customAttendances.slice(start, start + attPageSize);
+  }, [customAttendances, attPage, attPageSize]);
+
+  // Cell renderer for Schedule tab
+  const renderSchedCell = (
+    colKey: string,
+    s: ScheduleItemDto,
+    stt: number,
+    rowKey: string,
+    rowHeight: number
+  ) => {
+    const startTime = formatTimeSpan(s.thoiGianBatDau);
+    const endTime = formatTimeSpan(s.thoiGianKetThuc);
+    const clinicRoom = s.tenPhongKham ? ` - ${s.tenPhongKham}` : '';
+    const fullLocation = `${s.tenKhoa || '---'}${clinicRoom}`;
+
+    switch (colKey) {
+      case 'stt':
+        return (
+          <td
+            key="stt"
+            className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none"
+            style={{ height: `${rowHeight}px` }}
+          >
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-mono font-bold text-xs"
+              title={`Dòng ${stt}`}
+            >
+              <i
+                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[11px] opacity-60 hover:opacity-100"
+                title="Kéo thả để sắp xếp hàng"
+              />
+              {stt}
+            </div>
+            {/* Row Resizer Handle */}
+            <div
+              className="row-resizer h-1.5 w-full absolute left-0 bottom-0 cursor-row-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
+              onMouseDown={(e) => handleRowResizeStart(e, rowKey, rowHeight)}
+              onClick={(e) => e.stopPropagation()}
+              title="Kéo chuột để đổi chiều cao dòng"
+            />
+          </td>
+        );
+
+      case 'ngayLam':
+        return (
+          <td key="ngayLam" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-slate-800" title={formatDate(s.ngayLam)}>
+              {formatDate(s.ngayLam)}
+            </div>
+          </td>
+        );
+
+      case 'tenCa':
+        return (
+          <td key="tenCa" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-sky-800" title={s.tenCa || 'Theo ca'}>
+              {s.tenCa || 'Theo ca'}
+            </div>
+          </td>
+        );
+
+      case 'khungGio':
+        return (
+          <td key="khungGio" className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center text-slate-700" title={`${startTime} - ${endTime}`}>
+              {startTime} - {endTime}
+            </div>
+          </td>
+        );
+
+      case 'soGioLam':
+        return (
+          <td key="soGioLam" className="text-right align-middle px-2 py-1.5 border border-slate-300 font-mono font-semibold text-slate-900">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-end" title={s.soGioLam != null ? `${s.soGioLam} giờ` : '---'}>
+              {s.soGioLam != null ? `${s.soGioLam}h` : '---'}
+            </div>
+          </td>
+        );
+
+      case 'khoaPhong':
+        return (
+          <td key="khoaPhong" className="text-left align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-800 font-medium" title={fullLocation}>
+              {fullLocation}
+            </div>
+          </td>
+        );
+
+      case 'nguonLich':
+        return (
+          <td key="nguonLich" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center">
+              {renderSourceBadge(s.nguonLich)}
+            </div>
+          </td>
+        );
+
+      case 'trangThai':
+        return (
+          <td key="trangThai" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center">
+              <span className={`badge-status-tag ${s.trangThai === 'DA_XAC_NHAN' ? 'on-time' : 'late'}`} title={s.trangThai}>
+                <i className={`fa-solid ${s.trangThai === 'DA_XAC_NHAN' ? 'fa-circle-check' : 'fa-clock'}`}></i>
+                {s.trangThai === 'DA_XAC_NHAN' ? 'Đã xác nhận' : (s.trangThai || 'Kế hoạch')}
+              </span>
+            </div>
+          </td>
+        );
+
+      case 'ghiChu':
+        return (
+          <td key="ghiChu" className="text-left align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-500 text-xs" title={s.ghiChu || '---'}>
+              {s.ghiChu || '---'}
+            </div>
+          </td>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // Cell renderer for Attendance tab
+  const renderAttCell = (
+    colKey: string,
+    a: AttendanceItemDto,
+    stt: number,
+    rowKey: string,
+    rowHeight: number
+  ) => {
+    const lateMin = a.phutDiMuon ?? 0;
+    const earlyMin = a.phutVeSom ?? 0;
+
+    switch (colKey) {
+      case 'stt':
+        return (
+          <td
+            key="stt"
+            className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none"
+            style={{ height: `${rowHeight}px` }}
+          >
+            <div
+              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-mono font-bold text-xs"
+              title={`Dòng ${stt}`}
+            >
+              <i
+                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[11px] opacity-60 hover:opacity-100"
+                title="Kéo thả để sắp xếp hàng"
+              />
+              {stt}
+            </div>
+            {/* Row Resizer Handle */}
+            <div
+              className="row-resizer h-1.5 w-full absolute left-0 bottom-0 cursor-row-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
+              onMouseDown={(e) => handleRowResizeStart(e, rowKey, rowHeight)}
+              onClick={(e) => e.stopPropagation()}
+              title="Kéo chuột để đổi chiều cao dòng"
+            />
+          </td>
+        );
+
+      case 'ngayChamCong':
+        return (
+          <td key="ngayChamCong" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-slate-800" title={formatDate(a.ngayChamCong)}>
+              {formatDate(a.ngayChamCong)}
+            </div>
+          </td>
+        );
+
+      case 'tenCa':
+        return (
+          <td key="tenCa" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center text-slate-800 font-medium" title={a.tenCa || 'Theo ca trực'}>
+              {a.tenCa || 'Theo ca trực'}
+            </div>
+          </td>
+        );
+
+      case 'checkIn':
+        return (
+          <td key="checkIn" className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.checkIn ? formatTime(a.checkIn) : 'Chưa check-in'}>
+              {a.checkIn ? (
+                <span className="font-semibold text-emerald-700">
+                  <i className="fa-solid fa-arrow-down-long text-[10px] mr-1"></i>
+                  {formatTime(a.checkIn)}
+                </span>
+              ) : (
+                <span className="text-slate-400">---</span>
+              )}
+            </div>
+          </td>
+        );
+
+      case 'checkOut':
+        return (
+          <td key="checkOut" className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.checkOut ? formatTime(a.checkOut) : 'Chưa check-out'}>
+              {a.checkOut ? (
+                <span className="font-semibold text-amber-700">
+                  <i className="fa-solid fa-arrow-up-long text-[10px] mr-1"></i>
+                  {formatTime(a.checkOut)}
+                </span>
+              ) : (
+                <span className="text-slate-400">---</span>
+              )}
+            </div>
+          </td>
+        );
+
+      case 'gioThucTe':
+        return (
+          <td key="gioThucTe" className="text-right align-middle px-2 py-1.5 border border-slate-300 font-mono font-semibold text-slate-900">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-end" title={a.gioLamThucTe != null ? `${Number(a.gioLamThucTe).toFixed(1)} giờ` : '---'}>
+              {a.gioLamThucTe != null ? `${Number(a.gioLamThucTe).toFixed(1)}h` : '---'}
+            </div>
+          </td>
+        );
+
+      case 'diMuonVeSom':
+        return (
+          <td key="diMuonVeSom" className="text-center align-middle px-2 py-1.5 border border-slate-300 text-xs">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={lateMin > 0 || earlyMin > 0 ? `Muộn: ${lateMin}p, Sớm: ${earlyMin}p` : 'Đúng giờ'}>
+              {lateMin > 0 && (
+                <span className="text-rose-600 font-semibold mr-1.5">
+                  Muộn {lateMin}p
+                </span>
+              )}
+              {earlyMin > 0 && (
+                <span className="text-amber-600 font-semibold">
+                  Sớm {earlyMin}p
+                </span>
+              )}
+              {lateMin === 0 && earlyMin === 0 && (
+                <span className="text-slate-400">Không</span>
+              )}
+            </div>
+          </td>
+        );
+
+      case 'trangThai':
+        return (
+          <td key="trangThai" className="text-center align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.trangThai}>
+              {renderAttendanceStatus(a.trangThai)}
+            </div>
+          </td>
+        );
+
+      case 'ghiChu':
+        return (
+          <td key="ghiChu" className="text-left align-middle px-2 py-1.5 border border-slate-300">
+            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-500 text-xs" title={a.ghiChu || '---'}>
+              {a.ghiChu || '---'}
+            </div>
+          </td>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="doctor-schedule-page">
@@ -515,7 +956,7 @@ export const DoctorSchedulePage: React.FC = () => {
                 setSchedPage(1);
               }}
             >
-              <i className="fa-solid fa-calendar-days"></i> Lịch Làm Việc ({schedules.length})
+              <i className="fa-solid fa-calendar-days"></i> Lịch Làm Việc ({customSchedules.length})
             </button>
             <button
               className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
@@ -524,19 +965,54 @@ export const DoctorSchedulePage: React.FC = () => {
                 setAttPage(1);
               }}
             >
-              <i className="fa-solid fa-clipboard-user"></i> Lịch Sử Chấm Công ({attendances.length})
+              <i className="fa-solid fa-clipboard-user"></i> Lịch Sử Chấm Công ({customAttendances.length})
             </button>
           </div>
 
-          <div className="table-toolbar">
-            <span style={{ fontSize: '11px', color: 'var(--muted)', marginRight: '4px' }}>
-              <i className="fa-solid fa-arrows-left-right-to-line"></i> Kéo mép cột/hàng để đổi kích cỡ
-            </span>
+          <div className="table-toolbar flex items-center gap-3">
+            {/* Search Input with Clear Button */}
+            <div className="relative flex items-center">
+              <i className="fa-solid fa-search absolute left-2 text-slate-400 text-xs pointer-events-none"></i>
+              <input
+                type="text"
+                className="pl-7 pr-6 py-1 h-[28px] border border-slate-300 rounded text-xs text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:border-blue-500 w-56"
+                placeholder={activeTab === 'schedule' ? 'Tìm ngày, ca, phòng khám...' : 'Tìm ngày, ca, trạng thái...'}
+                value={activeTab === 'schedule' ? schedSearch : attSearch}
+                onChange={(e) => {
+                  if (activeTab === 'schedule') {
+                    setSchedSearch(e.target.value);
+                    setSchedPage(1);
+                  } else {
+                    setAttSearch(e.target.value);
+                    setAttPage(1);
+                  }
+                }}
+              />
+              {(activeTab === 'schedule' ? schedSearch : attSearch) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeTab === 'schedule') {
+                      setSchedSearch('');
+                      setSchedPage(1);
+                    } else {
+                      setAttSearch('');
+                      setAttPage(1);
+                    }
+                  }}
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none text-xs"
+                  title="Xóa tìm kiếm"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              )}
+            </div>
+
             <button
               type="button"
               className="btn-reset-grid"
               onClick={handleResetGridSizes}
-              title="Đặt lại độ rộng cột và chiều cao hàng về mặc định"
+              title="Đặt lại độ rộng cột, hàng và thứ tự về mặc định"
             >
               <i className="fa-solid fa-table-cells"></i> Đặt lại cỡ ô
             </button>
@@ -548,164 +1024,95 @@ export const DoctorSchedulePage: React.FC = () => {
             <div className="sched-table-wrap w-full overflow-auto border border-slate-300 rounded-none bg-white">
               <table className="table-fixed w-max min-w-full border-collapse border border-slate-300 divide-x divide-y divide-slate-300">
                 <colgroup>
-                  <col style={{ width: `${schedColWidths.stt}px` }} />
-                  <col style={{ width: `${schedColWidths.ngayLam}px` }} />
-                  <col style={{ width: `${schedColWidths.tenCa}px` }} />
-                  <col style={{ width: `${schedColWidths.khungGio}px` }} />
-                  <col style={{ width: `${schedColWidths.soGioLam}px` }} />
-                  <col style={{ width: `${schedColWidths.khoaPhong}px` }} />
-                  <col style={{ width: `${schedColWidths.nguonLich}px` }} />
-                  <col style={{ width: `${schedColWidths.trangThai}px` }} />
-                  <col style={{ width: `${schedColWidths.ghiChu}px` }} />
+                  {orderedSchedColumns.map((col) => (
+                    <col
+                      key={col.key}
+                      style={{ width: `${schedColWidths[col.key] || DEFAULT_SCHED_COL_WIDTHS[col.key] || 100}px` }}
+                    />
+                  ))}
                 </colgroup>
                 <thead>
                   <tr>
-                    <th
-                      style={{ width: schedColWidths.stt }}
-                      className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none uppercase text-xs"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Số thứ tự">
-                        STT
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'stt')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
+                    {orderedSchedColumns.map((col) => {
+                      const canDrag = col.key !== 'stt';
+                      const isDragged = draggedColKey === col.key;
+                      const isOver = dragOverColKey === col.key;
 
-                    <th
-                      style={{ width: schedColWidths.ngayLam }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Ngày Làm">
-                        Ngày Làm
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'ngayLam')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.tenCa }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Ca Trực">
-                        Ca Trực
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'tenCa')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.khungGio }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Khung Giờ">
-                        Khung Giờ
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'khungGio')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.soGioLam }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-right"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Số Giờ">
-                        Số Giờ
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'soGioLam')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.khoaPhong }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-left"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Khoa / Phòng Khám">
-                        Khoa / Phòng Khám
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'khoaPhong')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.nguonLich }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Nguồn Lịch">
-                        Nguồn Lịch
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'nguonLich')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.trangThai }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Trạng Thái">
-                        Trạng Thái
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'trangThai')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: schedColWidths.ghiChu }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-left"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Ghi Chú">
-                        Ghi Chú
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'ghiChu')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
+                      return (
+                        <th
+                          key={col.key}
+                          draggable={canDrag}
+                          onDragStart={(e) => {
+                            if (canDrag) {
+                              e.dataTransfer.setData('text/plain', col.key);
+                              setDraggedColKey(col.key);
+                            }
+                          }}
+                          onDragOver={(e) => {
+                            if (canDrag) {
+                              e.preventDefault();
+                              setDragOverColKey(col.key);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverColKey === col.key) {
+                              setDragOverColKey(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            if (canDrag) {
+                              e.preventDefault();
+                              handleSchedColDrop(col.key);
+                            }
+                          }}
+                          style={{
+                            width: schedColWidths[col.key] || DEFAULT_SCHED_COL_WIDTHS[col.key] || 100,
+                            opacity: isDragged ? 0.4 : 1,
+                          }}
+                          className={`relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none ${col.align} ${
+                            isOver ? 'bg-blue-100 border-l-2 border-l-blue-600' : ''
+                          }`}
+                        >
+                          <div
+                            className={`w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center ${
+                              col.align === 'text-center'
+                                ? 'justify-center'
+                                : col.align === 'text-right'
+                                ? 'justify-end'
+                                : 'justify-start'
+                            }`}
+                            title={col.label}
+                          >
+                            {canDrag && (
+                              <i
+                                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[10px] opacity-40 hover:opacity-100"
+                                title="Kéo chuột để đổi vị trí cột"
+                              />
+                            )}
+                            <span>{col.label}</span>
+                          </div>
+                          {/* Resizer Handle */}
+                          <div
+                            className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
+                            onMouseDown={(e) => handleColResizeStart(e, col.key)}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Kéo chuột để đổi độ rộng cột"
+                          />
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-500">
+                      <td colSpan={orderedSchedColumns.length} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-500">
                         <i className="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải dữ liệu lịch làm việc...
                       </td>
                     </tr>
-                  ) : paginatedSchedules.length === 0 ? (
+                  ) : customSchedules.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-400">
+                      <td colSpan={orderedSchedColumns.length} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-400">
                         Chưa có lịch làm việc được phân bổ.
                       </td>
                     </tr>
@@ -714,82 +1121,38 @@ export const DoctorSchedulePage: React.FC = () => {
                       const stt = (schedPage - 1) * schedPageSize + idx + 1;
                       const rowKey = `sched-row-${s.id || idx}`;
                       const rowHeight = schedRowHeights[rowKey] || 36;
-                      const startTime = formatTimeSpan(s.thoiGianBatDau);
-                      const endTime = formatTimeSpan(s.thoiGianKetThuc);
-                      const clinicRoom = s.tenPhongKham ? ` - ${s.tenPhongKham}` : '';
-                      const fullLocation = `${s.tenKhoa || '---'}${clinicRoom}`;
+                      const isRowOver = dragOverRowKey === rowKey;
+                      const isRowDragged = draggedRowKey === rowKey;
 
                       return (
                         <tr
                           key={s.id || idx}
-                          style={{ height: `${rowHeight}px` }}
-                          className="even:bg-slate-50/50 hover:bg-sky-50/60 transition-colors"
+                          style={{ height: `${rowHeight}px`, opacity: isRowDragged ? 0.4 : 1 }}
+                          className={`even:bg-slate-50/50 hover:bg-sky-50/60 transition-colors ${
+                            isRowOver ? 'border-t-2 border-t-blue-500 bg-blue-50/50' : ''
+                          }`}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', rowKey);
+                            setDraggedRowKey(rowKey);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOverRowKey(rowKey);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverRowKey === rowKey) {
+                              setDragOverRowKey(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleSchedRowDrop(rowKey);
+                          }}
                         >
-                          {/* STT Cell with Row Resizer Handle */}
-                          <td className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={`Dòng ${stt}`}>
-                              {stt}
-                            </div>
-                            <div
-                              className="row-resizer h-1.5 w-full absolute left-0 bottom-0 cursor-row-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                              onMouseDown={(e) => handleRowResizeStart(e, rowKey, rowHeight)}
-                              onClick={(e) => e.stopPropagation()}
-                              title="Kéo chuột để đổi chiều cao dòng"
-                            />
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-slate-800" title={formatDate(s.ngayLam)}>
-                              {formatDate(s.ngayLam)}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-sky-800" title={s.tenCa || 'Theo ca'}>
-                              {s.tenCa || 'Theo ca'}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs text-slate-700">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={`${startTime} - ${endTime}`}>
-                              {startTime} - {endTime}
-                            </div>
-                          </td>
-
-                          <td className="text-right align-middle px-2 py-1.5 border border-slate-300 font-mono font-semibold text-slate-900">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-end" title={`${Number(s.soGioLam || 0).toFixed(1)} giờ`}>
-                              {s.soGioLam != null ? `${Number(s.soGioLam).toFixed(1)}h` : '--'}
-                            </div>
-                          </td>
-
-                          <td className="text-left align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-800" title={fullLocation}>
-                              <strong>{s.tenKhoa || '---'}</strong>
-                              {s.tenPhongKham && <span className="text-slate-500 font-normal ml-1">({s.tenPhongKham})</span>}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={s.nguonLich}>
-                              {renderSourceBadge(s.nguonLich)}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={s.trangThai === 'LAM_VIEC' ? 'Làm việc' : 'Nghỉ phép'}>
-                              {s.trangThai === 'LAM_VIEC' ? (
-                                <span className="badge-status-tag on-time" title="Trực ca làm việc">Làm việc</span>
-                              ) : (
-                                <span className="badge-status-tag absent" title="Nghỉ phép">Nghỉ phép</span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="text-left align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-500 text-xs" title={s.ghiChu || '---'}>
-                              {s.ghiChu || '---'}
-                            </div>
-                          </td>
+                          {orderedSchedColumns.map((col) =>
+                            renderSchedCell(col.key, s, stt, rowKey, rowHeight)
+                          )}
                         </tr>
                       );
                     })
@@ -801,164 +1164,95 @@ export const DoctorSchedulePage: React.FC = () => {
             <div className="sched-table-wrap w-full overflow-auto border border-slate-300 rounded-none bg-white">
               <table className="table-fixed w-max min-w-full border-collapse border border-slate-300 divide-x divide-y divide-slate-300">
                 <colgroup>
-                  <col style={{ width: `${attColWidths.stt}px` }} />
-                  <col style={{ width: `${attColWidths.ngayChamCong}px` }} />
-                  <col style={{ width: `${attColWidths.tenCa}px` }} />
-                  <col style={{ width: `${attColWidths.checkIn}px` }} />
-                  <col style={{ width: `${attColWidths.checkOut}px` }} />
-                  <col style={{ width: `${attColWidths.gioThucTe}px` }} />
-                  <col style={{ width: `${attColWidths.diMuonVeSom}px` }} />
-                  <col style={{ width: `${attColWidths.trangThai}px` }} />
-                  <col style={{ width: `${attColWidths.ghiChu}px` }} />
+                  {orderedAttColumns.map((col) => (
+                    <col
+                      key={col.key}
+                      style={{ width: `${attColWidths[col.key] || DEFAULT_ATT_COL_WIDTHS[col.key] || 100}px` }}
+                    />
+                  ))}
                 </colgroup>
                 <thead>
                   <tr>
-                    <th
-                      style={{ width: attColWidths.stt }}
-                      className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none uppercase text-xs"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Số thứ tự">
-                        STT
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'stt')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
+                    {orderedAttColumns.map((col) => {
+                      const canDrag = col.key !== 'stt';
+                      const isDragged = draggedColKey === col.key;
+                      const isOver = dragOverColKey === col.key;
 
-                    <th
-                      style={{ width: attColWidths.ngayChamCong }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Ngày Chấm Công">
-                        Ngày Chấm Công
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'ngayChamCong')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.tenCa }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Ca Trực">
-                        Ca Trực
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'tenCa')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.checkIn }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Giờ Check-in">
-                        Check-in
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'checkIn')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.checkOut }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Giờ Check-out">
-                        Check-out
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'checkOut')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.gioThucTe }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-right"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Giờ Thực Tế">
-                        Giờ Thực Tế
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'gioThucTe')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.diMuonVeSom }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Đi Muộn / Về Sớm">
-                        Đi Muộn / Về Sớm
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'diMuonVeSom')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.trangThai }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-center"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Trạng Thái">
-                        Trạng Thái
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'trangThai')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
-
-                    <th
-                      style={{ width: attColWidths.ghiChu }}
-                      className="relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none text-left"
-                    >
-                      <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title="Ghi Chú">
-                        Ghi Chú
-                      </div>
-                      <div
-                        className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                        onMouseDown={(e) => handleColResizeStart(e, 'ghiChu')}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Kéo chuột để đổi độ rộng cột"
-                      />
-                    </th>
+                      return (
+                        <th
+                          key={col.key}
+                          draggable={canDrag}
+                          onDragStart={(e) => {
+                            if (canDrag) {
+                              e.dataTransfer.setData('text/plain', col.key);
+                              setDraggedColKey(col.key);
+                            }
+                          }}
+                          onDragOver={(e) => {
+                            if (canDrag) {
+                              e.preventDefault();
+                              setDragOverColKey(col.key);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverColKey === col.key) {
+                              setDragOverColKey(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            if (canDrag) {
+                              e.preventDefault();
+                              handleAttColDrop(col.key);
+                            }
+                          }}
+                          style={{
+                            width: attColWidths[col.key] || DEFAULT_ATT_COL_WIDTHS[col.key] || 100,
+                            opacity: isDragged ? 0.4 : 1,
+                          }}
+                          className={`relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none ${col.align} ${
+                            isOver ? 'bg-blue-100 border-l-2 border-l-blue-600' : ''
+                          }`}
+                        >
+                          <div
+                            className={`w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center ${
+                              col.align === 'text-center'
+                                ? 'justify-center'
+                                : col.align === 'text-right'
+                                ? 'justify-end'
+                                : 'justify-start'
+                            }`}
+                            title={col.label}
+                          >
+                            {canDrag && (
+                              <i
+                                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[10px] opacity-40 hover:opacity-100"
+                                title="Kéo chuột để đổi vị trí cột"
+                              />
+                            )}
+                            <span>{col.label}</span>
+                          </div>
+                          {/* Resizer Handle */}
+                          <div
+                            className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
+                            onMouseDown={(e) => handleColResizeStart(e, col.key)}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Kéo chuột để đổi độ rộng cột"
+                          />
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-500">
+                      <td colSpan={orderedAttColumns.length} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-500">
                         <i className="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải lịch sử chấm công...
                       </td>
                     </tr>
-                  ) : paginatedAttendances.length === 0 ? (
+                  ) : customAttendances.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-400">
+                      <td colSpan={orderedAttColumns.length} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-400">
                         Chưa có bản ghi chấm công nào trong kỳ này.
                       </td>
                     </tr>
@@ -967,101 +1261,38 @@ export const DoctorSchedulePage: React.FC = () => {
                       const stt = (attPage - 1) * attPageSize + idx + 1;
                       const rowKey = `att-row-${a.id || idx}`;
                       const rowHeight = attRowHeights[rowKey] || 36;
-                      const lateMin = a.phutDiMuon ?? 0;
-                      const earlyMin = a.phutVeSom ?? 0;
+                      const isRowOver = dragOverRowKey === rowKey;
+                      const isRowDragged = draggedRowKey === rowKey;
 
                       return (
                         <tr
                           key={a.id || idx}
-                          style={{ height: `${rowHeight}px` }}
-                          className="even:bg-slate-50/50 hover:bg-sky-50/60 transition-colors"
+                          style={{ height: `${rowHeight}px`, opacity: isRowDragged ? 0.4 : 1 }}
+                          className={`even:bg-slate-50/50 hover:bg-sky-50/60 transition-colors ${
+                            isRowOver ? 'border-t-2 border-t-blue-500 bg-blue-50/50' : ''
+                          }`}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', rowKey);
+                            setDraggedRowKey(rowKey);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOverRowKey(rowKey);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverRowKey === rowKey) {
+                              setDragOverRowKey(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleAttRowDrop(rowKey);
+                          }}
                         >
-                          {/* STT Cell with Row Resizer Handle */}
-                          <td className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={`Dòng ${stt}`}>
-                              {stt}
-                            </div>
-                            <div
-                              className="row-resizer h-1.5 w-full absolute left-0 bottom-0 cursor-row-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                              onMouseDown={(e) => handleRowResizeStart(e, rowKey, rowHeight)}
-                              onClick={(e) => e.stopPropagation()}
-                              title="Kéo chuột để đổi chiều cao dòng"
-                            />
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-slate-800" title={formatDate(a.ngayChamCong)}>
-                              {formatDate(a.ngayChamCong)}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center text-slate-800 font-medium" title={a.tenCa || 'Theo ca trực'}>
-                              {a.tenCa || 'Theo ca trực'}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.checkIn ? formatTime(a.checkIn) : 'Chưa check-in'}>
-                              {a.checkIn ? (
-                                <span className="font-semibold text-emerald-700">
-                                  <i className="fa-solid fa-arrow-down-long text-[10px] mr-1"></i>
-                                  {formatTime(a.checkIn)}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">---</span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.checkOut ? formatTime(a.checkOut) : 'Chưa check-out'}>
-                              {a.checkOut ? (
-                                <span className="font-semibold text-amber-700">
-                                  <i className="fa-solid fa-arrow-up-long text-[10px] mr-1"></i>
-                                  {formatTime(a.checkOut)}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">---</span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="text-right align-middle px-2 py-1.5 border border-slate-300 font-mono font-semibold text-slate-900">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-end" title={a.gioLamThucTe != null ? `${Number(a.gioLamThucTe).toFixed(1)} giờ` : '---'}>
-                              {a.gioLamThucTe != null ? `${Number(a.gioLamThucTe).toFixed(1)}h` : '---'}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300 text-xs">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={lateMin > 0 || earlyMin > 0 ? `Muộn: ${lateMin}p, Sớm: ${earlyMin}p` : 'Đúng giờ'}>
-                              {lateMin > 0 && (
-                                <span className="text-rose-600 font-semibold mr-1.5">
-                                  Muộn {lateMin}p
-                                </span>
-                              )}
-                              {earlyMin > 0 && (
-                                <span className="text-amber-600 font-semibold">
-                                  Sớm {earlyMin}p
-                                </span>
-                              )}
-                              {lateMin === 0 && earlyMin === 0 && (
-                                <span className="text-slate-400">Không</span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="text-center align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.trangThai}>
-                              {renderAttendanceStatus(a.trangThai)}
-                            </div>
-                          </td>
-
-                          <td className="text-left align-middle px-2 py-1.5 border border-slate-300">
-                            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-500 text-xs" title={a.ghiChu || '---'}>
-                              {a.ghiChu || '---'}
-                            </div>
-                          </td>
+                          {orderedAttColumns.map((col) =>
+                            renderAttCell(col.key, a, stt, rowKey, rowHeight)
+                          )}
                         </tr>
                       );
                     })
@@ -1092,8 +1323,8 @@ export const DoctorSchedulePage: React.FC = () => {
                       setSchedPage(1);
                     }}
                   >
-                    <option value={15}>15</option>
-                    <option value={25}>25</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
                   </select>
@@ -1164,8 +1395,8 @@ export const DoctorSchedulePage: React.FC = () => {
                       setAttPage(1);
                     }}
                   >
-                    <option value={15}>15</option>
-                    <option value={25}>25</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
                   </select>

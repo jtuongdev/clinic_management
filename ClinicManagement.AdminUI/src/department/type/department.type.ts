@@ -1,7 +1,9 @@
 
 export interface KhoaDropdownDto {
   id: number;
+  ma?: string;
   ten: string;
+  maCoSo?: number;
 }
 
 

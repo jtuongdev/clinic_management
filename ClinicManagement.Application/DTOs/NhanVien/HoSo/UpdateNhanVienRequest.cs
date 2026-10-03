@@ -10,7 +10,9 @@ namespace ClinicManagement.Application.DTOs.NhanVien
         public string Email { get; set; } = string.Empty;
         public string DienThoai { get; set; } = string.Empty;
         public int? MaChucVu { get; set; }
+        public int? MaKhoa { get; set; }
         public string ChuyenKhoa { get; set; } = string.Empty;
         public string SoHanhNghe { get; set; } = string.Empty;
+        public decimal? LuongCoBan { get; set; }
     }
 }

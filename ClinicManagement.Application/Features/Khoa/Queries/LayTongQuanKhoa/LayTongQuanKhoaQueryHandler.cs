@@ -24,7 +24,7 @@ namespace ClinicManagement.Application.Features.Khoa.Queries
             LayTongQuanKhoaQuery request,
             CancellationToken cancellationToken)
         {
-            // 1. Lấy dữ liệu từ Repository (đã Include đầy đủ)
+            // 1. Lấy dữ liệu từ Repository
             var khoas = await _khoaRepo.GetKhoasWithDetailsAsync(
                 request.MaCoSo,
                 cancellationToken);

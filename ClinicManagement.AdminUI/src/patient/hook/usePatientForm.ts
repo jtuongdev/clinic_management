@@ -60,14 +60,18 @@ export const usePatientForm = (
         maKhoa: values.maKhoa,
         maBacSi: values.maBacSi ?? undefined,
         maPhongKham: values.maPhongKham ?? undefined,
-        baoHiem: values.baoHiem
+        baoHiem: values.baoHiem && values.baoHiem.soThe?.trim()
           ? {
-              loaiBaoHiem: loaiBaoHiemMap[values.baoHiem.loaiBaoHiem],
-              tenNhaCungCap: values.baoHiem.tenNhaCungCap,
-              soThe: values.baoHiem.soThe,
-              ngayBatDau: values.baoHiem.ngayBatDau.toDate(),
-              ngayKetThuc: values.baoHiem.ngayKetThuc.toDate(),
-              mucHuong: values.baoHiem.mucHuong,
+              loaiBaoHiem: loaiBaoHiemMap[values.baoHiem.loaiBaoHiem] || 1,
+              tenNhaCungCap: values.baoHiem.tenNhaCungCap || '',
+              soThe: values.baoHiem.soThe.trim(),
+              ngayBatDau: values.baoHiem.ngayBatDau
+                ? (dayjs.isDayjs(values.baoHiem.ngayBatDau) ? values.baoHiem.ngayBatDau.toDate() : new Date(values.baoHiem.ngayBatDau))
+                : new Date(),
+              ngayKetThuc: values.baoHiem.ngayKetThuc
+                ? (dayjs.isDayjs(values.baoHiem.ngayKetThuc) ? values.baoHiem.ngayKetThuc.toDate() : new Date(values.baoHiem.ngayKetThuc))
+                : new Date(),
+              mucHuong: Number(values.baoHiem.mucHuong) || 0,
             }
           : undefined,
         tienSuBenhs: values.tienSuList

@@ -1,0 +1,197 @@
+/* ==========================================================================
+   EXCEL HIGH-DENSITY ENTERPRISE DATA GRID STANDARD
+   ========================================================================== */
+
+/* 1. KHUNG BẢNG TOÀN DIỆN */
+.excel-grid-container {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: auto;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* 2. CẤU TRÚC TABLE KHÓA CỘNG DỒN / CHỐNG VỠ DÒNG */
+table.excel-table,
+.excel-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  border-collapse: collapse !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  color: #1e293b;
+}
+
+/* 3. CHIỀU CAO & PADDING DÒNG CHUẨN */
+.excel-table tr.h-9,
+.excel-table th.h-9,
+.excel-table td.h-9 {
+  height: 36px !important;
+  min-height: 36px !important;
+}
+
+.excel-table th,
+.excel-table td {
+  box-sizing: border-box !important;
+  border-right: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  vertical-align: middle !important;
+  padding: 6px 10px !important;
+  position: relative;
+}
+
+/* 4. THEAD STICKY CỐ ĐỊNH */
+.excel-table thead th {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid #cbd5e1 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 15 !important;
+  user-select: none;
+}
+
+/* 5. CỘT STT CỐ ĐỊNH LEFT (STICKY) */
+.excel-table th.col-stt,
+.excel-table td.col-stt,
+.col-stt {
+  width: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
+  text-align: center !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-weight: 600 !important;
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 12 !important;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+.excel-table thead th.col-stt {
+  background-color: #f1f5f9 !important;
+  z-index: 25 !important;
+}
+
+/* 6. CĂN LỀ & FONT CHUẨN */
+.excel-table .text-center { text-align: center !important; }
+.excel-table .text-left { text-align: left !important; }
+.excel-table .text-right { text-align: right !important; }
+
+.font-mono,
+.tabular-nums {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* 7. Ô VĂN BẢN TRUNCATE */
+.cell-truncate,
+.excel-cell-text {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: block !important;
+}
+
+/* 8. DÒNG SO LE & HOVER CHUẨN KẾ TOÁN - KHO */
+.excel-table tbody tr:nth-child(even) td {
+  background-color: rgba(248, 250, 252, 0.65);
+}
+
+.excel-table tbody tr:hover td {
+  background-color: #eff6ff !important;
+}
+
+.excel-table tbody tr.active-row td {
+  background-color: #e0f2fe !important;
+}
+
+/* 9. TAY NẮM KÉO THẢ RESIZE CỘT */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 20;
+}
+
+.col-resizer:hover,
+.col-resizer.is-resizing {
+  background-color: #2563eb !important;
+}
+
+/* 10. ENTERPRISE STATUS BADGE */
+.excel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.excel-badge.warning,
+.excel-badge.pending {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde047;
+}
+
+.excel-badge.info,
+.excel-badge.approved {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
+}
+
+.excel-badge.success,
+.excel-badge.received {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.excel-badge.danger,
+.excel-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.dept-code-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  margin-right: 6px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}

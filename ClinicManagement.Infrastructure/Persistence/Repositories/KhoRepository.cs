@@ -1,8 +1,10 @@
 using ClinicManagement.Domain.Billing;
 using ClinicManagement.Domain.Examination;
+using ClinicManagement.Domain.Facility;
 using ClinicManagement.Domain.Inventory;
 using ClinicManagement.Domain.Prescription;
 using ClinicManagement.Domain.Repositories;
+using ClinicManagement.Domain.Service;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ClinicManagement.Infrastructure.Persistence.Repositories;
@@ -26,7 +28,9 @@ public sealed class KhoRepository(ClinicDbContext context) : IKhoRepository
     public IQueryable<HoaDon> HoaDons => context.HoaDons;
     public IQueryable<Stocktake> Stocktakes => context.Stocktakes;
     public IQueryable<StocktakeCount> StocktakeCounts => context.StocktakeCounts;
-    public IQueryable<ClinicManagement.Domain.Service.DinhMucVatTuDichVu> DinhMucVatTuDichVus => context.DinhMucVatTuDichVus;
+    public IQueryable<DinhMucVatTuDichVu> DinhMucVatTuDichVus => context.DinhMucVatTuDichVus;
+    public IQueryable<Khoa> Khoas => context.Khoas;
+    public IQueryable<ChiDinhDichVu> ChiDinhDichVus => context.ChiDinhDichVus;
 
     public void Add<TEntity>(TEntity entity) where TEntity : class
         => context.Set<TEntity>().Add(entity);

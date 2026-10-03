@@ -90,19 +90,58 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       destroyOnHidden
       width={500}
     >
-      <div style={{ marginBottom: 16 }}>
-        <Alert
-          type="info"
-          showIcon
-          message={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Số tiền bệnh nhân còn nợ:</span>
-              <Text strong style={{ fontSize: 16, color: conNo > 0 ? '#cf1322' : '#16a34a' }}>
-                {conNo.toLocaleString('vi-VN')} ₫
+      <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Chi tiết khấu trừ BHYT tự động */}
+        <div
+          style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 8,
+            padding: '10px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            fontSize: 13,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+            <span>Tổng chi phí (dịch vụ & thuốc):</span>
+            <Text strong>{(invoice?.tongTien || 0).toLocaleString('vi-VN')} ₫</Text>
+          </div>
+          {(invoice?.soTienBaoHiemChiTra || 0) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0284c7' }}>
+              <span>
+                BHYT chi trả {invoice?.mucHuongBHYT ? `(${invoice.mucHuongBHYT}%)` : ''}:
+              </span>
+              <Text strong style={{ color: '#0284c7' }}>
+                -{(invoice?.soTienBaoHiemChiTra || 0).toLocaleString('vi-VN')} ₫
               </Text>
             </div>
-          }
-        />
+          )}
+          {(invoice?.daThanhToan || 0) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a' }}>
+              <span>Đã thanh toán trước đó:</span>
+              <Text strong style={{ color: '#16a34a' }}>
+                -{(invoice?.daThanhToan || 0).toLocaleString('vi-VN')} ₫
+              </Text>
+            </div>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderTop: '1px dashed #cbd5e1',
+              paddingTop: 6,
+              marginTop: 2,
+            }}
+          >
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>Bệnh nhân cần nộp:</span>
+            <Text strong style={{ fontSize: 16, color: conNo > 0 ? '#cf1322' : '#16a34a' }}>
+              {conNo.toLocaleString('vi-VN')} ₫
+            </Text>
+          </div>
+        </div>
       </div>
 
       <Form form={form} layout="vertical">

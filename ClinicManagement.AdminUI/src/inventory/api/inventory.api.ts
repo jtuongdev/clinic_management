@@ -32,7 +32,16 @@ import {
   PurchaseOrderForImportDto,
   CreateImportFromPoRequest,
   ImportFromPoResult,
+  ProcedureSupplyExportDto,
+  GetProcedureSupplyExportsParams,
+  // Department Dispense
+  TaoYeuCauXuatNoiBoRequest,
+  InternalDispenseDto,
+  GetInternalDispenseParams,
+  DepartmentUsageStatDto,
+  GetDepartmentUsageParams,
 } from '../types/inventory.types';
+
 
 export const inventoryApi = {
   // SUPPLIERS
@@ -86,6 +95,11 @@ export const inventoryApi = {
 
   previewFefo: (prescriptionId: number) =>
     api.get<ApiResponse<FefoPreviewResult>>(`/inventory/prescriptions/${prescriptionId}/preview-fefo`),
+  getProcedureSupplyExports: (params?: GetProcedureSupplyExportsParams) =>
+    api.get<ApiResponse<{ items: ProcedureSupplyExportDto[]; total: number; pageIndex: number; pageSize: number }>>(
+      '/inventory/exports/procedure-supplies',
+      { params }
+    ),
   exportInternalUse: (data: ExportRequest) =>
     api.post<ApiResponse<ExportResult>>('/inventory/exports/internal-use', data),
   returnToSupplier: (data: StockMutationRequest) =>
@@ -146,4 +160,43 @@ export const inventoryApi = {
 
   createImportFromPo: (data: CreateImportFromPoRequest) =>
     api.post<ApiResponse<ImportFromPoResult>>('/purchase-orders/import-receipt', data),
+
+  // ── Xuất cấp phát nội bộ Khoa/Phòng ────────────────────────────────────────
+
+  /** Khoa/Phòng tạo yêu cầu xin cấp phát vật tư tiêu hao */
+  createInternalRequest: (data: TaoYeuCauXuatNoiBoRequest) =>
+    api.post<ApiResponse<{ id: number; maPhieu: string; trangThai: string }>>('/inventory/dispense/internal-request', data),
+
+  /** Admin duyệt phiếu — trừ kho FEFO */
+  approveInternalDispense: (id: number) =>
+    api.put<ApiResponse<{ id: number; maPhieu: string; trangThai: string }>>(`/inventory/dispense/${id}/approve`),
+
+  /** Trưởng khoa xác nhận đã nhận hàng */
+  confirmReceived: (id: number, nguoiNhanId?: number, ghiChuNhanHang?: string) =>
+    api.put<ApiResponse<{ id: number; maPhieu: string; trangThai: string }>>(
+      `/inventory/dispense/${id}/confirm-received`,
+      { nguoiNhanId, ghiChuNhanHang },
+      { params: { nguoiNhanId, ghiChuNhanHang } },
+    ),
+
+  /** Admin từ chối phiếu */
+  rejectInternalDispense: (id: number, lyDo: string) =>
+    api.put<ApiResponse<{ id: number; maPhieu: string; trangThai: string }>>(`/inventory/dispense/${id}/reject`, null, {
+      params: { lyDo },
+    }),
+
+  /** Lấy danh sách phiếu xuất nội bộ Khoa/Phòng */
+  getInternalDispenseList: (params?: GetInternalDispenseParams) =>
+    api.get<ApiResponse<{ items: InternalDispenseDto[]; total: number; pageIndex: number; pageSize: number }>>(
+      '/inventory/dispense/internal-list',
+      { params },
+    ),
+
+  /** Thống kê tiêu hao theo Khoa/Phòng trong kỳ */
+  getDepartmentUsageStats: (params: GetDepartmentUsageParams) =>
+    api.get<ApiResponse<{ items: DepartmentUsageStatDto[]; tuNgay: string; denNgay: string }>>(
+      '/inventory/dispense/department-usage-stats',
+      { params },
+    ),
 };
+

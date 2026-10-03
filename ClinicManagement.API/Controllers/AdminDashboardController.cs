@@ -3,6 +3,9 @@ using System.Text;
 using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Infrastructure.Persistence;
 using ClinicManagement.API.Authorization;
+using ClinicManagement.Application.Features.ThongKe.Queries.LayBaoCaoLamSang;
+using ClinicManagement.Application.Features.ThongKe.Queries.XuatBaoCaoLamSang;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +14,7 @@ namespace ClinicManagement.API.Controllers;
 [ApiController]
 [ClinicalAuthorize("audit", HanhDongQuyen.XEM, PhamViDuLieu.TOAN_HE_THONG)]
 [Route("api/admin/dashboard")]
-public sealed class AdminDashboardController(ClinicDbContext db) : BaseController
+public sealed class AdminDashboardController(ClinicDbContext db, IMediator mediator) : BaseController
 {
     [HttpGet("overview")]
     public async Task<IActionResult> GetOverview(
@@ -143,53 +146,20 @@ public sealed class AdminDashboardController(ClinicDbContext db) : BaseControlle
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null,
         [FromQuery] int? facilityId = null,
+        [FromQuery] int? departmentId = null,
+        [FromQuery] string? shift = null,
         CancellationToken cancellationToken = default)
     {
-        var from = (fromDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1)).Date;
-        var to = (toDate ?? DateTime.UtcNow).Date.AddDays(1);
-        var visits = db.LuotKhams.AsNoTracking()
-            .Where(x => x.NgayKham >= from && x.NgayKham < to &&
-                        x.TrangThai == TrangThaiLuotKham.HOAN_THANH);
-        if (facilityId.HasValue)
-            visits = visits.Where(x => x.MaCoSo == facilityId.Value);
-
-        var invoiceReportQuery = db.HoaDons.AsNoTracking()
-            .Where(x => x.NgayLap >= from && x.NgayLap < to);
-        if (facilityId.HasValue)
-            invoiceReportQuery = invoiceReportQuery.Where(x => x.MaCoSo == facilityId.Value);
-
-        var revenue = await invoiceReportQuery
-            .GroupBy(x => x.LuotKham.Khoa != null ? x.LuotKham.Khoa.Ten : "Chưa phân loại")
-            .Select(g => new { name = g.Key, value = g.Sum(x => x.DaThanhToan) })
-            .OrderByDescending(x => x.value)
-            .ToListAsync(cancellationToken);
-
-        var doctors = await visits.Where(x => x.MaBacSi.HasValue)
-            .GroupBy(x => new { x.MaBacSi, name = x.BacSi.HoTen, department = x.Khoa.Ten })
-            .Select(g => new { name = g.Key.name, department = g.Key.department, count = g.Count() })
-            .OrderByDescending(x => x.count)
-            .Take(20)
-            .ToListAsync(cancellationToken);
-
-        return Success(new
+        var result = await mediator.Send(new LayBaoCaoLamSangQuery
         {
-            kpis = new
-            {
-                revenue = revenue.Sum(x => x.value),
-                completedVisits = await visits.CountAsync(cancellationToken),
-                activeDoctors = await db.NhanViens.AsNoTracking().CountAsync(x => x.IsActive && x.ChuyenKhoa != "", cancellationToken),
-                openDepartments = await db.Khoas.AsNoTracking().CountAsync(x => !facilityId.HasValue || x.MaCoSo == facilityId.Value, cancellationToken),
-                bhytReimbursementRate = await GetReimbursementRateAsync(invoiceReportQuery, cancellationToken)
-            },
-            revenueByDepartment = revenue,
-            doctorKpis = doctors.Select((x, index) => new
-            {
-                rank = index + 1,
-                name = x.name,
-                department = x.department,
-                count = x.count
-            })
-        });
+            FacilityId = facilityId,
+            DepartmentId = departmentId,
+            FromDate = fromDate,
+            ToDate = toDate,
+            Shift = shift
+        }, cancellationToken);
+
+        return Success(result);
     }
 
     [HttpGet("staff")]
@@ -243,51 +213,21 @@ public sealed class AdminDashboardController(ClinicDbContext db) : BaseControlle
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null,
         [FromQuery] int? facilityId = null,
+        [FromQuery] int? departmentId = null,
+        [FromQuery] string? shift = null,
+        [FromQuery] string format = "csv",
         CancellationToken cancellationToken = default)
     {
-        var from = (fromDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1)).Date;
-        var to = (toDate ?? DateTime.UtcNow).Date.AddDays(1);
-        var invoiceQuery = db.HoaDons.AsNoTracking().Where(x => x.NgayLap >= from && x.NgayLap < to);
-        if (facilityId.HasValue)
-            invoiceQuery = invoiceQuery.Where(x => x.MaCoSo == facilityId.Value);
-        var revenue = await invoiceQuery
-            .GroupBy(x => x.LuotKham.Khoa != null ? x.LuotKham.Khoa.Ten : "Chưa phân loại")
-            .Select(g => new { name = g.Key, value = g.Sum(x => x.DaThanhToan) })
-            .OrderByDescending(x => x.value)
-            .ToListAsync(cancellationToken);
-        var visits = db.LuotKhams.AsNoTracking()
-            .Where(x => x.NgayKham >= from && x.NgayKham < to &&
-                        x.TrangThai == TrangThaiLuotKham.HOAN_THANH);
-        if (facilityId.HasValue)
-            visits = visits.Where(x => x.MaCoSo == facilityId.Value);
-        var doctors = await visits.Where(x => x.MaBacSi.HasValue)
-            .GroupBy(x => new { x.MaBacSi, name = x.BacSi.HoTen, department = x.Khoa.Ten })
-            .Select(g => new { name = g.Key.name, department = g.Key.department, count = g.Count() })
-            .OrderByDescending(x => x.count)
-            .Take(20)
-            .ToListAsync(cancellationToken);
-        var csv = new StringBuilder();
-        csv.AppendLine("Loai,Ten,ChiTiet,SoLuong,GiaTri");
-        csv.AppendLine($"KPI,\"Doanh thu\",\"{from:O} - {to:O}\",{await visits.CountAsync(cancellationToken)},{revenue.Sum(x => x.value).ToString(CultureInfo.InvariantCulture)}");
-        foreach (var row in revenue)
-            csv.AppendLine($"DoanhThuKhoa,{Csv(row.name)},,," +
-                           row.value.ToString(CultureInfo.InvariantCulture));
-        foreach (var row in doctors)
-            csv.AppendLine($"KPIBacSi,{Csv(row.name)},{Csv(row.department)},{row.count},");
-        return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv; charset=utf-8",
-            $"bao-cao-kham-benh-{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
-    }
+        var fileResult = await mediator.Send(new XuatBaoCaoLamSangQuery
+        {
+            FacilityId = facilityId,
+            DepartmentId = departmentId,
+            FromDate = fromDate,
+            ToDate = toDate,
+            Shift = shift,
+            Format = format
+        }, cancellationToken);
 
-    private async Task<decimal?> GetReimbursementRateAsync(
-        IQueryable<ClinicManagement.Domain.Billing.HoaDon> query,
-        CancellationToken cancellationToken)
-    {
-        var totals = await query.Select(x => new { x.TongTien, x.SoTienBaoHiemChiTra })
-            .ToListAsync(cancellationToken);
-        var total = totals.Sum(x => x.TongTien);
-        return total <= 0 ? null : Math.Round(totals.Sum(x => x.SoTienBaoHiemChiTra) / total * 100, 2);
+        return File(fileResult.FileContent, fileResult.ContentType, fileResult.FileName);
     }
-
-    private static string Csv(string value)
-        => $"\"{value.Replace("\"", "\"\"")}\"";
 }

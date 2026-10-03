@@ -65,16 +65,22 @@ export interface ExaminationReportsDto {
     activeDoctors: number;
     openDepartments: number;
     bhytReimbursementRate: number | null;
+    patientSatisfactionRate?: number | null;
+    satisfactionRate?: number | null;
   };
   revenueByDepartment: Array<{
     name: string;
     value: number;
+    percentage?: number;
   }>;
   doctorKpis: Array<{
     rank: number;
+    doctorId?: number;
     name: string;
     department: string;
     count: number;
+    rating?: string;
+    revenue?: number;
   }>;
 }
 
@@ -95,12 +101,12 @@ export const dashboardApi = {
   },
 
   // GET /api/admin/dashboard/reports
-  getReports: (params?: { fromDate?: string; toDate?: string; facilityId?: number }) => {
+  getReports: (params?: { fromDate?: string; toDate?: string; facilityId?: number; departmentId?: number; shift?: string }) => {
     return api.get<{ success: boolean; data: ExaminationReportsDto }>('/admin/dashboard/reports', { params });
   },
 
   // GET /api/admin/dashboard/reports/export
-  exportReportsCsv: (params?: { fromDate?: string; toDate?: string; facilityId?: number }) => {
+  exportReportsCsv: (params?: { fromDate?: string; toDate?: string; facilityId?: number; departmentId?: number; shift?: string }) => {
     return api.get('/admin/dashboard/reports/export', { params, responseType: 'blob' });
   },
 };

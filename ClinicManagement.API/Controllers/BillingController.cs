@@ -76,4 +76,51 @@ public sealed class BillingController(IMediator mediator) : BaseController
     public async Task<IActionResult> GetOverdueDebts(
         [FromQuery] int facilityId = 0, CancellationToken cancellationToken = default)
         => Success(await mediator.Send(new LayCongNoQuaHanQuery(facilityId), cancellationToken));
+
+    [HttpGet("debts/patients")]
+    public async Task<IActionResult> GetPatientDebtsPaged(
+        [FromQuery] int facilityId = 0,
+        [FromQuery] string? status = null,
+        [FromQuery] string? keyword = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+        => Success(await mediator.Send(
+            new LayDanhSachCongNoBenhNhanQuery(facilityId, status, keyword, fromDate, toDate, pageIndex, pageSize),
+            cancellationToken));
+
+    [HttpGet("debts/suppliers")]
+    public async Task<IActionResult> GetSupplierDebts(
+        [FromQuery] int facilityId = 0,
+        [FromQuery] int? supplierId = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? keyword = null,
+        [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+        => Success(await mediator.Send(
+            new LayDanhSachCongNoNhaCungCapQuery(facilityId, supplierId, fromDate, toDate, status, keyword, pageIndex, pageSize),
+            cancellationToken));
+
+    [HttpGet("debts/suppliers/summary")]
+    public async Task<IActionResult> GetSupplierDebtsSummary(
+        [FromQuery] int facilityId = 0,
+        CancellationToken cancellationToken = default)
+        => Success(await mediator.Send(
+            new LayTongQuanCongNoNhaCungCapQuery(facilityId),
+            cancellationToken));
+
+    [HttpPost("debts/suppliers/payment")]
+    [ClinicalAuthorize("billing", HanhDongQuyen.TAO, PhamViDuLieu.CO_SO)]
+    public async Task<IActionResult> RecordSupplierPayment(
+        [FromBody] ThanhToanCongNoNhaCungCapRequest request,
+        CancellationToken cancellationToken)
+        => Success(await mediator.Send(
+            new ThanhToanCongNoNhaCungCapCommand(request, CurrentUserId),
+            cancellationToken),
+            "Ghi nhận thanh toán công nợ nhà cung cấp thành công");
 }

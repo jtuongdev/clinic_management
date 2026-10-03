@@ -8,6 +8,7 @@ using ClinicManagement.API.Common;
 using ClinicManagement.Application.DTOs.NhanVien;
 using ClinicManagement.Application.Features.NhanVien.Commands;
 using ClinicManagement.Application.Features.NhanVien.Queries;
+using ClinicManagement.Application.Features.NhanVien.Queries.LayDanhSachNhanVienLookup;
 using System;
 using System.Threading.Tasks;
 
@@ -45,6 +46,33 @@ namespace ClinicManagement.API.Controllers
                 Ngay = ngay,
                 PageIndex = pageIndex,
                 PageSize = pageSize
+            }, cancellationToken);
+
+            return Success(result);
+        }
+
+        /// <summary>
+        /// Lấy danh sách rút gọn nhân viên cho Dropdown / Lookup / Bộ lọc
+        /// </summary>
+        [HttpGet("lookup")]
+        [HttpGet("dropdown")]
+        public async Task<IActionResult> GetLookup(
+            [FromQuery] int? maKhoa = null,
+            [FromQuery] string? chucVu = null,
+            [FromQuery] int? maChucVu = null,
+            [FromQuery] int? maCoSo = null,
+            [FromQuery] string? keyword = null,
+            [FromQuery] bool? isActive = true,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _mediator.Send(new LayDanhSachNhanVienLookupQuery
+            {
+                MaKhoa = maKhoa,
+                ChucVu = chucVu,
+                MaChucVu = maChucVu,
+                MaCoSo = maCoSo,
+                Keyword = keyword,
+                IsActive = isActive
             }, cancellationToken);
 
             return Success(result);

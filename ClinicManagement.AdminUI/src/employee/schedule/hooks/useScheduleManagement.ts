@@ -42,6 +42,7 @@ export const useScheduleManagement = () => {
     activeCell: scheduleData.activeCell,
     coSos: scheduleData.coSos,
     employees: scheduleData.employees,
+    allEmployees: scheduleData.allEmployees,
     editing: scheduleData.editing,
     schedules: scheduleData.schedules,
     getSchedules,

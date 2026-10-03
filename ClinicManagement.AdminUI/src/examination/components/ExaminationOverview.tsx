@@ -337,7 +337,7 @@ const ExaminationOverview: React.FC = () => {
         </div>
 
         {/* Real-time Alerts Strip */}
-        <div
+        {/* <div
           style={{
             padding: '10px 16px',
             background: '#ffffff',
@@ -377,7 +377,7 @@ const ExaminationOverview: React.FC = () => {
               />
             </Col>
           </Row>
-        </div>
+        </div> */}
 
         {/* Middle Row: Department Volume + Online Clinic Status */}
         <Row style={{ borderBottom: '1px solid #e2e8f0' }}>

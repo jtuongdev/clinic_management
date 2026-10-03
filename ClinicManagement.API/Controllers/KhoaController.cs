@@ -3,11 +3,12 @@ using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Application.Features.Khoa.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 namespace ClinicManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[ClinicalAuthorize("inventory", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
+[Authorize]
 public class KhoaController : BaseController
 {
     private readonly IMediator _mediator;
@@ -19,15 +20,13 @@ public class KhoaController : BaseController
 
     [HttpGet("dropdown")]
     public async Task<IActionResult> GetDropdown(
-        [FromQuery] int maCoSo,
-        CancellationToken cancellationToken)
+        [FromQuery] int? maCoSo = null,
+        CancellationToken cancellationToken = default)
     {
-        int effectiveMaCoSo = maCoSo <= 0 ? 1 : maCoSo;
-
         var result = await _mediator.Send(
             new LayDanhSachKhoaDropdownQuery
             {
-                MaCoSo = effectiveMaCoSo
+                MaCoSo = maCoSo
             },
             cancellationToken);
 
@@ -35,6 +34,7 @@ public class KhoaController : BaseController
     }
 
     [HttpGet("overview")]
+    [ClinicalAuthorize("inventory", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
     public async Task<IActionResult> GetOverview(
         [FromQuery] int? maCoSo = null,
         CancellationToken cancellationToken = default)

@@ -23,6 +23,9 @@ import {
   StopOutlined,
   HistoryOutlined,
   FileTextOutlined,
+  IdcardOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -330,6 +333,41 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             </Row>
           </Card>
 
+          {/* BHYT Status Banner */}
+          {detail.soTheBHYT && (
+            <Card
+              size="small"
+              style={{
+                background: detail.bhytConHan === false ? '#fff1f0' : '#f0fdf4',
+                borderColor: detail.bhytConHan === false ? '#ffa39e' : '#bbf7d0',
+                borderRadius: 8,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <Space align="center" wrap>
+                  <IdcardOutlined style={{ color: detail.bhytConHan === false ? '#cf1322' : '#15803d', fontSize: 16 }} />
+                  <Text strong>Thẻ BHYT: {detail.soTheBHYT}</Text>
+                  <Tag color="processing" style={{ fontWeight: 600 }}>
+                    Mức hưởng: {detail.mucHuongBHYT}%
+                  </Tag>
+                  {detail.bhytConHan === false ? (
+                    <Tag color="error" icon={<CloseCircleOutlined />}>
+                      Đã hết hạn
+                    </Tag>
+                  ) : (
+                    <Tag color="success" icon={<CheckCircleOutlined />}>
+                      Còn hiệu lực (Đã tự động trừ BHYT)
+                    </Tag>
+                  )}
+                </Space>
+                <div style={{ fontSize: 12.5, color: '#334155' }}>
+                  Đã tự động giảm trừ BHYT:{' '}
+                  <strong style={{ color: '#0284c7' }}>{formatCurrency(detail.soTienBaoHiemChiTra)}</strong>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Financial summary row */}
           <Row gutter={12}>
             <Col span={6}>
@@ -346,7 +384,11 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             <Col span={6}>
               <Card size="small" style={{ background: '#f0f9ff' }}>
                 <Statistic
-                  title={<span style={{ fontSize: 12 }}>BHYT chi trả</span>}
+                  title={
+                    <span style={{ fontSize: 12 }}>
+                      BHYT chi trả {detail.mucHuongBHYT ? `(${detail.mucHuongBHYT}%)` : ''}
+                    </span>
+                  }
                   value={detail.soTienBaoHiemChiTra}
                   precision={0}
                   suffix="₫"

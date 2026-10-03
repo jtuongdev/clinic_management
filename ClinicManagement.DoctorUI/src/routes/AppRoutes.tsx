@@ -18,6 +18,7 @@ import { reportsRoutes } from '../reports/routes';
 import { systemRoutes } from '../system/routes';
 import { scheduleRoutes } from '../schedule/routes';
 import { payrollRoutes } from '../payroll/routes';
+import { appointmentRoutes } from '../appointment/routes';
 
 // Hàm hợp nhất routes
 const mergeRoutes = (...routesArrays: any[]) =>
@@ -55,6 +56,9 @@ export const router = createBrowserRouter([
 
         // Lịch làm việc & Chấm công
         scheduleRoutes,
+
+        // Lịch hẹn bệnh nhân
+        appointmentRoutes,
 
         // Bảng lương & Thu nhập
         payrollRoutes,

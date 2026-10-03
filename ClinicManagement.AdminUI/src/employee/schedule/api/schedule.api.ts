@@ -22,9 +22,12 @@ export const scheduleApi = {
   create: (data: CreateScheduleRequest) => api.post<ApiResponse<Schedule>>('/LichLamViec', data),
   update: (id: number, data: UpdateScheduleRequest) => api.put<ApiResponse<Schedule>>(`/LichLamViec/${id}`, data),
   remove: (id: number) => api.delete<ApiResponse<null>>(`/LichLamViec/${id}`),
-  getEmployees: (maKhoa?: number, ngay?: string) => api.get<ApiResponse<{ items: Employee[] }>>('/NhanVien', {
-    params: { pageIndex: 1, pageSize: 100, isActive: true, maKhoa, ngay },
-  }),
+  getEmployees: (maKhoa?: number, maCoSo?: number, chucVu?: string, keyword?: string) =>
+    api.get<ApiResponse<Employee[]>>('/NhanVien/lookup', {
+      params: { maKhoa, maCoSo, chucVu, keyword, isActive: true },
+    }),
+  getEmployeeDropdown: (params?: { maKhoa?: number; maCoSo?: number; chucVu?: string; keyword?: string; isActive?: boolean }) =>
+    api.get<ApiResponse<Employee[]>>('/NhanVien/dropdown', { params }),
   getShifts: () => api.get<ApiResponse<Shift[]>>('/CaTruc'),
   getFixed: (params: { maNhanVien?: number; maKhoa?: number }) =>
     api.get<ApiResponse<FixedSchedule[]>>('/LichLamViec/fixed', { params }),
@@ -99,7 +102,18 @@ export const scheduleApi = {
 export interface StatusCatalogItem { code: string; label: string; }
 export type StatusCatalog = StatusCatalogItem[];
 
-export interface Employee { id: number; hoTen: string; username: string; }
+export interface Employee {
+  id: number;
+  hoTen: string;
+  username: string;
+  maNhanVien?: string;
+  chucVu?: string;
+  vaiTro?: string;
+  maKhoa?: number;
+  tenKhoa?: string;
+  trangThaiHoatDong?: boolean;
+  isActive?: boolean;
+}
 export interface BulkScheduleRequest {
   maNhanVien: number[];
   maKhoa: number;

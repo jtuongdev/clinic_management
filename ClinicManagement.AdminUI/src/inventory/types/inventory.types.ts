@@ -430,3 +430,125 @@ export interface ImportFromPoResult {
   purchaseOrderStatus: string;
 }
 
+// ─── XUẤT VẬT TƯ KỸ THUẬT / THỦ THUẬT ─────────────────────────────────────────
+
+export interface ProcedureSupplyExportItemDto {
+  id: number;
+  maItem: number;
+  maItemCode: string;
+  tenItem: string;
+  loaiItem: string;
+  donViTinh: string;
+  soLo: string;
+  hanSuDung?: string | null;
+  soLuongXuat: number;
+  donGiaXuat: number;
+  thanhTien: number;
+}
+
+export interface ProcedureSupplyExportDto {
+  id: number;
+  maPhieu: string;
+  loaiXuat: string; // XUAT_THU_THUAT, XUAT_NOI_BO
+  maKhoXuat: number;
+  tenKhoXuat: string;
+  ngayXuat: string;
+  maNguoiXuat: number;
+  tenNguoiXuat: string;
+  ghiChu: string;
+  maDonThuoc?: number | null;
+  soLuongMatHang: number;
+  tongSoLuongXuat: number;
+  tongTienXuat: number;
+  chiTiets: ProcedureSupplyExportItemDto[];
+}
+
+export interface GetProcedureSupplyExportsParams {
+  khoId?: number;
+  loaiXuat?: string;
+  keyword?: string;
+  fromDate?: string;
+  toDate?: string;
+  pageIndex?: number;
+  pageSize?: number;
+}
+
+// ── Xuất cấp phát nội bộ Khoa/Phòng (Department Dispense) ─────────────────
+
+export type TrangThaiXuatNoiBo = 'ChoDuyet' | 'DaDuyet' | 'DaNhanHang' | 'TuChoi';
+
+export interface YeuCauXuatNoiBoItem {
+  itemId: number;
+  soLuong: number;
+  donViTinh?: string;
+  ghiChu?: string;
+}
+
+export interface TaoYeuCauXuatNoiBoRequest {
+  maKhoXuat: number;
+  maKhoaNhan: number;
+  nguoiNhanId?: number;
+  ghiChu?: string;
+  idempotencyKey: string;
+  items: YeuCauXuatNoiBoItem[];
+}
+
+export interface InternalDispenseLineDto {
+  id: number;
+  maItem?: number;
+  tenItem?: string;
+  maItemCode?: string;
+  donViTinh?: string;
+  soLo?: string;
+  hanSuDung?: string | null;
+  soLuongXuat: number;
+  donGia: number;
+  ghiChu?: string;
+}
+
+export interface InternalDispenseDto {
+  id: number;
+  maPhieu: string;
+  ngayLap: string;
+  trangThaiXuat: TrangThaiXuatNoiBo | null;
+  maKhoaNhan?: number;
+  tenKhoaNhan?: string;
+  maKhoaCode?: string;
+  maPhongNhan?: number;
+  tenPhongNhan?: string;
+  nguoiNhanId?: number;
+  tenNguoiNhan?: string;
+  chucDanhNguoiNhan?: string;
+  nguoiLap?: string;
+  chucDanhNguoiLap?: string;
+  tongMatHang: number;
+  tongSoLuong: number;
+  ghiChu: string;
+  chiTiets: InternalDispenseLineDto[];
+}
+
+export interface GetInternalDispenseParams {
+  maKhoa?: number;
+  trangThai?: TrangThaiXuatNoiBo | '';
+  tuNgay?: string;
+  denNgay?: string;
+  pageIndex?: number;
+  pageSize?: number;
+}
+
+export interface DepartmentUsageStatDto {
+  maKhoa?: number;
+  tenKhoa: string;
+  maKhoaCode: string;
+  tongPhieu: number;
+  tongSoLuong: number;
+  tongMatHang: number;
+  tongLuotKham: number;
+  tongChiDinh: number;
+}
+
+export interface GetDepartmentUsageParams {
+  maKhoa?: number;
+  tuNgay: string;
+  denNgay: string;
+}

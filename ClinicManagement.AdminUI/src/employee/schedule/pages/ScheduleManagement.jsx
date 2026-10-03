@@ -16,7 +16,7 @@ const formatWeekRange = (days) => `${days[0].format('DD/MM/YYYY')} - ${days[6].f
 export const ScheduleManagement = ({ embedded = false }) => {
   const { modal } = App.useApp();
   const {
-    activeCell, coSos, employees, editing, schedules, khoas, loadSchedules, loadSchedulesRange,
+    activeCell, coSos, employees, allEmployees, editing, schedules, khoas, loadSchedules, loadSchedulesRange,
     loading, closeEditor, note, openCreate, openEdit, remove, saveSchedule, saving,
     selectedCoSo, selectedKhoa, setNote, roomId, setRoomId, dailyStatus, setDailyStatus,
     setSelectedCoSo, setSelectedKhoa,
@@ -197,7 +197,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
               onClick={() => saveSchedule(employee.id)}
             >
               <span>{employee.hoTen}</span>
-              <small>@{employee.username}</small>
+              <small>@{employee.maNhanVien || employee.username}{employee.chucVu ? ` • ${employee.chucVu}` : ''}</small>
             </Button>
           ))}
         </div>
@@ -287,7 +287,11 @@ export const ScheduleManagement = ({ embedded = false }) => {
           <Select
             placeholder="Chọn khoa"
             value={selectedKhoa}
-            options={khoas.map((khoa) => ({ value: khoa.id, label: khoa.ten }))}
+            allowClear
+            options={[
+              { value: undefined, label: 'Tất cả khoa' },
+              ...khoas.map((khoa) => ({ value: khoa.id, label: khoa.ten })),
+            ]}
             onChange={setSelectedKhoa}
             disabled={!selectedCoSo}
             style={{ minWidth: 180, borderRadius: 8 }}
@@ -346,7 +350,18 @@ export const ScheduleManagement = ({ embedded = false }) => {
       {showFilters && (
         <div className="schedule-filters">
           <Select allowClear placeholder="Phòng" value={roomFilter} onChange={setRoomFilter} options={phongKhams.map((room) => ({ value: room.id, label: room.ten }))} />
-          <Select allowClear placeholder="Nhân viên" value={employeeFilter} onChange={setEmployeeFilter} options={employees.map((employee) => ({ value: employee.id, label: employee.hoTen }))} />
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Nhân viên"
+            value={employeeFilter}
+            onChange={setEmployeeFilter}
+            options={employees.map((employee) => ({
+              value: employee.id,
+              label: `${employee.hoTen} (${employee.maNhanVien || employee.username || ''})${employee.chucVu ? ` - ${employee.chucVu}` : ''}`,
+            }))}
+          />
           <Select allowClear placeholder="Ca" value={shiftFilter} onChange={setShiftFilter} options={shifts.map((shift) => ({ value: shift.id, label: shift.tenCa }))} />
           <Select allowClear placeholder="Trạng thái" value={statusFilter} onChange={setStatusFilter} options={[
             { value: 'CHECKED_IN', label: 'Đã check-in' },
@@ -551,7 +566,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
               reviewAdjustment={reviewAttendanceAdjustment}
               createPeriod={createAttendancePeriod}
               togglePeriod={toggleAttendancePeriod}
-              employees={employees}
+              employees={allEmployees?.length ? allEmployees : employees}
               khoas={khoas}
               selectedKhoa={selectedKhoa}
             />
@@ -564,7 +579,7 @@ export const ScheduleManagement = ({ embedded = false }) => {
               <FileText size={15} /> Đơn nghỉ phép
             </span>
           ),
-          children: <LeaveManagement employees={employees} leaves={leaves} createLeave={createLeave} reviewLeave={reviewLeave} cancelLeave={cancelLeave} statusLabels={leaveStatusCatalog} />,
+          children: <LeaveManagement employees={allEmployees?.length ? allEmployees : employees} leaves={leaves} createLeave={createLeave} reviewLeave={reviewLeave} cancelLeave={cancelLeave} statusLabels={leaveStatusCatalog} />,
         },
         {
           key: 'fixed',
@@ -623,7 +638,12 @@ export const ScheduleManagement = ({ embedded = false }) => {
               mode="multiple"
               getPopupContainer={() => document.body}
               listHeight={Math.max(240, window.innerHeight - 260)}
-              options={employees.map((employee) => ({ value: employee.id, label: employee.hoTen }))}
+              showSearch
+              optionFilterProp="label"
+              options={employees.map((employee) => ({
+                value: employee.id,
+                label: `${employee.hoTen} (${employee.maNhanVien || employee.username || ''})${employee.chucVu ? ` - ${employee.chucVu}` : ''}`,
+              }))}
             />
           </Form.Item>
           <Form.Item name="maCaTruc" label="Ca trực" rules={[{ required: true, message: 'Chọn ca trực.' }]}>

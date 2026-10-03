@@ -4,11 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 using ClinicManagement.Domain.Repositories;
 using ClinicManagement.Domain.Repositories.System;
 using ClinicManagement.Domain.Common;
+using ClinicManagement.Domain.Inventory.Services;
 using ClinicManagement.Infrastructure.Persistence;
 using ClinicManagement.Infrastructure.Persistence.Repositories;
 using ClinicManagement.Infrastructure.Persistence.Repositories.System;
 using ClinicManagement.Application.Common.Interfaces;
-using ClinicManagement.Application.Features.Kho;
+using ClinicManagement.Application.Common.Helpers;
 using ClinicManagement.Infrastructure.Identity.Services;
 
 namespace ClinicManagement.Infrastructure
@@ -48,7 +49,10 @@ namespace ClinicManagement.Infrastructure
             services.AddScoped<IKhoRepository, KhoRepository>();
             services.AddScoped<IHoaDonRepository, HoaDonRepository>();
             services.AddScoped<IInventorySettings, InventorySettings>();
-            services.AddScoped<IKhoService, KhoService>();
+            // Domain Service: FEFO allocation algorithm (inject vào các Handler cần FEFO)
+            services.AddScoped<FefoAllocationService>();
+            // Application Helper: idempotency (inject vào các Handler cần replay protection)
+            services.AddScoped<IdempotencyHelper>();
 
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();

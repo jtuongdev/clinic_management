@@ -66,13 +66,30 @@ public sealed class HoanThanhKhamCommandHandler(
             return null;
         }
 
+        // Tự động kiểm tra thẻ BHYT và ngày hết hạn
+        var examDate = visit.NgayKham != default ? visit.NgayKham.Date : DateTime.UtcNow.Date;
+        var activeInsurance = visit.BenhNhan?.BaoHiems?
+            .Where(b => b.IsValidAt(examDate) && b.MucHuong > 0)
+            .OrderByDescending(b => b.MucHuong)
+            .FirstOrDefault();
+
+        if (activeInsurance != null)
+        {
+            var tyLe = Math.Clamp(activeInsurance.MucHuong, 0m, 100m) / 100m;
+            var soTienBaoHiem = Math.Round(invoice.TongTien * tyLe, 0);
+            if (soTienBaoHiem > 0)
+            {
+                invoice.ApplyInsurance(soTienBaoHiem);
+            }
+        }
+
         invoice.CongNoBenhNhan = new CongNoBenhNhan
         {
             MaBenhNhan = visit.MaBenhNhan,
             SoTienNo = invoice.SoTienBenhNhanChiTra,
             SoTienDaTra = 0,
             HanThanhToan = DateTime.UtcNow.Date.AddDays(30),
-            TrangThai = TrangThaiCongNo.DANG_NO,
+            TrangThai = invoice.SoTienBenhNhanChiTra <= 0 ? TrangThaiCongNo.DA_TAT_TOAN : TrangThaiCongNo.DANG_NO,
             CreatedBy = request.UserId
         };
 

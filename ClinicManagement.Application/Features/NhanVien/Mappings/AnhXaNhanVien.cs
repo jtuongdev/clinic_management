@@ -18,9 +18,14 @@ namespace ClinicManagement.Application.Features.NhanVien
                 DienThoai = employee.DienThoai,
                 MaChucVu = employee.MaChucVu,
                 TenChucVu = employee.ChucVu?.TenChucVu,
+                MaKhoa = employee.NhanVienKhoa.Where(k => k.LaKhoaChinh).Select(k => (int?)k.MaKhoa).FirstOrDefault()
+                         ?? employee.NhanVienKhoa.Select(k => (int?)k.MaKhoa).FirstOrDefault(),
+                TenKhoa = employee.NhanVienKhoa.Where(k => k.LaKhoaChinh).Select(k => k.Khoa?.Ten).FirstOrDefault()
+                          ?? employee.NhanVienKhoa.Select(k => k.Khoa?.Ten).FirstOrDefault(),
                 ChuyenKhoa = employee.ChuyenKhoa,
                 SoHanhNghe = employee.SoHanhNghe,
                 IsActive = employee.IsActive,
+                LuongCoBan = employee.LuongCoBan,
                 LastLogin = employee.LastLogin,
                 VaiTros = employee.NhanVienVaiTro.Select(x => new NhanVienRoleDto
                 {
@@ -44,6 +49,8 @@ namespace ClinicManagement.Application.Features.NhanVien
 
         public static NhanVienListDto ToListItem(NhanVienEntity employee)
         {
+            var mainDept = employee.NhanVienKhoa?.FirstOrDefault(k => k.LaKhoaChinh)
+                           ?? employee.NhanVienKhoa?.FirstOrDefault();
             return new NhanVienListDto
             {
                 Id = employee.Id,
@@ -51,8 +58,14 @@ namespace ClinicManagement.Application.Features.NhanVien
                 HoTen = employee.HoTen,
                 Email = employee.Email,
                 DienThoai = employee.DienThoai,
+                MaChucVu = employee.MaChucVu,
                 TenChucVu = employee.ChucVu?.TenChucVu,
+                MaKhoa = mainDept?.MaKhoa,
+                TenKhoa = mainDept?.Khoa?.Ten,
                 ChuyenKhoa = employee.ChuyenKhoa,
+                SoHanhNghe = employee.SoHanhNghe,
+                NgaySinh = employee.NgaySinh,
+                GioiTinh = employee.GioiTinh.ToString(),
                 IsActive = employee.IsActive,
                 LuongCoBan = employee.LuongCoBan,
                 LastLogin = employee.LastLogin

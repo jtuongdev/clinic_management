@@ -7,9 +7,17 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class HoaDonRepository(ClinicDbContext context) : IHoaDonRepository
 {
+    public IQueryable<HoaDon> GetQueryable() => context.HoaDons.AsQueryable();
+
+    public IQueryable<CongNoBenhNhan> GetCongNoQueryable()
+        => context.CongNoBenhNhans
+            .Include(c => c.HoaDon)
+            .Include(c => c.BenhNhan);
+
     private IQueryable<HoaDon> WithDetails()
         => context.HoaDons
             .Include(h => h.BenhNhan)
+                .ThenInclude(bn => bn.BaoHiems)
             .Include(h => h.ChiTietHoaDons)
             .Include(h => h.PhieuThus)
                 .ThenInclude(p => p.NguoiThu)

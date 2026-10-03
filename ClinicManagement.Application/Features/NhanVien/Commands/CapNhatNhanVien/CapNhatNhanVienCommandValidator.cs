@@ -13,6 +13,7 @@ namespace ClinicManagement.Application.Features.NhanVien.Commands
             RuleFor(x => x.Request.ChuyenKhoa).MaximumLength(100);
             RuleFor(x => x.Request.SoHanhNghe).MaximumLength(50);
             RuleFor(x => x.Request.NgaySinh).LessThan(DateTime.UtcNow.Date).When(x => x.Request.NgaySinh.HasValue);
+            RuleFor(x => x.Request.LuongCoBan).GreaterThanOrEqualTo(0).When(x => x.Request.LuongCoBan.HasValue);
         }
     }
 }

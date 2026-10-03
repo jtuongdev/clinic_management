@@ -10,7 +10,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  collapsed: false,
+  collapsed: true,
   openKeys: [],
   mobileOpen: false,
   toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),

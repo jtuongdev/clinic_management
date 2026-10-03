@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import dayjs from 'dayjs';
 
 export const useInsuranceList = () => {
   const [insuranceList, setInsuranceList] = useState([
@@ -7,9 +6,9 @@ export const useInsuranceList = () => {
       loaiBaoHiem: 'BHYT' as any,
       tenNhaCungCap: '',
       soThe: '',
-      ngayBatDau: dayjs(),
-      ngayKetThuc: dayjs().add(1, 'year'),
-      mucHuong: 80,
+      ngayBatDau: null,
+      ngayKetThuc: null,
+      mucHuong: undefined as any,
     },
   ]);
 
@@ -20,9 +19,9 @@ export const useInsuranceList = () => {
         loaiBaoHiem: 'BHYT' as any,
         tenNhaCungCap: '',
         soThe: '',
-        ngayBatDau: dayjs(),
-        ngayKetThuc: dayjs().add(1, 'year'),
-        mucHuong: 80,
+        ngayBatDau: null,
+        ngayKetThuc: null,
+        mucHuong: undefined as any,
       },
     ]);
   };
@@ -37,9 +36,9 @@ export const useInsuranceList = () => {
         loaiBaoHiem: 'BHYT' as any,
         tenNhaCungCap: '',
         soThe: '',
-        ngayBatDau: dayjs(),
-        ngayKetThuc: dayjs().add(1, 'year'),
-        mucHuong: 80,
+        ngayBatDau: null,
+        ngayKetThuc: null,
+        mucHuong: undefined as any,
       },
     ]);
   };

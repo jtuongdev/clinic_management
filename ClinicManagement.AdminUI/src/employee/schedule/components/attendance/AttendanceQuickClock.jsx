@@ -19,7 +19,7 @@ export const AttendanceQuickClock = ({
     if (employees?.length) {
       return employees.map((e) => ({
         value: e.id,
-        label: `${e.hoTen || e.name} (${e.chuyenKhoa || 'Nhân viên'})`,
+        label: `${e.hoTen || e.name} (${e.maNhanVien || e.username || ''}) - ${e.chucVu || e.chuyenKhoa || e.vaiTro || 'Nhân viên'}`,
       }));
     }
     return Array.from(

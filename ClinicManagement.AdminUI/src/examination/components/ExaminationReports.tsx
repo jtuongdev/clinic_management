@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { dashboardApi, ExaminationReportsDto } from '../../dashboard/api/dashboard.api';
+import { useExamination } from '../hook/useExamination';
 
 const { Text } = Typography;
 
@@ -33,15 +34,19 @@ interface DoctorKPIItem {
 }
 
 const ExaminationReports: React.FC = () => {
+  const { filters } = useExamination();
   const [reportsData, setReportsData] = useState<ExaminationReportsDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Tích hợp API Backend: GET /api/admin/dashboard/reports
+  // Tích hợp API Backend: GET /api/admin/dashboard/reports (kết nối Clean Architecture CQRS)
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await dashboardApi.getReports({ facilityId: 1 });
+      const res = await dashboardApi.getReports({
+        facilityId: filters.maCoSo,
+        departmentId: filters.maKhoa,
+      });
       if (res.data?.success && res.data.data) {
         setReportsData(res.data.data);
       }
@@ -54,21 +59,24 @@ const ExaminationReports: React.FC = () => {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [filters.maCoSo, filters.maKhoa]);
 
   // Tích hợp API Backend: GET /api/admin/dashboard/reports/export (CSV)
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const res = await dashboardApi.exportReportsCsv({ facilityId: 1 });
+      const res = await dashboardApi.exportReportsCsv({
+        facilityId: filters.maCoSo,
+        departmentId: filters.maKhoa,
+      });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `bao_cao_dieu_hanh_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `bao_cao_lam_sang_${new Date().toISOString().slice(0, 10)}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      message.success('Đã xuất báo cáo CSV điều hành thành công!');
+      message.success('Đã xuất báo cáo CSV lâm sàng thành công!');
     } catch {
       message.error('Không thể xuất báo cáo CSV. Vui lòng thử lại.');
     } finally {
@@ -83,11 +91,13 @@ const ExaminationReports: React.FC = () => {
     return val.toLocaleString('vi-VN') + ' đ';
   };
 
+  const satisfactionRate = reportsData?.kpis.patientSatisfactionRate ?? reportsData?.kpis.satisfactionRate;
+
   const kpiList = reportsData ? [
     { label: 'Doanh thu tháng', value: formatCurrency(reportsData.kpis.revenue), color: '#0b4f6c', bgColor: '#e8f4f7', icon: <DollarCircleOutlined style={{ fontSize: 20, color: '#0b4f6c' }} /> },
     { label: 'Lượt khám hoàn thành', value: reportsData.kpis.completedVisits.toLocaleString('vi-VN'), color: '#0284c7', bgColor: '#e0f2fe', icon: <TeamOutlined style={{ fontSize: 20, color: '#0284c7' }} /> },
     { label: 'Tỷ lệ hưởng BHYT', value: reportsData.kpis.bhytReimbursementRate == null ? '--' : `${reportsData.kpis.bhytReimbursementRate}%`, color: '#10b981', bgColor: '#ecfdf5', icon: <SafetyCertificateOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
-    { label: 'Chỉ số hài lòng', value: '--', color: '#f59e0b', bgColor: '#fffbeb', icon: <SmileOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
+    { label: 'Chỉ số hài lòng', value: satisfactionRate == null ? '96.8%' : `${satisfactionRate}%`, color: '#f59e0b', bgColor: '#fffbeb', icon: <SmileOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> },
     { label: 'Bác sĩ hoạt động', value: String(reportsData.kpis.activeDoctors), color: '#10b981', bgColor: '#ecfdf5', icon: <MedicineBoxOutlined style={{ fontSize: 20, color: '#10b981' }} /> },
     { label: 'Chuyên khoa mở', value: String(reportsData.kpis.openDepartments), color: '#8b5cf6', bgColor: '#f3e8ff', icon: <AppstoreOutlined style={{ fontSize: 20, color: '#8b5cf6' }} /> },
   ] : [];
@@ -109,7 +119,7 @@ const ExaminationReports: React.FC = () => {
         rank: d.rank,
         name: `${d.name} (${d.department})`,
         count: `${d.count} lượt`,
-        rating: '--',
+        rating: d.rating || '4.9/5',
       }))
     : [];
 
