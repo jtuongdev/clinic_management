@@ -29,6 +29,7 @@ namespace ClinicManagement.Application.Services
                 new Dictionary<string, List<HanhDongQuyen>>
                 {
                     ["patient"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
+                    ["appointment"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["examination"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["cls"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
                     ["inventory"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA, HanhDongQuyen.DUYET],
@@ -47,6 +48,7 @@ namespace ClinicManagement.Application.Services
                 new Dictionary<string, List<HanhDongQuyen>>
                 {
                     ["patient"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA],
+                    ["appointment"] = [HanhDongQuyen.XEM, HanhDongQuyen.SUA],
                     ["examination"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.DUYET],
                     ["cls"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA],
                     ["inventory"] = [HanhDongQuyen.XEM],
@@ -76,6 +78,7 @@ namespace ClinicManagement.Application.Services
                 new Dictionary<string, List<HanhDongQuyen>>
                 {
                     ["patient"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA],
+                    ["appointment"] = [HanhDongQuyen.XEM],
                     ["examination"] = [HanhDongQuyen.XEM, HanhDongQuyen.SUA],
                     ["cls"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO],
                     ["inventory"] = [HanhDongQuyen.XEM]
@@ -89,6 +92,7 @@ namespace ClinicManagement.Application.Services
                 new Dictionary<string, List<HanhDongQuyen>>
                 {
                     ["patient"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA],
+                    ["appointment"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO, HanhDongQuyen.SUA, HanhDongQuyen.XOA],
                     ["examination"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO],
                     ["billing"] = [HanhDongQuyen.XEM, HanhDongQuyen.TAO]
                 })
@@ -165,6 +169,7 @@ namespace ClinicManagement.Application.Services
             CancellationToken cancellationToken = default)
         {
             var normalizedPhanHe = (phanHe ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalizedPhanHe == "employee") normalizedPhanHe = "hr";
             var normalizedHanhDong = (hanhDong ?? string.Empty).Trim().ToUpperInvariant();
 
             if (maNguoiDung <= 0 || string.IsNullOrWhiteSpace(normalizedPhanHe) || string.IsNullOrWhiteSpace(normalizedHanhDong))

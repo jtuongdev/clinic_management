@@ -334,6 +334,38 @@
   flex-direction: column;
 }
 
+/* Attendance calendar tab: full-screen workspace (header & check-in cards hidden) */
+.doctor-schedule-page--calendar {
+  overflow: hidden;
+}
+
+.content-card--calendar {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.content-card--calendar .table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 1023px) {
+  /* Small screens: let the whole page scroll naturally */
+  .doctor-schedule-page--calendar {
+    overflow-y: auto;
+  }
+
+  .content-card--calendar {
+    flex: 0 0 auto;
+  }
+
+  .content-card--calendar .table-container {
+    flex: none;
+    overflow: visible;
+  }
+}
+
 .sched-table-wrap {
   flex: 1;
   min-height: 0;

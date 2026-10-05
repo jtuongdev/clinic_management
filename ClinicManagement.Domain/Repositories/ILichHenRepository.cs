@@ -32,5 +32,12 @@ namespace ClinicManagement.Domain.Repositories
             int maBacSi,
             DateTime date,
             CancellationToken cancellationToken = default);
+
+        Task<(IReadOnlyList<LichHen> Items, int TotalCount)> GetAppointmentsByPatientAsync(
+            int patientId,
+            string? trangThaiGroup,
+            int pageIndex,
+            int pageSize,
+            CancellationToken cancellationToken = default);
     }
 }

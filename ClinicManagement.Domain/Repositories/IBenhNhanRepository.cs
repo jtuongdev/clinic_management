@@ -56,6 +56,11 @@ namespace ClinicManagement.Domain.Repositories
             int pageSize = 10,
             CancellationToken cancellationToken = default);
 
+        Task<DonThuoc?> GetPrescriptionDetailAsync(
+            int patientId,
+            int prescriptionId,
+            CancellationToken cancellationToken = default);
+
         // TAB: XÉT NGHIỆM
         Task<(IReadOnlyList<ChiDinhDichVu> Items, int TotalCount)> GetLabResultsByPatientIdAsync(
             int patientId,

@@ -2,14 +2,20 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ClinicManagement.Application.Common.Interfaces;
+using ClinicManagement.Application.Common.Notifications.Templates;
 using ClinicManagement.Application.DTOs.BenhNhan;
 using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Domain.Repositories;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ClinicManagement.Application.Features.Billing;
 
-public sealed class ThanhToanHoaDonCommandHandler(IHoaDonRepository repository)
+public sealed class ThanhToanHoaDonCommandHandler(
+    IHoaDonRepository repository,
+    IEmailSender emailSender,
+    ILogger<ThanhToanHoaDonCommandHandler> logger)
     : IRequestHandler<ThanhToanHoaDonCommand, HoaDonDetailDto>
 {
     public async Task<HoaDonDetailDto> Handle(
@@ -44,6 +50,44 @@ public sealed class ThanhToanHoaDonCommandHandler(IHoaDonRepository repository)
         invoice.RecordPayment(request.Request.SoTien, request.Request.PhuongThuc, collectorId, request.Request.GhiChu);
         repository.Update(invoice);
         await repository.SaveChangesAsync(cancellationToken);
+
+        // Gửi email biên lai thu tiền nếu bệnh nhân có email
+        if (!string.IsNullOrWhiteSpace(invoice.BenhNhan?.Email))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var emailData = new InvoiceEmailData
+                    {
+                        SoHoaDon = invoice.SoHoaDon,
+                        TenBenhNhan = $"{invoice.BenhNhan.Ho} {invoice.BenhNhan.Ten}".Trim(),
+                        TongTien = invoice.TongTien,
+                        DaThanhToan = invoice.DaThanhToan,
+                        ConLai = invoice.TongTien - invoice.SoTienBaoHiemChiTra - invoice.DaThanhToan,
+                        PhuongThucThanhToan = request.Request.PhuongThuc.ToString(),
+                        NgayThu = DateTime.Now,
+                        Items = invoice.ChiTietHoaDons?.Select(c => new InvoiceItemEmailDto
+                        {
+                            TenDichVu = c.MoTa,
+                            SoLuong = c.SoLuong,
+                            DonGia = c.DonGia,
+                        }).ToList() ?? new(),
+                    };
+
+                    var emailNotification = new InvoicePaymentEmail(emailData);
+                    await emailSender.SendEmailAsync(
+                        invoice.BenhNhan.Email,
+                        emailNotification.Subject,
+                        emailNotification.BuildHtmlBody(),
+                        cancellationToken: CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Lỗi khi gửi email hóa đơn #{SoHoaDon}", invoice.SoHoaDon);
+                }
+            }, CancellationToken.None);
+        }
 
         return BillingMapper.ToDetail(invoice);
     }

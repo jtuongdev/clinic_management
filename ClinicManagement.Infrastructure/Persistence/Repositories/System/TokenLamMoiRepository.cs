@@ -20,6 +20,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories.System
 
             return await _context.TokenLamMois
                 .Include(t => t.NhanVien)
+                .Include(t => t.BenhNhan)
                 .FirstOrDefaultAsync(t => t.MaToken == token, cancellationToken);
         }
 
@@ -41,6 +42,23 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories.System
         {
             var tokens = await _context.TokenLamMois
                 .Where(t => t.MaNhanVien == userId && !t.DaHuyBo)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in tokens)
+            {
+                token.HuyBo();
+            }
+
+            if (tokens.Count > 0)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        public async Task RevokeAllByPatientAsync(int patientId, CancellationToken cancellationToken = default)
+        {
+            var tokens = await _context.TokenLamMois
+                .Where(t => t.MaBenhNhan == patientId && !t.DaHuyBo)
                 .ToListAsync(cancellationToken);
 
             foreach (var token in tokens)

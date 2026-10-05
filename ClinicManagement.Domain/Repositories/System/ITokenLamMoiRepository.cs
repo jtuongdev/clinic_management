@@ -8,6 +8,7 @@ namespace ClinicManagement.Domain.Repositories.System
         Task<TokenLamMoi?> GetByTokenAsync(string token, CancellationToken cancellationToken = default);
         Task RevokeByTokenAsync(string token, CancellationToken cancellationToken = default);
         Task RevokeAllByUserAsync(int userId, CancellationToken cancellationToken = default);
+        Task RevokeAllByPatientAsync(int patientId, CancellationToken cancellationToken = default);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

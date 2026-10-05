@@ -18,7 +18,7 @@ namespace ClinicManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [ClinicalAuthorize("appointment", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
+    [ClinicalAuthorize("appointment", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
     public class LichHenController : BaseController
     {
         private readonly IMediator _mediator;

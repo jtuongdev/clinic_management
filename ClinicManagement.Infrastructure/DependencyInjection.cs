@@ -56,6 +56,7 @@ namespace ClinicManagement.Infrastructure
 
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
 
             return services;
         }

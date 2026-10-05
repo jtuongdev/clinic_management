@@ -4,20 +4,29 @@ import { settingsApi } from '../api/settings.api';
 
 const MODULES = [
   { id: 'patient', name: 'Quản lý Bệnh nhân' },
+  { id: 'appointment', name: 'Lịch hẹn khám' },
   { id: 'examination', name: 'Khám bệnh & EMR' },
   { id: 'cls', name: 'Cận lâm sàng (LIS/PACS)' },
   { id: 'inventory', name: 'Kho Dược & Vật tư' },
   { id: 'billing', name: 'Viện phí & Hóa đơn' },
-  { id: 'employee', name: 'Nhân sự & Lương' },
+  { id: 'finance', name: 'Báo cáo Tài chính' },
+  { id: 'hr', name: 'Nhân sự & Lương' },
+  { id: 'audit', name: 'Nhật ký kiểm toán' },
   { id: 'settings', name: 'Cấu hình Hệ thống' },
 ];
 
 const ACTIONS = [
-  { id: 'view', name: 'Xem' },
-  { id: 'create', name: 'Tạo mới' },
-  { id: 'edit', name: 'Chỉnh sửa' },
-  { id: 'delete', name: 'Xóa' },
-  { id: 'approve', name: 'Duyệt / Ký' },
+  { id: 'XEM', name: 'Xem' },
+  { id: 'TAO', name: 'Tạo mới' },
+  { id: 'SUA', name: 'Chỉnh sửa' },
+  { id: 'XOA', name: 'Xóa' },
+  { id: 'DUYET', name: 'Duyệt / Ký' },
+];
+
+const DATA_SCOPES = [
+  { key: 'TOAN_HE_THONG', label: 'Toàn viện / Tất cả Cơ sở', icon: Building },
+  { key: 'CO_SO', label: 'Cơ sở trực thuộc', icon: Layers },
+  { key: 'KHOA_PHONG', label: 'Khoa / Buồng phòng được phân công', icon: DoorOpen },
 ];
 
 const EMPTY_ROLE = {
@@ -25,8 +34,49 @@ const EMPTY_ROLE = {
   code: '',
   name: 'Chưa có dữ liệu vai trò',
   description: '',
-  dataScope: '',
+  dataScope: 'TOAN_HE_THONG',
   permissions: {},
+};
+
+// Chuẩn hóa dữ liệu trả về từ backend API sang form UI
+const normalizeRole = (r) => {
+  if (!r) return EMPTY_ROLE;
+
+  const rawPerms = r.phanQuyen || r.permissions || {};
+  const normalizedPerms = {};
+
+  const actionMap = {
+    view: 'XEM',
+    create: 'TAO',
+    edit: 'SUA',
+    delete: 'XOA',
+    approve: 'DUYET',
+  };
+
+  Object.entries(rawPerms).forEach(([modKey, actionList]) => {
+    let k = modKey.toLowerCase();
+    if (k === 'employee') k = 'hr';
+    if (Array.isArray(actionList)) {
+      normalizedPerms[k] = actionList.map(a => {
+        const str = String(a).trim();
+        return actionMap[str.toLowerCase()] || str.toUpperCase();
+      });
+    }
+  });
+
+  let scope = r.phamViDuLieu || r.dataScope || 'CO_SO';
+  if (scope === 'ALL_FACILITIES') scope = 'TOAN_HE_THONG';
+  else if (scope === 'FACILITY_ONLY') scope = 'CO_SO';
+  else if (scope === 'DEPARTMENT_ONLY') scope = 'KHOA_PHONG';
+
+  return {
+    id: r.id,
+    code: r.maCode || r.code || '',
+    name: r.ten || r.name || 'Vai trò',
+    description: r.moTa || r.description || '',
+    dataScope: scope,
+    permissions: normalizedPerms,
+  };
 };
 
 export const RoleManagementPage = () => {
@@ -42,7 +92,7 @@ export const RoleManagementPage = () => {
     setLoading(true);
     try {
       const res = await settingsApi.getRoles();
-      const loadedRoles = res.data?.success && Array.isArray(res.data.data) ? res.data.data : [];
+      const loadedRoles = res.data?.success && Array.isArray(res.data.data) ? res.data.data.map(normalizeRole) : [];
       setRoles(loadedRoles);
       setSelectedRole(loadedRoles[0] || EMPTY_ROLE);
       setCurrentRoleForm(loadedRoles[0] || EMPTY_ROLE);
@@ -89,7 +139,15 @@ export const RoleManagementPage = () => {
   const handleSaveRole = async () => {
     setSaving(true);
     try {
-      await settingsApi.updateRole(currentRoleForm);
+      const payload = {
+        id: currentRoleForm.id,
+        maCode: currentRoleForm.code,
+        ten: currentRoleForm.name,
+        moTa: currentRoleForm.description,
+        phamViDuLieu: currentRoleForm.dataScope,
+        phanQuyen: currentRoleForm.permissions,
+      };
+      await settingsApi.updateRole(payload);
       setRoles(prev => prev.map(r => r.id === currentRoleForm.id ? currentRoleForm : r));
       setSelectedRole(currentRoleForm);
       setIsEditing(false);
@@ -108,13 +166,18 @@ export const RoleManagementPage = () => {
       code: `ROLE_${newId.toString().slice(-4)}`,
       name: 'Vai trò mới',
       description: 'Mô tả vai trò',
-      dataScope: 'FACILITY_ONLY',
+      dataScope: 'CO_SO',
       permissions: {},
     };
     setRoles(prev => [...prev, newRole]);
     setSelectedRole(newRole);
     setCurrentRoleForm(newRole);
     setIsEditing(true);
+  };
+
+  const getScopeLabel = (scopeKey) => {
+    const found = DATA_SCOPES.find(s => s.key === scopeKey);
+    return found ? found.label : (scopeKey === 'ALL_FACILITIES' ? 'Toàn bộ cơ sở' : 'Tại cơ sở trực thuộc');
   };
 
   return (
@@ -184,7 +247,7 @@ export const RoleManagementPage = () => {
                 </p>
                 <div style={{ fontSize: '11px', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Building size={12} />
-                  Phạm vi: {role.dataScope === 'ALL_FACILITIES' ? 'Toàn bộ cơ sở' : role.dataScope === 'FACILITY_ONLY' ? 'Tại cơ sở trực thuộc' : 'Chỉ tại Khoa phòng'}
+                  Phạm vi: {getScopeLabel(role.dataScope)}
                 </div>
               </div>
             ))}
@@ -244,11 +307,7 @@ export const RoleManagementPage = () => {
               Phạm vi truy cập Dữ liệu Y tế (Granular Data Scope):
             </label>
             <div style={{ display: 'flex', gap: '20px' }}>
-              {[
-                { key: 'ALL_FACILITIES', label: 'Toàn viện / Tất cả Cơ sở', icon: Building },
-                { key: 'FACILITY_ONLY', label: 'Cơ sở trực thuộc', icon: Layers },
-                { key: 'DEPARTMENT_ONLY', label: 'Khoa / Buồng phòng được phân công', icon: DoorOpen },
-              ].map(scope => {
+              {DATA_SCOPES.map(scope => {
                 const Icon = scope.icon;
                 return (
                   <label key={scope.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: isEditing ? 'pointer' : 'default' }}>

@@ -29,30 +29,37 @@ namespace ClinicManagement.Infrastructure.Persistence.Configurations
                 .HasMaxLength(10);
                 
             builder.Property(b => b.Email)
+                .IsRequired(false)
                 .HasMaxLength(100);
             builder.HasIndex(b => b.Email)
                 .IsUnique()
                 .HasFilter("[Email] IS NOT NULL");
                 
             builder.Property(b => b.SoCCCD)
+                .IsRequired(false)
                 .HasMaxLength(20);
             builder.HasIndex(b => b.SoCCCD)
                 .IsUnique()
                 .HasFilter("[SoCCCD] IS NOT NULL");
                 
             builder.Property(b => b.DienThoai)
+                .IsRequired()
                 .HasMaxLength(20);
                 
             builder.Property(b => b.DiaChi)
+                .IsRequired(false)
                 .HasMaxLength(255);
                 
             builder.Property(b => b.NguoiLienHeTen)
+                .IsRequired(false)
                 .HasMaxLength(100);
                 
             builder.Property(b => b.NguoiLienHeDienThoai)
+                .IsRequired(false)
                 .HasMaxLength(20);
                 
             builder.Property(b => b.Username)
+                .IsRequired(false)
                 .HasMaxLength(50);
             builder.HasIndex(b => b.Username)
                 .IsUnique()

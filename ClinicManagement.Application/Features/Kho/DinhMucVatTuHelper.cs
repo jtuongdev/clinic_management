@@ -40,7 +40,6 @@ namespace ClinicManagement.Application.Features.Kho
                     // 1 [fromUnit] = match.HeSo * [baseUnit]
                     return bomQuantity * match.HeSo;
                 }
-
                 // Nếu baseUnit là đơn vị lớn và bảng quy đổi lưu tỷ lệ đơn vị nhỏ
                 var baseMatch = item.DonViTinhQuyDois
                     .FirstOrDefault(x => x.DonVi.Trim().ToLowerInvariant() == baseUnit);
@@ -265,7 +264,6 @@ namespace ClinicManagement.Application.Features.Kho
                         need -= qty;
                     }
                 }
-
                 // 6. Lưu chứng từ xuất kho nếu có phát sinh chi tiết xuất
                 if (export.ChiTietXuatKhos.Count > 0)
                 {

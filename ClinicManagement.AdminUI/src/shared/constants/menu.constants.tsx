@@ -65,12 +65,12 @@ export const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    label: 'Tài chính & Công nợ',
+    label: 'Tài chính & Viện phí',
     items: [
       {
         key: 'invoices',
         icon: <FileText size={18} />,
-        label: 'Hóa đơn',
+        label: 'Hóa đơn viện phí',
         path: '/invoices',
         badge: '3',
         badgeColor: 'red',
@@ -78,22 +78,22 @@ export const menuGroups: MenuGroup[] = [
       {
         key: 'receipts',
         icon: <Receipt size={18} />,
-        label: 'Phiếu thu / Hoàn',
+        label: 'Sổ thu & Chốt ca',
         path: '/receipts',
+      },
+      {
+        key: 'cashbook',
+        icon: <ArrowLeftRight size={18} />,
+        label: 'Sổ quỹ dòng tiền',
+        path: '/cashbook',
       },
       {
         key: 'debts',
         icon: <HandCoins size={18} />,
-        label: 'Công nợ',
+        label: 'Quản lý công nợ',
         path: '/debts',
         badge: '8',
         badgeColor: 'orange',
-      },
-      {
-        key: 'transactions',
-        icon: <ArrowLeftRight size={18} />,
-        label: 'Giao dịch',
-        path: '/transactions',
       },
       {
         key: 'finance-reports',

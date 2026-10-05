@@ -1,0 +1,689 @@
+/* ==========================================================================
+   ATTENDANCE CALENDAR VIEW - CSS STYLING
+   Khớp chuẩn 100% bản thiết kế phác thảo (Mockup):
+   - Thẻ KPI trên cùng (5-6 thẻ bo góc mềm, số to rõ, nền trắng nổi bật)
+   - Thanh điều hướng tháng (‹ Tháng mm/yyyy ›, nút Hôm nay, lọc trạng thái)
+   - Lưới lịch 7 cột (T2 -> CN, ô ngày bo góc, viền rõ, màu trạng thái trực quan)
+   - Panel chi tiết bên phải (Thứ..., ngày... / Card ca trực / Timeline thực tế vs lịch / Thống kê / Nút Điều chỉnh)
+   ========================================================================== */
+
+.attendance-calendar-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #f1f5f9;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .attendance-calendar-root {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   1. KPI Summary Cards Row
+   -------------------------------------------------------------------------- */
+.att-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.att-summary-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.att-summary-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+}
+
+.att-summary-card .card-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.att-summary-card .card-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.att-summary-card .card-value .unit {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.att-summary-card .card-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   2. Toolbar (Month Navigation & Filters)
+   -------------------------------------------------------------------------- */
+.att-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.att-month-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.att-nav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.att-nav-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.att-month-title-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.att-month-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.att-month-title:hover {
+  background: #e2e8f0;
+}
+
+.att-month-native-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.att-btn-today {
+  height: 32px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.att-btn-today:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #0d9488;
+  color: #0d9488;
+}
+
+.att-btn-today:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.att-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.att-chip-btn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  transition: all 0.15s;
+}
+
+.att-chip-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.att-chip-btn.active {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   3. Workspace Grid (Calendar 70% + Detail Panel 30%)
+   -------------------------------------------------------------------------- */
+.att-workspace-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .att-workspace-layout {
+    grid-template-columns: minmax(0, 1fr) 350px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+.att-calendar-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .att-calendar-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.att-weekday-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.att-weekday-cell {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.att-weekday-cell.weekend {
+  color: #ef4444;
+}
+
+.att-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+@media (min-width: 1024px) {
+  .att-days-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+/* Day Cell */
+.att-day-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px;
+  text-align: left;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 76px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .att-day-cell {
+    min-height: 0;
+    height: 100%;
+  }
+}
+
+.att-day-cell:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+  border-color: #94a3b8;
+}
+
+.att-day-cell.selected {
+  outline: 2px solid #0d9488 !important;
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+.att-day-cell.today {
+  border: 2px solid #0d9488 !important;
+}
+
+.att-day-cell.outside-month {
+  opacity: 0.45;
+  background: #f8fafc;
+}
+
+.att-day-cell.dimmed {
+  opacity: 0.25;
+  filter: grayscale(40%);
+}
+
+/* Day Cell Color Tones */
+.att-day-cell.tone-ontime {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+.att-day-cell.tone-late {
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+.att-day-cell.tone-absent {
+  background: #ffe4e6;
+  border-color: #fecdd3;
+}
+.att-day-cell.tone-missingOut {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+.att-day-cell.tone-upcoming {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.att-day-cell.tone-inProgress {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+}
+.att-day-cell.tone-leave {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.att-cell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.att-cell-date-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.att-cell-date-num.is-today {
+  background: #0d9488;
+  color: #ffffff;
+  border-radius: 50%;
+  padding: 0 4px;
+}
+
+.att-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-ontime { background: #10b981; }
+.dot-late { background: #f59e0b; }
+.dot-absent { background: #f43f5e; }
+.dot-missingOut { background: #8b5cf6; }
+.dot-upcoming { background: #3b82f6; }
+.dot-inProgress { background: #0d9488; animation: pulse 1.5s infinite; }
+.dot-leave { background: #64748b; }
+
+.att-cell-body {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.att-cell-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.att-cell-badge-text {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-ontime { color: #047857; }
+.text-late { color: #b45309; }
+.text-absent { color: #be123c; }
+.text-missingOut { color: #6d28d9; }
+.text-upcoming { color: #1d4ed8; }
+.text-inProgress { color: #0f766e; }
+.text-leave { color: #475569; }
+
+.att-cell-extra-pill {
+  align-self: flex-end;
+  margin-top: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+/* Legend bar */
+.att-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.att-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   4. Right Detail Panel
+   -------------------------------------------------------------------------- */
+.att-detail-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 1024px) {
+  .att-detail-panel {
+    overflow-y: auto;
+    height: 100%;
+  }
+}
+
+.att-detail-header h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.att-detail-header p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+/* Shift Box in Detail Panel */
+.att-shift-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.att-shift-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.att-shift-icon-wrap {
+  width: 36px;
+  height: 36px;
+  background: #ccfbf1;
+  color: #0f766e;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.att-shift-info h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.att-shift-info .shift-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  font-family: ui-monospace, monospace;
+}
+
+.att-shift-info .shift-location {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Timeline */
+.att-timeline-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.att-timeline-time-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.att-timeline-time-header .in-time { color: #0d9488; }
+.att-timeline-time-header .out-time { color: #ea580c; }
+
+.att-timeline-bar-track {
+  position: relative;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.att-timeline-bar-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #0d9488;
+  border-radius: 4px;
+}
+
+.att-timeline-bar-late {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #f59e0b;
+}
+
+.att-status-pill-center {
+  margin: 8px auto 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.att-status-pill-center.badge-late {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.att-status-pill-center.badge-ontime {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.att-status-pill-center.badge-absent {
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.att-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.att-stat-item {
+  text-align: center;
+}
+
+.att-stat-item .stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.att-stat-item .stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.att-stat-item .stat-val.highlight {
+  color: #d97706;
+}
+
+/* Note textarea */
+.att-note-box {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.att-note-box label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.att-note-box .note-content {
+  font-size: 12px;
+  color: #1e293b;
+  min-height: 40px;
+}
+
+/* Adjustment button */
+.att-btn-adjustment {
+  width: 100%;
+  height: 38px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.att-btn-adjustment:hover {
+  background: #f8fafc;
+  border-color: #0d9488;
+  color: #0d9488;
+}

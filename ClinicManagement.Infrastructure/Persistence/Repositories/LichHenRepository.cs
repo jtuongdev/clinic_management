@@ -140,5 +140,58 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
                 .OrderBy(lh => lh.ThoiGianBatDau)
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task<(IReadOnlyList<LichHen> Items, int TotalCount)> GetAppointmentsByPatientAsync(
+            int patientId,
+            string? trangThaiGroup,
+            int pageIndex,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            var query = _context.LichHens
+                .AsNoTracking()
+                .Include(lh => lh.BenhNhan)
+                    .ThenInclude(bn => bn.BenhNhanCoSo)
+                .Include(lh => lh.BacSi)
+                .Include(lh => lh.CoSo)
+                .Include(lh => lh.Khoa)
+                .Where(lh => !lh.IsDeleted && lh.MaBenhNhan == patientId);
+
+            var now = DateTime.Now;
+
+            if (!string.IsNullOrWhiteSpace(trangThaiGroup))
+            {
+                var upperGroup = trangThaiGroup.Trim().ToUpperInvariant();
+                if (upperGroup == "SAP_TOI")
+                {
+                    query = query.Where(lh =>
+                        lh.TrangThai != TrangThaiLichHen.DA_HUY &&
+                        lh.TrangThai != TrangThaiLichHen.HOAN_THANH &&
+                        lh.TrangThai != TrangThaiLichHen.DA_DEN &&
+                        lh.ThoiGianBatDau >= now.AddHours(-1));
+                }
+                else if (upperGroup == "DA_KHAM")
+                {
+                    query = query.Where(lh =>
+                        lh.TrangThai == TrangThaiLichHen.HOAN_THANH ||
+                        lh.TrangThai == TrangThaiLichHen.DA_DEN ||
+                        (lh.ThoiGianKetThuc < now && lh.TrangThai != TrangThaiLichHen.DA_HUY));
+                }
+                else if (upperGroup == "DA_HUY")
+                {
+                    query = query.Where(lh => lh.TrangThai == TrangThaiLichHen.DA_HUY);
+                }
+            }
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var items = await query
+                .OrderByDescending(lh => lh.ThoiGianBatDau)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (items, totalCount);
+        }
     }
 }

@@ -2,11 +2,16 @@ import { api } from '../../shared/api/axios.api';
 
 export interface RolePermissionMatrixDto {
   id: number;
-  code: string;
-  name: string;
-  description: string;
-  dataScope: string;
-  permissions: Record<string, string[]>;
+  code?: string;
+  maCode?: string;
+  name?: string;
+  ten?: string;
+  description?: string;
+  moTa?: string;
+  dataScope?: string;
+  phamViDuLieu?: string;
+  permissions?: Record<string, string[]>;
+  phanQuyen?: Record<string, string[]>;
 }
 
 export interface EmrAuditLogDto {
@@ -41,8 +46,16 @@ export const settingsApi = {
   getRoles: () => {
     return api.get<{ success: boolean; data: RolePermissionMatrixDto[] }>('/admin/roles');
   },
-  updateRole: (payload: RolePermissionMatrixDto) => {
-    return api.post<{ success: boolean; data: RolePermissionMatrixDto }>('/admin/roles', payload);
+  updateRole: (payload: any) => {
+    const body = {
+      id: payload.id,
+      maCode: payload.maCode || payload.code || '',
+      ten: payload.ten || payload.name || '',
+      moTa: payload.moTa || payload.description || '',
+      phamViDuLieu: payload.phamViDuLieu || payload.dataScope || 'TOAN_HE_THONG',
+      phanQuyen: payload.phanQuyen || payload.permissions || {},
+    };
+    return api.post<{ success: boolean; data: RolePermissionMatrixDto }>('/admin/roles', body);
   },
 
   // EMR Audit Logs

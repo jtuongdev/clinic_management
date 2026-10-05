@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using ClinicManagement.Domain.Identity;
+using ClinicManagement.Domain.Patient;
 using ClinicManagement.Application.Common.Interfaces;
 
 namespace ClinicManagement.Infrastructure.Identity.Services
@@ -46,6 +47,33 @@ namespace ClinicManagement.Infrastructure.Identity.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             
+            var token = new JwtSecurityToken(
+                issuer: _issuer,
+                audience: _audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(_accessTokenExpiryMinutes),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string GeneratePatientAccessToken(BenhNhan patient)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, patient.Id.ToString()),
+                new Claim("patientId", patient.Id.ToString()),
+                new Claim(ClaimTypes.Name, !string.IsNullOrWhiteSpace(patient.Username) ? patient.Username : patient.DienThoai),
+                new Claim(ClaimTypes.Role, "Patient"),
+                new Claim("FullName", $"{patient.Ho} {patient.Ten}".Trim()),
+                new Claim(ClaimTypes.MobilePhone, patient.DienThoai ?? string.Empty),
+                new Claim(ClaimTypes.Email, patient.Email ?? string.Empty)
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
             var token = new JwtSecurityToken(
                 issuer: _issuer,
                 audience: _audience,

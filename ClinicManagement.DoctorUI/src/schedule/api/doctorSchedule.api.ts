@@ -35,7 +35,7 @@ export interface AttendanceItemDto {
   gioLamThucTe?: number;
   phutDiMuon?: number;
   phutVeSom?: number;
-  trangThai: string; // "DUNG_GIO" | "DI_MUON" | "VE_SOM" | "DI_MUON_VE_SOM" | "VANG_MAT"
+  trangThai: string; // TrangThaiChamCong: "DI_DUNG_GIO" | "DI_MUON" | "VE_SOM" | "DI_MUON_VE_SOM" | "VANG_MAT" | "THIEU_CHECK_OUT" | "NGHI_PHEP" | "CHO_XAC_NHAN" | "CHUA_CHAM_CONG"
   ghiChu?: string;
 }
 

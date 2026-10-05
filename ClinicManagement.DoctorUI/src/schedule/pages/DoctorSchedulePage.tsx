@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 import {
   doctorScheduleApi,
   type ScheduleItemDto,
-  type AttendanceItemDto,
   type TodayStatusDto,
 } from '../api/doctorSchedule.api';
+import AttendanceCalendarView from '../attendance/AttendanceCalendarView';
 import './DoctorSchedulePage.css';
 
 // Default column widths for Schedule tab
@@ -17,19 +18,6 @@ const DEFAULT_SCHED_COL_WIDTHS: Record<string, number> = {
   soGioLam: 80,
   khoaPhong: 230,
   nguonLich: 120,
-  trangThai: 110,
-  ghiChu: 260,
-};
-
-// Default column widths for Attendance tab
-const DEFAULT_ATT_COL_WIDTHS: Record<string, number> = {
-  stt: 48,
-  ngayChamCong: 140,
-  tenCa: 120,
-  checkIn: 110,
-  checkOut: 110,
-  gioThucTe: 96,
-  diMuonVeSom: 140,
   trangThai: 110,
   ghiChu: 260,
 };
@@ -47,40 +35,44 @@ const SCHED_COLUMNS = [
   { key: 'ghiChu', label: 'Ghi Chú', align: 'text-left' },
 ];
 
-// Column definitions for Attendance tab
-const ATT_COLUMNS = [
-  { key: 'stt', label: 'STT', align: 'text-center' },
-  { key: 'ngayChamCong', label: 'Ngày Chấm Công', align: 'text-center' },
-  { key: 'tenCa', label: 'Ca Trực', align: 'text-center' },
-  { key: 'checkIn', label: 'Check-in', align: 'text-center' },
-  { key: 'checkOut', label: 'Check-out', align: 'text-center' },
-  { key: 'gioThucTe', label: 'Giờ Thực Tế', align: 'text-right' },
-  { key: 'diMuonVeSom', label: 'Đi Muộn / Về Sớm', align: 'text-center' },
-  { key: 'trangThai', label: 'Trạng Thái', align: 'text-center' },
-  { key: 'ghiChu', label: 'Ghi Chú', align: 'text-left' },
-];
-
 export const DoctorSchedulePage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState<'schedule' | 'attendance'>('schedule');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab: 'schedule' | 'attendance' = searchParams.get('tab') === 'attendance' ? 'attendance' : 'schedule';
+  const changeTab = useCallback(
+    (tab: 'schedule' | 'attendance') => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (tab === 'attendance') {
+            params.set('tab', 'attendance');
+          } else {
+            params.delete('tab');
+            params.delete('month');
+          }
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+  // Bumped after every successful reload so the attendance calendar can refresh silently
+  const [dataVersion, setDataVersion] = useState<number>(0);
   const [todayStatus, setTodayStatus] = useState<TodayStatusDto | null>(null);
   const [schedules, setSchedules] = useState<ScheduleItemDto[]>([]);
-  const [attendances, setAttendances] = useState<AttendanceItemDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [note, setNote] = useState<string>('');
 
   // Search keyword states
   const [schedSearch, setSchedSearch] = useState<string>('');
-  const [attSearch, setAttSearch] = useState<string>('');
 
   // Custom reordered row lists
   const [customSchedules, setCustomSchedules] = useState<ScheduleItemDto[]>([]);
-  const [customAttendances, setCustomAttendances] = useState<AttendanceItemDto[]>([]);
 
   // Column Reordering states
   const [schedColOrder, setSchedColOrder] = useState<string[]>(() => SCHED_COLUMNS.map((c) => c.key));
-  const [attColOrder, setAttColOrder] = useState<string[]>(() => ATT_COLUMNS.map((c) => c.key));
   const [draggedColKey, setDraggedColKey] = useState<string | null>(null);
   const [dragOverColKey, setDragOverColKey] = useState<string | null>(null);
 
@@ -91,16 +83,12 @@ export const DoctorSchedulePage: React.FC = () => {
   // Pagination states
   const [schedPage, setSchedPage] = useState<number>(1);
   const [schedPageSize, setSchedPageSize] = useState<number>(20);
-  const [attPage, setAttPage] = useState<number>(1);
-  const [attPageSize, setAttPageSize] = useState<number>(20);
 
   // Column Resizing states (pixel widths)
   const [schedColWidths, setSchedColWidths] = useState<Record<string, number>>(DEFAULT_SCHED_COL_WIDTHS);
-  const [attColWidths, setAttColWidths] = useState<Record<string, number>>(DEFAULT_ATT_COL_WIDTHS);
 
   // Row Resizing states (pixel heights per row key)
   const [schedRowHeights, setSchedRowHeights] = useState<Record<string, number>>({});
-  const [attRowHeights, setAttRowHeights] = useState<Record<string, number>>({});
 
   // Clock tick
   useEffect(() => {
@@ -114,10 +102,9 @@ export const DoctorSchedulePage: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [todayRes, schedRes, attRes] = await Promise.all([
+      const [todayRes, schedRes] = await Promise.all([
         doctorScheduleApi.getTodayStatus(),
         doctorScheduleApi.getMySchedule(),
-        doctorScheduleApi.getMyAttendance(),
       ]);
 
       if (todayRes?.data) setTodayStatus(todayRes.data);
@@ -126,16 +113,12 @@ export const DoctorSchedulePage: React.FC = () => {
         ? schedRes.data
         : (Array.isArray(schedRes) ? schedRes : []);
       setSchedules(schedData);
-
-      const attData = Array.isArray(attRes?.data)
-        ? attRes.data
-        : (Array.isArray(attRes) ? attRes : []);
-      setAttendances(attData);
     } catch (err: any) {
       console.error('Lỗi tải dữ liệu lịch và chấm công:', err);
       toast.error('Không thể tải dữ liệu lịch làm việc. Vui lòng thử lại.');
     } finally {
       setLoading(false);
+      setDataVersion((v) => v + 1);
     }
   }, []);
 
@@ -177,21 +160,14 @@ export const DoctorSchedulePage: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    const isAttendance = activeTab === 'attendance';
     const startX = e.clientX;
-    const currentWidth = isAttendance
-      ? (attColWidths[colKey] || DEFAULT_ATT_COL_WIDTHS[colKey] || 100)
-      : (schedColWidths[colKey] || DEFAULT_SCHED_COL_WIDTHS[colKey] || 100);
+    const currentWidth = schedColWidths[colKey] || DEFAULT_SCHED_COL_WIDTHS[colKey] || 100;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       moveEvent.preventDefault();
       const deltaX = moveEvent.clientX - startX;
       const newWidth = Math.max(50, currentWidth + deltaX); // Safe bound minWidth: 50px
-      if (isAttendance) {
-        setAttColWidths((prev) => ({ ...prev, [colKey]: newWidth }));
-      } else {
-        setSchedColWidths((prev) => ({ ...prev, [colKey]: newWidth }));
-      }
+      setSchedColWidths((prev) => ({ ...prev, [colKey]: newWidth }));
     };
 
     const onMouseUp = () => {
@@ -209,7 +185,6 @@ export const DoctorSchedulePage: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    const isAttendance = activeTab === 'attendance';
     const startY = e.clientY;
     const startHeight = currentRowHeight || 36;
 
@@ -217,11 +192,7 @@ export const DoctorSchedulePage: React.FC = () => {
       moveEvent.preventDefault();
       const deltaY = moveEvent.clientY - startY;
       const newHeight = Math.max(32, startHeight + deltaY); // Safe bound minHeight: 32px
-      if (isAttendance) {
-        setAttRowHeights((prev) => ({ ...prev, [rowKey]: newHeight }));
-      } else {
-        setSchedRowHeights((prev) => ({ ...prev, [rowKey]: newHeight }));
-      }
+      setSchedRowHeights((prev) => ({ ...prev, [rowKey]: newHeight }));
     };
 
     const onMouseUp = () => {
@@ -235,7 +206,7 @@ export const DoctorSchedulePage: React.FC = () => {
     document.addEventListener('mouseup', onMouseUp);
   };
 
-  // Filtered schedules & attendances by search keywords
+  // Filtered schedules by search keywords
   const filteredSchedules = useMemo(() => {
     if (!schedSearch.trim()) return schedules;
     const q = schedSearch.toLowerCase().trim();
@@ -250,27 +221,10 @@ export const DoctorSchedulePage: React.FC = () => {
     });
   }, [schedules, schedSearch]);
 
-  const filteredAttendances = useMemo(() => {
-    if (!attSearch.trim()) return attendances;
-    const q = attSearch.toLowerCase().trim();
-    return attendances.filter((a) => {
-      return (
-        (a.tenCa && a.tenCa.toLowerCase().includes(q)) ||
-        (a.ghiChu && a.ghiChu.toLowerCase().includes(q)) ||
-        (a.ngayChamCong && a.ngayChamCong.includes(q)) ||
-        (a.trangThai && a.trangThai.toLowerCase().includes(q))
-      );
-    });
-  }, [attendances, attSearch]);
-
   // Sync custom reordered lists with filtered data
   useEffect(() => {
     setCustomSchedules(filteredSchedules);
   }, [filteredSchedules]);
-
-  useEffect(() => {
-    setCustomAttendances(filteredAttendances);
-  }, [filteredAttendances]);
 
   // Column Drop Handlers
   const handleSchedColDrop = (targetKey: string) => {
@@ -280,26 +234,6 @@ export const DoctorSchedulePage: React.FC = () => {
       return;
     }
     setSchedColOrder((prev) => {
-      const next = [...prev];
-      const fromIdx = next.indexOf(draggedColKey);
-      const toIdx = next.indexOf(targetKey);
-      if (fromIdx !== -1 && toIdx !== -1) {
-        next.splice(fromIdx, 1);
-        next.splice(toIdx, 0, draggedColKey);
-      }
-      return next;
-    });
-    setDraggedColKey(null);
-    setDragOverColKey(null);
-  };
-
-  const handleAttColDrop = (targetKey: string) => {
-    if (!draggedColKey || draggedColKey === targetKey || draggedColKey === 'stt' || targetKey === 'stt') {
-      setDraggedColKey(null);
-      setDragOverColKey(null);
-      return;
-    }
-    setAttColOrder((prev) => {
       const next = [...prev];
       const fromIdx = next.indexOf(draggedColKey);
       const toIdx = next.indexOf(targetKey);
@@ -334,38 +268,11 @@ export const DoctorSchedulePage: React.FC = () => {
     setDragOverRowKey(null);
   };
 
-  const handleAttRowDrop = (targetRowKey: string) => {
-    if (!draggedRowKey || draggedRowKey === targetRowKey) {
-      setDraggedRowKey(null);
-      setDragOverRowKey(null);
-      return;
-    }
-    setCustomAttendances((prev) => {
-      const next = [...prev];
-      const fromIdx = next.findIndex((a, idx) => `att-row-${a.id || idx}` === draggedRowKey);
-      const toIdx = next.findIndex((a, idx) => `att-row-${a.id || idx}` === targetRowKey);
-      if (fromIdx !== -1 && toIdx !== -1) {
-        const [moved] = next.splice(fromIdx, 1);
-        next.splice(toIdx, 0, moved);
-      }
-      return next;
-    });
-    setDraggedRowKey(null);
-    setDragOverRowKey(null);
-  };
-
   const handleResetGridSizes = () => {
-    if (activeTab === 'schedule') {
-      setSchedColWidths(DEFAULT_SCHED_COL_WIDTHS);
-      setSchedRowHeights({});
-      setSchedColOrder(SCHED_COLUMNS.map((c) => c.key));
-      setCustomSchedules(filteredSchedules);
-    } else {
-      setAttColWidths(DEFAULT_ATT_COL_WIDTHS);
-      setAttRowHeights({});
-      setAttColOrder(ATT_COLUMNS.map((c) => c.key));
-      setCustomAttendances(filteredAttendances);
-    }
+    setSchedColWidths(DEFAULT_SCHED_COL_WIDTHS);
+    setSchedRowHeights({});
+    setSchedColOrder(SCHED_COLUMNS.map((c) => c.key));
+    setCustomSchedules(filteredSchedules);
     toast.success('Đã khôi phục kích thước và thứ tự ô lưới mặc định');
   };
 
@@ -443,23 +350,6 @@ export const DoctorSchedulePage: React.FC = () => {
     return <span className="badge-source" title={src}>{src || 'Tiêu chuẩn'}</span>;
   };
 
-  const renderAttendanceStatus = (status: string) => {
-    switch (status) {
-      case 'DUNG_GIO':
-        return <span className="badge-status-tag on-time"><i className="fa-solid fa-circle-check"></i> Đúng giờ</span>;
-      case 'DI_MUON':
-        return <span className="badge-status-tag late"><i className="fa-solid fa-clock"></i> Đi muộn</span>;
-      case 'VE_SOM':
-        return <span className="badge-status-tag late"><i className="fa-solid fa-person-walking-arrow-right"></i> Về sớm</span>;
-      case 'DI_MUON_VE_SOM':
-        return <span className="badge-status-tag late"><i className="fa-solid fa-triangle-exclamation"></i> Muộn/Sớm</span>;
-      case 'VANG_MAT':
-        return <span className="badge-status-tag absent"><i className="fa-solid fa-circle-xmark"></i> Vắng mặt</span>;
-      default:
-        return <span className="badge-status-tag on-time">{status || 'Hoàn tất'}</span>;
-    }
-  };
-
   const currentActiveShift = todayStatus?.shifts?.find((s) => s.id === selectedShiftId) ||
     todayStatus?.shifts?.find((s) => s.isCurrentActive) ||
     todayStatus?.shifts?.[0];
@@ -470,25 +360,13 @@ export const DoctorSchedulePage: React.FC = () => {
     return schedColOrder.map((key) => colMap.get(key)).filter(Boolean) as typeof SCHED_COLUMNS;
   }, [schedColOrder]);
 
-  const orderedAttColumns = useMemo(() => {
-    const colMap = new Map(ATT_COLUMNS.map((c) => [c.key, c]));
-    return attColOrder.map((key) => colMap.get(key)).filter(Boolean) as typeof ATT_COLUMNS;
-  }, [attColOrder]);
-
-  // Paginated data based on customSchedules and customAttendances
+  // Paginated data based on customSchedules
   const schedTotal = customSchedules.length;
   const schedTotalPages = Math.max(1, Math.ceil(schedTotal / schedPageSize));
   const paginatedSchedules = useMemo(() => {
     const start = (schedPage - 1) * schedPageSize;
     return customSchedules.slice(start, start + schedPageSize);
   }, [customSchedules, schedPage, schedPageSize]);
-
-  const attTotal = customAttendances.length;
-  const attTotalPages = Math.max(1, Math.ceil(attTotal / attPageSize));
-  const paginatedAttendances = useMemo(() => {
-    const start = (attPage - 1) * attPageSize;
-    return customAttendances.slice(start, start + attPageSize);
-  }, [customAttendances, attPage, attPageSize]);
 
   // Cell renderer for Schedule tab
   const renderSchedCell = (
@@ -611,150 +489,10 @@ export const DoctorSchedulePage: React.FC = () => {
     }
   };
 
-  // Cell renderer for Attendance tab
-  const renderAttCell = (
-    colKey: string,
-    a: AttendanceItemDto,
-    stt: number,
-    rowKey: string,
-    rowHeight: number
-  ) => {
-    const lateMin = a.phutDiMuon ?? 0;
-    const earlyMin = a.phutVeSom ?? 0;
-
-    switch (colKey) {
-      case 'stt':
-        return (
-          <td
-            key="stt"
-            className="relative w-12 text-center font-mono font-semibold text-slate-500 bg-slate-100 align-middle px-2 py-1.5 border border-slate-300 select-none"
-            style={{ height: `${rowHeight}px` }}
-          >
-            <div
-              className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-mono font-bold text-xs"
-              title={`Dòng ${stt}`}
-            >
-              <i
-                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[11px] opacity-60 hover:opacity-100"
-                title="Kéo thả để sắp xếp hàng"
-              />
-              {stt}
-            </div>
-            {/* Row Resizer Handle */}
-            <div
-              className="row-resizer h-1.5 w-full absolute left-0 bottom-0 cursor-row-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-              onMouseDown={(e) => handleRowResizeStart(e, rowKey, rowHeight)}
-              onClick={(e) => e.stopPropagation()}
-              title="Kéo chuột để đổi chiều cao dòng"
-            />
-          </td>
-        );
-
-      case 'ngayChamCong':
-        return (
-          <td key="ngayChamCong" className="text-center align-middle px-2 py-1.5 border border-slate-300">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center font-semibold text-slate-800" title={formatDate(a.ngayChamCong)}>
-              {formatDate(a.ngayChamCong)}
-            </div>
-          </td>
-        );
-
-      case 'tenCa':
-        return (
-          <td key="tenCa" className="text-center align-middle px-2 py-1.5 border border-slate-300">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center text-slate-800 font-medium" title={a.tenCa || 'Theo ca trực'}>
-              {a.tenCa || 'Theo ca trực'}
-            </div>
-          </td>
-        );
-
-      case 'checkIn':
-        return (
-          <td key="checkIn" className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.checkIn ? formatTime(a.checkIn) : 'Chưa check-in'}>
-              {a.checkIn ? (
-                <span className="font-semibold text-emerald-700">
-                  <i className="fa-solid fa-arrow-down-long text-[10px] mr-1"></i>
-                  {formatTime(a.checkIn)}
-                </span>
-              ) : (
-                <span className="text-slate-400">---</span>
-              )}
-            </div>
-          </td>
-        );
-
-      case 'checkOut':
-        return (
-          <td key="checkOut" className="text-center align-middle px-2 py-1.5 border border-slate-300 font-mono text-xs">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.checkOut ? formatTime(a.checkOut) : 'Chưa check-out'}>
-              {a.checkOut ? (
-                <span className="font-semibold text-amber-700">
-                  <i className="fa-solid fa-arrow-up-long text-[10px] mr-1"></i>
-                  {formatTime(a.checkOut)}
-                </span>
-              ) : (
-                <span className="text-slate-400">---</span>
-              )}
-            </div>
-          </td>
-        );
-
-      case 'gioThucTe':
-        return (
-          <td key="gioThucTe" className="text-right align-middle px-2 py-1.5 border border-slate-300 font-mono font-semibold text-slate-900">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-end" title={a.gioLamThucTe != null ? `${Number(a.gioLamThucTe).toFixed(1)} giờ` : '---'}>
-              {a.gioLamThucTe != null ? `${Number(a.gioLamThucTe).toFixed(1)}h` : '---'}
-            </div>
-          </td>
-        );
-
-      case 'diMuonVeSom':
-        return (
-          <td key="diMuonVeSom" className="text-center align-middle px-2 py-1.5 border border-slate-300 text-xs">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={lateMin > 0 || earlyMin > 0 ? `Muộn: ${lateMin}p, Sớm: ${earlyMin}p` : 'Đúng giờ'}>
-              {lateMin > 0 && (
-                <span className="text-rose-600 font-semibold mr-1.5">
-                  Muộn {lateMin}p
-                </span>
-              )}
-              {earlyMin > 0 && (
-                <span className="text-amber-600 font-semibold">
-                  Sớm {earlyMin}p
-                </span>
-              )}
-              {lateMin === 0 && earlyMin === 0 && (
-                <span className="text-slate-400">Không</span>
-              )}
-            </div>
-          </td>
-        );
-
-      case 'trangThai':
-        return (
-          <td key="trangThai" className="text-center align-middle px-2 py-1.5 border border-slate-300">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-center" title={a.trangThai}>
-              {renderAttendanceStatus(a.trangThai)}
-            </div>
-          </td>
-        );
-
-      case 'ghiChu':
-        return (
-          <td key="ghiChu" className="text-left align-middle px-2 py-1.5 border border-slate-300">
-            <div className="w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start text-slate-500 text-xs" title={a.ghiChu || '---'}>
-              {a.ghiChu || '---'}
-            </div>
-          </td>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="doctor-schedule-page">
+    <div className={`doctor-schedule-page ${activeTab === 'attendance' ? 'doctor-schedule-page--calendar' : ''}`}>
+      {activeTab === 'schedule' && (
+      <>
       <div className="sched-header">
         <div className="sched-title">
           <i className="fa-solid fa-calendar-check" style={{ fontSize: '24px', color: 'var(--primary)' }}></i>
@@ -944,15 +682,17 @@ export const DoctorSchedulePage: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* Main Table / Tabs */}
-      <div className="content-card">
+      <div className={`content-card ${activeTab === 'attendance' ? 'content-card--calendar' : ''}`}>
         <div className="card-nav-tabs">
           <div className="tab-buttons">
             <button
               className={`tab-btn ${activeTab === 'schedule' ? 'active' : ''}`}
               onClick={() => {
-                setActiveTab('schedule');
+                changeTab('schedule');
                 setSchedPage(1);
               }}
             >
@@ -960,63 +700,52 @@ export const DoctorSchedulePage: React.FC = () => {
             </button>
             <button
               className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('attendance');
-                setAttPage(1);
-              }}
+              onClick={() => changeTab('attendance')}
             >
-              <i className="fa-solid fa-clipboard-user"></i> Lịch Sử Chấm Công ({customAttendances.length})
+              <i className="fa-solid fa-clipboard-user"></i> Lịch Sử Chấm Công
             </button>
           </div>
 
-          <div className="table-toolbar flex items-center gap-3">
-            {/* Search Input with Clear Button */}
-            <div className="relative flex items-center">
-              <i className="fa-solid fa-search absolute left-2 text-slate-400 text-xs pointer-events-none"></i>
-              <input
-                type="text"
-                className="pl-7 pr-6 py-1 h-[28px] border border-slate-300 rounded text-xs text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:border-blue-500 w-56"
-                placeholder={activeTab === 'schedule' ? 'Tìm ngày, ca, phòng khám...' : 'Tìm ngày, ca, trạng thái...'}
-                value={activeTab === 'schedule' ? schedSearch : attSearch}
-                onChange={(e) => {
-                  if (activeTab === 'schedule') {
+          {activeTab === 'schedule' && (
+            <div className="table-toolbar flex items-center gap-3">
+              {/* Search Input with Clear Button */}
+              <div className="relative flex items-center">
+                <i className="fa-solid fa-search absolute left-2 text-slate-400 text-xs pointer-events-none"></i>
+                <input
+                  type="text"
+                  className="pl-7 pr-6 py-1 h-[28px] border border-slate-300 rounded text-xs text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:border-blue-500 w-56"
+                  placeholder="Tìm ngày, ca, phòng khám..."
+                  value={schedSearch}
+                  onChange={(e) => {
                     setSchedSearch(e.target.value);
                     setSchedPage(1);
-                  } else {
-                    setAttSearch(e.target.value);
-                    setAttPage(1);
-                  }
-                }}
-              />
-              {(activeTab === 'schedule' ? schedSearch : attSearch) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeTab === 'schedule') {
+                  }}
+                />
+                {schedSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
                       setSchedSearch('');
                       setSchedPage(1);
-                    } else {
-                      setAttSearch('');
-                      setAttPage(1);
-                    }
-                  }}
-                  className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none text-xs"
-                  title="Xóa tìm kiếm"
-                >
-                  <i className="fa-solid fa-xmark"></i>
-                </button>
-              )}
-            </div>
+                    }}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none text-xs"
+                    title="Xóa tìm kiếm"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                )}
+              </div>
 
-            <button
-              type="button"
-              className="btn-reset-grid"
-              onClick={handleResetGridSizes}
-              title="Đặt lại độ rộng cột, hàng và thứ tự về mặc định"
-            >
-              <i className="fa-solid fa-table-cells"></i> Đặt lại cỡ ô
-            </button>
-          </div>
+              <button
+                type="button"
+                className="btn-reset-grid"
+                onClick={handleResetGridSizes}
+                title="Đặt lại độ rộng cột, hàng và thứ tự về mặc định"
+              >
+                <i className="fa-solid fa-table-cells"></i> Đặt lại cỡ ô
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="table-container">
@@ -1161,149 +890,11 @@ export const DoctorSchedulePage: React.FC = () => {
               </table>
             </div>
           ) : (
-            <div className="sched-table-wrap w-full overflow-auto border border-slate-300 rounded-none bg-white">
-              <table className="table-fixed w-max min-w-full border-collapse border border-slate-300 divide-x divide-y divide-slate-300">
-                <colgroup>
-                  {orderedAttColumns.map((col) => (
-                    <col
-                      key={col.key}
-                      style={{ width: `${attColWidths[col.key] || DEFAULT_ATT_COL_WIDTHS[col.key] || 100}px` }}
-                    />
-                  ))}
-                </colgroup>
-                <thead>
-                  <tr>
-                    {orderedAttColumns.map((col) => {
-                      const canDrag = col.key !== 'stt';
-                      const isDragged = draggedColKey === col.key;
-                      const isOver = dragOverColKey === col.key;
-
-                      return (
-                        <th
-                          key={col.key}
-                          draggable={canDrag}
-                          onDragStart={(e) => {
-                            if (canDrag) {
-                              e.dataTransfer.setData('text/plain', col.key);
-                              setDraggedColKey(col.key);
-                            }
-                          }}
-                          onDragOver={(e) => {
-                            if (canDrag) {
-                              e.preventDefault();
-                              setDragOverColKey(col.key);
-                            }
-                          }}
-                          onDragLeave={() => {
-                            if (dragOverColKey === col.key) {
-                              setDragOverColKey(null);
-                            }
-                          }}
-                          onDrop={(e) => {
-                            if (canDrag) {
-                              e.preventDefault();
-                              handleAttColDrop(col.key);
-                            }
-                          }}
-                          style={{
-                            width: attColWidths[col.key] || DEFAULT_ATT_COL_WIDTHS[col.key] || 100,
-                            opacity: isDragged ? 0.4 : 1,
-                          }}
-                          className={`relative bg-slate-100 text-slate-800 font-bold text-xs uppercase tracking-tight border-b-2 border-slate-400 sticky top-0 z-10 align-middle px-2 py-1.5 border border-slate-300 select-none ${col.align} ${
-                            isOver ? 'bg-blue-100 border-l-2 border-l-blue-600' : ''
-                          }`}
-                        >
-                          <div
-                            className={`w-full h-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center ${
-                              col.align === 'text-center'
-                                ? 'justify-center'
-                                : col.align === 'text-right'
-                                ? 'justify-end'
-                                : 'justify-start'
-                            }`}
-                            title={col.label}
-                          >
-                            {canDrag && (
-                              <i
-                                className="fa-solid fa-grip-vertical text-slate-400 cursor-grab mr-1 text-[10px] opacity-40 hover:opacity-100"
-                                title="Kéo chuột để đổi vị trí cột"
-                              />
-                            )}
-                            <span>{col.label}</span>
-                          </div>
-                          {/* Resizer Handle */}
-                          <div
-                            className="col-resizer w-1.5 h-full absolute right-0 top-0 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 select-none z-20"
-                            onMouseDown={(e) => handleColResizeStart(e, col.key)}
-                            onClick={(e) => e.stopPropagation()}
-                            title="Kéo chuột để đổi độ rộng cột"
-                          />
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={orderedAttColumns.length} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-500">
-                        <i className="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải lịch sử chấm công...
-                      </td>
-                    </tr>
-                  ) : customAttendances.length === 0 ? (
-                    <tr>
-                      <td colSpan={orderedAttColumns.length} className="text-center align-middle h-24 py-8 border border-slate-300 text-slate-400">
-                        Chưa có bản ghi chấm công nào trong kỳ này.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedAttendances.map((a, idx) => {
-                      const stt = (attPage - 1) * attPageSize + idx + 1;
-                      const rowKey = `att-row-${a.id || idx}`;
-                      const rowHeight = attRowHeights[rowKey] || 36;
-                      const isRowOver = dragOverRowKey === rowKey;
-                      const isRowDragged = draggedRowKey === rowKey;
-
-                      return (
-                        <tr
-                          key={a.id || idx}
-                          style={{ height: `${rowHeight}px`, opacity: isRowDragged ? 0.4 : 1 }}
-                          className={`even:bg-slate-50/50 hover:bg-sky-50/60 transition-colors ${
-                            isRowOver ? 'border-t-2 border-t-blue-500 bg-blue-50/50' : ''
-                          }`}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', rowKey);
-                            setDraggedRowKey(rowKey);
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setDragOverRowKey(rowKey);
-                          }}
-                          onDragLeave={() => {
-                            if (dragOverRowKey === rowKey) {
-                              setDragOverRowKey(null);
-                            }
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            handleAttRowDrop(rowKey);
-                          }}
-                        >
-                          {orderedAttColumns.map((col) =>
-                            renderAttCell(col.key, a, stt, rowKey, rowHeight)
-                          )}
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <AttendanceCalendarView refreshSignal={dataVersion} />
           )}
 
           {/* Excel Status Bar & Pagination Footer */}
-          {activeTab === 'schedule' ? (
+          {activeTab === 'schedule' && (
             <div className="sched-pagination">
               <div className="pagination-info">
                 <span>Hiển thị</span>
@@ -1368,78 +959,6 @@ export const DoctorSchedulePage: React.FC = () => {
                     className="page-nav-btn"
                     disabled={schedPage >= schedTotalPages}
                     onClick={() => setSchedPage(schedTotalPages)}
-                    title="Đến trang cuối"
-                  >
-                    <i className="fa-solid fa-angles-right"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="sched-pagination">
-              <div className="pagination-info">
-                <span>Hiển thị</span>
-                <strong>{attTotal === 0 ? 0 : (attPage - 1) * attPageSize + 1} - {Math.min(attPage * attPageSize, attTotal)}</strong>
-                <span>trên tổng số</span>
-                <strong>{attTotal.toLocaleString('vi-VN')}</strong>
-                <span>bản ghi chấm công</span>
-              </div>
-
-              <div className="pagination-controls">
-                <div className="page-size-selector">
-                  <span>Dòng/trang:</span>
-                  <select
-                    value={attPageSize}
-                    onChange={(e) => {
-                      setAttPageSize(Number(e.target.value));
-                      setAttPage(1);
-                    }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-
-                <div className="page-buttons">
-                  <button
-                    type="button"
-                    className="page-nav-btn"
-                    disabled={attPage <= 1}
-                    onClick={() => setAttPage(1)}
-                    title="Về trang đầu"
-                  >
-                    <i className="fa-solid fa-angles-left"></i>
-                  </button>
-                  <button
-                    type="button"
-                    className="page-nav-btn"
-                    disabled={attPage <= 1}
-                    onClick={() => setAttPage(p => Math.max(1, p - 1))}
-                    title="Trang trước"
-                  >
-                    <i className="fa-solid fa-angle-left"></i>
-                  </button>
-
-                  <span className="page-current">
-                    Trang <strong>{attPage}</strong> / {attTotalPages}
-                  </span>
-
-                  <button
-                    type="button"
-                    className="page-nav-btn"
-                    disabled={attPage >= attTotalPages}
-                    onClick={() => setAttPage(p => Math.min(attTotalPages, p + 1))}
-                    title="Trang sau"
-                  >
-                    <i className="fa-solid fa-angle-right"></i>
-                  </button>
-                  <button
-                    type="button"
-                    className="page-nav-btn"
-                    disabled={attPage >= attTotalPages}
-                    onClick={() => setAttPage(attTotalPages)}
                     title="Đến trang cuối"
                   >
                     <i className="fa-solid fa-angles-right"></i>

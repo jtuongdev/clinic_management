@@ -392,6 +392,24 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
             return (items, totalCount);
         }
 
+        public async Task<DonThuoc?> GetPrescriptionDetailAsync(
+            int patientId,
+            int prescriptionId,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.DonThuocs
+                .AsNoTracking()
+                .Include(d => d.BacSi)
+                .Include(d => d.LuotKham)
+                .Include(d => d.ChiTietDonThuocs).ThenInclude(ct => ct.Item)
+                .FirstOrDefaultAsync(
+                    d => d.Id == prescriptionId &&
+                         d.MaLuotKham != null &&
+                         d.LuotKham.MaBenhNhan == patientId &&
+                         !d.IsDeleted,
+                    cancellationToken);
+        }
+
         // ============================================================
         // TAB: XÉT NGHIỆM
         // ============================================================

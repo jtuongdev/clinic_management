@@ -3,6 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using ClinicManagement.Application.Common.Interfaces;
+using ClinicManagement.Application.Common.Notifications.Templates;
 using ClinicManagement.Application.DTOs.Appointment;
 using ClinicManagement.Domain.Appointment;
 using ClinicManagement.Domain.Common.Enums;
@@ -29,17 +32,23 @@ namespace ClinicManagement.Application.Features.LichHen.Commands.TaoLichHen
         private readonly IBenhNhanRepository _benhNhanRepo;
         private readonly INhanVienRepository _nhanVienRepo;
         private readonly ICoSoRepository _coSoRepo;
+        private readonly ClinicManagement.Application.Common.Interfaces.IEmailSender _emailSender;
+        private readonly Microsoft.Extensions.Logging.ILogger<TaoLichHenCommandHandler> _logger;
 
         public TaoLichHenCommandHandler(
             ILichHenRepository lichHenRepo,
             IBenhNhanRepository benhNhanRepo,
             INhanVienRepository nhanVienRepo,
-            ICoSoRepository coSoRepo)
+            ICoSoRepository coSoRepo,
+            ClinicManagement.Application.Common.Interfaces.IEmailSender emailSender,
+            Microsoft.Extensions.Logging.ILogger<TaoLichHenCommandHandler> logger)
         {
             _lichHenRepo = lichHenRepo;
             _benhNhanRepo = benhNhanRepo;
             _nhanVienRepo = nhanVienRepo;
             _coSoRepo = coSoRepo;
+            _emailSender = emailSender;
+            _logger = logger;
         }
 
         public async Task<LichHenDto> Handle(TaoLichHenCommand request, CancellationToken cancellationToken)
@@ -95,6 +104,39 @@ namespace ClinicManagement.Application.Features.LichHen.Commands.TaoLichHen
 
             await _lichHenRepo.AddAsync(lichHen);
             await _lichHenRepo.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Gửi email xác nhận đặt lịch hẹn nếu bệnh nhân có email
+            if (!string.IsNullOrWhiteSpace(benhNhan.Email))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var emailData = new AppointmentEmailData
+                        {
+                            MaLichHen = lichHen.Id,
+                            TenBenhNhan = $"{benhNhan.Ho} {benhNhan.Ten}".Trim(),
+                            TenBacSi = bacSi.HoTen,
+                            TenChuyenKhoa = coSo.Ten,
+                            TenPhongKham = "Phòng khám theo lịch trực",
+                            GioHen = lichHen.ThoiGianBatDau,
+                            TenCoSo = coSo.Ten,
+                            LyDoKham = lichHen.LyDo,
+                        };
+
+                        var emailNotification = new AppointmentConfirmationEmail(emailData);
+                        await _emailSender.SendEmailAsync(
+                            benhNhan.Email,
+                            emailNotification.Subject,
+                            emailNotification.BuildHtmlBody(),
+                            cancellationToken: CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Lỗi khi gửi email xác nhận lịch hẹn #{Id}", lichHen.Id);
+                    }
+                }, CancellationToken.None);
+            }
 
             return new LichHenDto
             {

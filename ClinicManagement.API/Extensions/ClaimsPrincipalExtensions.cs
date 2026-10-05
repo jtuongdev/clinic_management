@@ -10,6 +10,14 @@ namespace ClinicManagement.API.Extensions
             return int.TryParse(claim, out var id) ? id : 0;
         }
 
+        public static int GetPatientId(this ClaimsPrincipal user)
+        {
+            var claim = user.FindFirst("patientId")?.Value 
+                     ?? user.FindFirst("PatientId")?.Value 
+                     ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(claim, out var id) ? id : 0;
+        }
+
         public static string GetUserName(this ClaimsPrincipal user)
             => user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
 

@@ -1,11 +1,13 @@
 using ClinicManagement.Application.Common.Helpers;
 using ClinicManagement.Application.Common.Interfaces;
+using ClinicManagement.Application.Common.Notifications.Templates;
 using ClinicManagement.Domain.Common.Enums;
 using ClinicManagement.Domain.Inventory;
 using ClinicManagement.Domain.Inventory.Services;
 using ClinicManagement.Domain.Repositories;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ClinicManagement.Application.Features.Kho.Lenh;
 
@@ -13,7 +15,9 @@ public sealed class CapPhatDonCommandHandler(
     IKhoRepository db,
     IInventorySettings settings,
     FefoAllocationService fefo,
-    IdempotencyHelper idempotency)
+    IdempotencyHelper idempotency,
+    IEmailSender emailSender,
+    ILogger<CapPhatDonCommandHandler> logger)
     : IRequestHandler<CapPhatDonCommand, InventoryResult>
 {
     public async Task<InventoryResult> Handle(CapPhatDonCommand request, CancellationToken ct)
@@ -23,13 +27,16 @@ public sealed class CapPhatDonCommandHandler(
         var replay = await idempotency.TryReplayAsync(r.IdempotencyKey, nameof(CapPhatDonCommand));
         if (replay is not null) return InventoryResult.Raw(replay.ResponseJson, replay.StatusCode);
 
-        var prescription = await db.DonThuocs.Include(x => x.ChiTietDonThuocs).FirstOrDefaultAsync(x => x.Id == prescriptionId, ct);
+        var prescription = await db.DonThuocs
+            .Include(x => x.ChiTietDonThuocs)
+            .FirstOrDefaultAsync(x => x.Id == prescriptionId, ct);
         if (prescription is null) return InventoryResult.Error("Không tìm thấy đơn thuốc.", 404);
         if (prescription.TrangThai != TrangThaiDonThuoc.DA_DUYET) return InventoryResult.Error("Đơn thuốc chưa sẵn sàng cấp phát.", 409);
 
         if (settings.RequirePaymentBeforeDispense)
         {
-            var activeInvoice = await db.HoaDons.AsNoTracking()
+            var activeInvoice = await db.HoaDons
+                .AsNoTracking()
                 .Where(h => h.MaLuotKham == prescription.MaLuotKham && h.TrangThai != TrangThaiHoaDon.DA_HUY)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync(ct);
@@ -106,6 +113,44 @@ public sealed class CapPhatDonCommandHandler(
                 };
                 await idempotency.SaveAsync(r.IdempotencyKey, nameof(CapPhatDonCommand), result, userId);
                 await transaction.CommitAsync(ct);
+
+                // Gửi email đơn thuốc điện tử cho bệnh nhân nếu có địa chỉ email
+                var patientEmail = prescription.LuotKham?.BenhNhan?.Email;
+                if (!string.IsNullOrWhiteSpace(patientEmail))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var emailData = new PrescriptionEmailData
+                            {
+                                MaDonThuoc = prescription.Id,
+                                TenBenhNhan = $"{prescription.LuotKham.BenhNhan.Ho} {prescription.LuotKham.BenhNhan.Ten}".Trim(),
+                                TenBacSi = prescription.BacSi?.HoTen ?? "Bác sĩ chỉ định",
+                                NgayKeDon = prescription.NgayKe,
+                                LoiDanBacSi = prescription.GhiChu,
+                                Thuocs = prescription.ChiTietDonThuocs.Select(c => new PrescriptionDrugItemEmailDto
+                                {
+                                    TenThuoc = $"Mặt hàng #{c.MaItem}",
+                                    SoLuong = c.SoLuongDaXuat > 0 ? c.SoLuongDaXuat : c.SoLuongKe,
+                                    CachDung = string.IsNullOrWhiteSpace(c.HuongDan) ? $"{c.LieuDung} {c.TanSuat}".Trim() : c.HuongDan
+                                }).ToList()
+                            };
+
+                            var emailNotification = new PrescriptionDispenseEmail(emailData);
+                            await emailSender.SendEmailAsync(
+                                patientEmail,
+                                emailNotification.Subject,
+                                emailNotification.BuildHtmlBody(),
+                                cancellationToken: CancellationToken.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Lỗi khi gửi email đơn thuốc #{Id}", prescription.Id);
+                        }
+                    }, CancellationToken.None);
+                }
+
                 return InventoryResult.Ok(result);
             }
             catch (DbUpdateConcurrencyException)

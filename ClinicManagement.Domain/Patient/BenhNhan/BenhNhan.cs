@@ -11,13 +11,13 @@ namespace ClinicManagement.Domain.Patient;
         public DateTime NgaySinh { get; private set; }
         public GioiTinh GioiTinh { get; private set; }
         public string DienThoai { get; private set; } = string.Empty;
-        public string Email { get; private set; } = string.Empty;
-        public string SoCCCD { get; private set; } = string.Empty;
-        public string DiaChi { get; private set; } = string.Empty;
-        public string NguoiLienHeTen { get; private set; } = string.Empty;
-        public string NguoiLienHeDienThoai { get; private set; } = string.Empty;
-        public string Username { get; private set; } = string.Empty;
-        public string PasswordHash { get; private set; } = string.Empty;
+        public string? Email { get; private set; }
+        public string? SoCCCD { get; private set; }
+        public string? DiaChi { get; private set; }
+        public string? NguoiLienHeTen { get; private set; }
+        public string? NguoiLienHeDienThoai { get; private set; }
+        public string? Username { get; private set; }
+        public string? PasswordHash { get; private set; }
 
         public virtual ICollection<BenhNhanCoSo> BenhNhanCoSo { get; private set; }
         public virtual ICollection<BaoHiem> BaoHiems { get; private set; }
@@ -40,29 +40,29 @@ namespace ClinicManagement.Domain.Patient;
             DateTime ngaySinh,
             GioiTinh gioiTinh,
             string dienThoai,
-            string email,
-            string soCCCD,
-            string diaChi,
+            string? email,
+            string? soCCCD,
+            string? diaChi,
             int createdBy,
-            string nguoiLienHeTen,
-            string nguoiLienHeDienThoai,
-            string username,
-            string passwordHash)
+            string? nguoiLienHeTen = null,
+            string? nguoiLienHeDienThoai = null,
+            string? username = null,
+            string? passwordHash = null)
         {
             Ho = ho;
             Ten = ten;
             NgaySinh = ngaySinh.Date;
             GioiTinh = gioiTinh;
             DienThoai = dienThoai;
-            Email = email;
-            SoCCCD = soCCCD;
-            DiaChi = diaChi;
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+            SoCCCD = string.IsNullOrWhiteSpace(soCCCD) ? null : soCCCD.Trim();
+            DiaChi = string.IsNullOrWhiteSpace(diaChi) ? null : diaChi.Trim();
             CreatedBy = createdBy;
 
-            NguoiLienHeTen = nguoiLienHeTen;
-            NguoiLienHeDienThoai = nguoiLienHeDienThoai;
-            Username = username;
-            PasswordHash = passwordHash;
+            NguoiLienHeTen = string.IsNullOrWhiteSpace(nguoiLienHeTen) ? null : nguoiLienHeTen.Trim();
+            NguoiLienHeDienThoai = string.IsNullOrWhiteSpace(nguoiLienHeDienThoai) ? null : nguoiLienHeDienThoai.Trim();
+            Username = string.IsNullOrWhiteSpace(username) ? null : username.Trim();
+            PasswordHash = string.IsNullOrWhiteSpace(passwordHash) ? null : passwordHash;
 
             BenhNhanCoSo = new List<BenhNhanCoSo>();
             BaoHiems = new List<BaoHiem>();
@@ -76,22 +76,21 @@ namespace ClinicManagement.Domain.Patient;
             DateTime ngaySinh,
             GioiTinh gioiTinh,
             string dienThoai,
-            string email,
-            string diaChi,
-            string nguoiLienHeTen,
-            string nguoiLienHeDienThoai)
+            string? email,
+            string? diaChi,
+            string? nguoiLienHeTen,
+            string? nguoiLienHeDienThoai)
         {
             Ho = ho;
             Ten = ten;
             NgaySinh = ngaySinh.Date;
             GioiTinh = gioiTinh;
             DienThoai = dienThoai;
-            Email = email;
-            DiaChi = diaChi;
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+            DiaChi = string.IsNullOrWhiteSpace(diaChi) ? null : diaChi.Trim();
 
-            NguoiLienHeTen = nguoiLienHeTen;
-            NguoiLienHeDienThoai = nguoiLienHeDienThoai;
-
+            NguoiLienHeTen = string.IsNullOrWhiteSpace(nguoiLienHeTen) ? null : nguoiLienHeTen.Trim();
+            NguoiLienHeDienThoai = string.IsNullOrWhiteSpace(nguoiLienHeDienThoai) ? null : nguoiLienHeDienThoai.Trim();
         }
         public void AddBaoHiem(LoaiBaoHiem loai, string tenNhaCungCap, string soThe, 
                               DateTime ngayBatDau, DateTime ngayKetThuc, decimal mucHuong)
@@ -141,5 +140,14 @@ namespace ClinicManagement.Domain.Patient;
         {
             PasswordHash = newPasswordHash;
         }
-    
+
+        public void LinkUserAccount(string username, string passwordHash, string? email = null)
+        {
+            Username = username;
+            PasswordHash = passwordHash;
+            if (!string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(Email))
+            {
+                Email = email;
+            }
+        }
     }
