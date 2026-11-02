@@ -1,0 +1,97 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using ClinicManagement.Domain.Patient;
+
+namespace ClinicManagement.Infrastructure.Persistence.Configurations
+{
+    public class BenhNhanConfiguration : IEntityTypeConfiguration<BenhNhan>
+    {
+        public void Configure(EntityTypeBuilder<BenhNhan> builder)
+        {
+            builder.ToTable("BenhNhan");
+            builder.HasKey(b => b.Id);
+            
+            builder.Property(b => b.Ho)
+                .IsRequired()
+                .HasMaxLength(50);
+                
+            builder.Property(b => b.Ten)
+                .IsRequired()
+                .HasMaxLength(50);
+                
+            var gioiTinhConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<ClinicManagement.Domain.Common.Enums.GioiTinh, string>(
+                v => v == ClinicManagement.Domain.Common.Enums.GioiTinh.M ? "NAM" : v == ClinicManagement.Domain.Common.Enums.GioiTinh.F ? "NU" : "KHAC",
+                v => v == "NAM" ? ClinicManagement.Domain.Common.Enums.GioiTinh.M : v == "NU" ? ClinicManagement.Domain.Common.Enums.GioiTinh.F : ClinicManagement.Domain.Common.Enums.GioiTinh.O
+            );
+            
+            builder.Property(b => b.GioiTinh)
+                .HasConversion(gioiTinhConverter)
+                .HasMaxLength(10);
+                
+            builder.Property(b => b.Email)
+                .IsRequired(false)
+                .HasMaxLength(100);
+            builder.HasIndex(b => b.Email)
+                .IsUnique()
+                .HasFilter("[Email] IS NOT NULL");
+                
+            builder.Property(b => b.SoCCCD)
+                .IsRequired(false)
+                .HasMaxLength(20);
+            builder.HasIndex(b => b.SoCCCD)
+                .IsUnique()
+                .HasFilter("[SoCCCD] IS NOT NULL");
+                
+            builder.Property(b => b.DienThoai)
+                .IsRequired()
+                .HasMaxLength(20);
+                
+            builder.Property(b => b.DiaChi)
+                .IsRequired(false)
+                .HasMaxLength(255);
+                
+            builder.Property(b => b.NguoiLienHeTen)
+                .IsRequired(false)
+                .HasMaxLength(100);
+                
+            builder.Property(b => b.NguoiLienHeDienThoai)
+                .IsRequired(false)
+                .HasMaxLength(20);
+                
+            builder.Property(b => b.Username)
+                .IsRequired(false)
+                .HasMaxLength(50);
+            builder.HasIndex(b => b.Username)
+                .IsUnique()
+                .HasFilter("[Username] IS NOT NULL");
+                
+            builder.Property(b => b.PasswordHash)
+                .HasMaxLength(500);
+            
+            builder.HasMany(b => b.BenhNhanCoSo)
+                .WithOne(bn => bn.BenhNhan)
+                .HasForeignKey(bn => bn.MaBenhNhan)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.HasMany(b => b.BaoHiems)
+                .WithOne(bh => bh.BenhNhan)
+                .HasForeignKey(bh => bh.MaBenhNhan)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.HasMany(b => b.TienSuBenhs)
+                .WithOne(ts => ts.BenhNhan)
+                .HasForeignKey(ts => ts.MaBenhNhan)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.HasMany(b => b.LuotKhams)
+                .WithOne(lk => lk.BenhNhan)
+                .HasForeignKey(lk => lk.MaBenhNhan)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            builder.HasMany(b => b.HoaDons)
+                .WithOne(h => h.BenhNhan)
+                .HasForeignKey(h => h.MaBenhNhan)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+}

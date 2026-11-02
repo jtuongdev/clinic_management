@@ -1,0 +1,73 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using ClinicManagement.Domain.Repositories;
+using ClinicManagement.Domain.Repositories.System;
+using ClinicManagement.Domain.Common;
+using ClinicManagement.Domain.Inventory.Services;
+using ClinicManagement.Infrastructure.Persistence;
+using ClinicManagement.Infrastructure.Persistence.Repositories;
+using ClinicManagement.Infrastructure.Persistence.Repositories.System;
+using ClinicManagement.Application.Common.Interfaces;
+using ClinicManagement.Application.Common.Helpers;
+using ClinicManagement.Infrastructure.Identity.Services;
+
+namespace ClinicManagement.Infrastructure
+{
+    public static class DependencyInjection
+    {
+        public static IServiceCollection AddInfrastructure(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // Đăng ký DbContext
+            services.AddDbContext<ClinicDbContext>(options =>
+                options.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly(typeof(ClinicDbContext).Assembly.FullName)));
+            services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ClinicDbContext>());
+            services.AddScoped<INhanVienRepository, NhanVienRepository>();
+            services.AddScoped<IBenhNhanRepository, BenhNhanRepository>();
+            services.AddScoped<INhatKyHoSoBenhAnRepository, NhatKyHoSoBenhAnRepository>();
+            services.AddScoped<ICauHinhTichHopRepository, CauHinhTichHopRepository>();
+            services.AddScoped<IClinicalAccessRepository, ClinicalAccessRepository>();
+            services.AddScoped<IMaTranPhanQuyenRepository, MaTranPhanQuyenRepository>();
+            services.AddScoped<IClinicalDrugSafetyRepository, ClinicalDrugSafetyRepository>();
+            services.AddScoped<ITokenLamMoiRepository, TokenLamMoiRepository>();
+            
+            services.AddScoped<ICoSoRepository, CoSoRepository>();
+            services.AddScoped<IKhoaRepository, KhoaRepository>();
+            services.AddScoped<IPhongKhamRepository, PhongKhamRepository>();
+
+            services.AddScoped<ILuotKhamRepository, LuotKhamRepository>();
+            services.AddScoped<ILichHenRepository, LichHenRepository>();
+            services.AddScoped<ILichLamViecRepository, LichLamViecRepository>();
+            services.AddScoped<IChamCongRepository, ChamCongRepository>();
+            services.AddScoped<IPayrollRepository, PayrollRepository>();
+            services.AddScoped<INghiPhepRepository, NghiPhepRepository>();
+            services.AddScoped<IDanhMucDichVuRepository, DanhMucDichVuRepository>();
+            services.AddScoped<IKhoRepository, KhoRepository>();
+            services.AddScoped<IHoaDonRepository, HoaDonRepository>();
+            services.AddScoped<IInventorySettings, InventorySettings>();
+            // Domain Service: FEFO allocation algorithm (inject vào các Handler cần FEFO)
+            services.AddScoped<FefoAllocationService>();
+            // Application Helper: idempotency (inject vào các Handler cần replay protection)
+            services.AddScoped<IdempotencyHelper>();
+
+            services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+            return services;
+        }
+
+        private sealed class InventorySettings(IConfiguration configuration) : IInventorySettings
+        {
+            public int DefaultWarehouseId =>
+                int.TryParse(configuration["Inventory:DefaultWarehouseId"], out var id) ? id : 1;
+
+            public bool RequirePaymentBeforeDispense =>
+                !bool.TryParse(configuration["Inventory:RequirePaymentBeforeDispense"], out var req) || req;
+        }
+    }
+}
