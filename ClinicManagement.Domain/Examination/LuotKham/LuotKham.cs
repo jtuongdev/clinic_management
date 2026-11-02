@@ -1,0 +1,254 @@
+using System;
+using System.Collections.Generic;
+using ClinicManagement.Domain.Common;
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.Domain.Facility;
+using ClinicManagement.Domain.Identity;
+using ClinicManagement.Domain.Patient;
+using ClinicManagement.Domain.Appointment;
+using ClinicManagement.Domain.Service;
+using ClinicManagement.Domain.Prescription;
+using ClinicManagement.Domain.Billing;
+
+namespace ClinicManagement.Domain.Examination
+{
+    public class LuotKham : BaseEntity, IAggregateRoot
+    {
+        public int MaBenhNhan { get; private set; }
+        public int? MaBacSi { get; private set; }
+        public int? MaLichHen { get; private set; }
+        public int MaCoSo { get; private set; } 
+        public int MaKhoa { get; private set; }
+        public HinhThucDieuTri HinhThucDieuTri { get; private set; }
+        public TrangThaiLuotKham TrangThai { get; private set; }
+        public int? SoThuTu { get; private set; }
+        public DateTime NgayKham { get; private set; }
+        public DateTime? ThoiGianBatDauKham { get; private set; }
+        public DateTime? ThoiGianKetThucKham { get; private set; }
+        public string LyDoKham { get; private set; } = string.Empty;
+        public int? MaPhongKham { get; private set; }
+        public int? CreatedBy { get; private set; }
+        public bool EmrLocked { get; private set; }
+        public string? EmrSignature { get; private set; }
+        public DateTime? EmrLockedAt { get; private set; }
+        public int? EmrLockedBy { get; private set; }
+
+        public virtual BenhNhan BenhNhan { get; set; } = null!;
+        public virtual NhanVien BacSi { get; set; } = null!;
+        public virtual LichHen? LichHen { get; set; }
+        public virtual CoSo CoSo { get; set; } = null!;
+        public virtual Khoa Khoa { get; set; } = null!;
+        public virtual ICollection<ChanDoan> ChanDoans { get; set; }
+        public virtual ICollection<SinhHieu> SinhHieus { get; set; }
+        public virtual ICollection<ChiDinhDichVu> ChiDinhDichVus { get; set; } 
+        public virtual ICollection<DonThuoc> DonThuocs { get; set; }
+        public virtual ICollection<HoaDon> HoaDons { get; set; }
+        public virtual Facility.PhongKham? PhongKham { get; set; } 
+
+        private LuotKham() 
+        {
+            ChanDoans = new List<ChanDoan>();
+            SinhHieus = new List<SinhHieu>();
+            ChiDinhDichVus = new List<ChiDinhDichVu>();
+            DonThuocs = new List<DonThuoc>();
+            HoaDons = new List<HoaDon>();
+        }
+
+        public LuotKham(
+            int maBenhNhan,
+            int maCoSo,
+            int maKhoa,
+            int soThuTu,        
+            int? maBacSi = null,
+            int? maLichHen = null,
+            int? maPhongKham = null)
+        {
+            MaBenhNhan = maBenhNhan;
+            MaCoSo = maCoSo;
+            MaKhoa = maKhoa;
+            SoThuTu = soThuTu;   
+            MaBacSi = maBacSi;
+            MaLichHen = maLichHen;
+            MaPhongKham = maPhongKham;
+
+            TrangThai = TrangThaiLuotKham.CHO_KHAM;
+            NgayKham = DateTime.UtcNow.Date;
+            HinhThucDieuTri = HinhThucDieuTri.NGOAI_TRU;
+
+            ChanDoans = new List<ChanDoan>();
+            SinhHieus = new List<SinhHieu>();
+            ChiDinhDichVus = new List<ChiDinhDichVu>();
+            DonThuocs = new List<DonThuoc>();
+            HoaDons = new List<HoaDon>();
+        }
+
+        public void StartExam()
+        {
+            if (TrangThai != TrangThaiLuotKham.CHO_KHAM) 
+                throw new InvalidOperationException("Chỉ có thể bắt đầu khám cho lượt khám đang ở trạng thái chờ khám.");
+
+            TrangThai = TrangThaiLuotKham.DANG_KHAM; 
+            ThoiGianBatDauKham = DateTime.UtcNow;
+        }
+
+        public void CompleteExam()
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thay đổi.");
+            if (TrangThai != TrangThaiLuotKham.DANG_KHAM && TrangThai != TrangThaiLuotKham.CHO_CLS && TrangThai != TrangThaiLuotKham.KET_LUAN) 
+                throw new InvalidOperationException("Chỉ có thể hoàn thành lượt khám khi đang trong tiến trình khám hoặc chờ kết quả.");
+
+            TrangThai = TrangThaiLuotKham.HOAN_THANH; 
+            ThoiGianKetThucKham = DateTime.UtcNow;
+        }
+
+        public void SendToParaclinical()
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thay đổi.");
+            if (TrangThai != TrangThaiLuotKham.DANG_KHAM)
+                throw new InvalidOperationException("Chỉ có thể chuyển sang chờ cận lâm sàng khi lượt khám đang khám.");
+
+            TrangThai = TrangThaiLuotKham.CHO_CLS;
+        }
+
+        public void ResumeExam()
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thay đổi.");
+            if (TrangThai != TrangThaiLuotKham.CHO_CLS)
+                throw new InvalidOperationException("Chỉ có thể tiếp tục khám khi lượt khám đang ở trạng thái chờ cận lâm sàng.");
+
+            TrangThai = TrangThaiLuotKham.DANG_KHAM;
+        }
+
+        public void LockEmr(string signature, int userId)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+                throw new ArgumentException("Chữ ký EMR không được để trống.", nameof(signature));
+            if (userId <= 0)
+                throw new ArgumentOutOfRangeException(nameof(userId));
+            if (EmrLocked && !string.Equals(EmrSignature, signature, StringComparison.Ordinal))
+                throw new InvalidOperationException("Hồ sơ EMR đã được khóa trước đó.");
+
+            EmrLocked = true;
+            EmrSignature = signature;
+            EmrLockedAt = DateTime.UtcNow;
+            EmrLockedBy = userId;
+        }
+
+        public void CancelExam()
+        {
+            if (TrangThai == TrangThaiLuotKham.HOAN_THANH) 
+                throw new InvalidOperationException("Không thể hủy một lượt khám đã hoàn thành.");
+
+            TrangThai = TrangThaiLuotKham.DA_HUY; 
+        }
+
+        public void AddChanDoan(string maICD, string tenChanDoan, bool laChinh, string ghiChu, int createdBy)
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể thêm chẩn đoán.");
+            ChanDoans ??= new List<ChanDoan>();
+
+            var chanDoan = new ChanDoan
+            {
+                MaLuotKham = Id,
+                MaICD = maICD,
+                TenChanDoan = tenChanDoan,
+                LaChanDoanChinh = laChinh,
+                GhiChu = ghiChu,
+                CreatedBy = createdBy
+            };
+            ChanDoans.Add(chanDoan);
+        }
+
+        public void AddSinhHieu(int? huyetApTamThu, int? huyetApTamTruong, int? mach,
+                               decimal? nhietDo, decimal? canNang, decimal? chieuCao, decimal? spO2,
+                               int createdBy = 0)
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể cập nhật sinh hiệu.");
+            SinhHieus ??= new List<SinhHieu>();
+
+            var sinhHieu = new SinhHieu
+            {
+                MaLuotKham = Id,
+                HuyetApTamThu = huyetApTamThu,
+                HuyetApTamTruong = huyetApTamTruong,
+                Mach = mach,
+                NhietDo = nhietDo,
+                CanNang = canNang,
+                ChieuCao = chieuCao,
+                SpO2 = spO2,
+                ThoiDiemDo = DateTime.UtcNow,
+                CreatedBy = createdBy > 0 ? createdBy : null
+            };
+            SinhHieus.Add(sinhHieu);
+        }
+
+        public void AddChiDinhDichVu(
+            int maDanhMuc,
+            int maBacSiChiDinh,
+            string? trangThai,
+            int? maNguoiThucHien,
+            string? ketLuan,
+            string? urlKetQua,
+            DateTime? ngayChiDinh = null,
+            DateTime? ngayThucHien = null,
+            DateTime? ngayCoKetQua = null,
+            int createdBy = 0)
+        {
+            if (EmrLocked)
+                throw new InvalidOperationException("Hồ sơ EMR đã khóa, không thể chỉ định dịch vụ.");
+            if (TrangThai != TrangThaiLuotKham.DANG_KHAM)
+                throw new InvalidOperationException("Chỉ được chỉ định dịch vụ khi lượt khám đang ở trạng thái đang khám.");
+
+            if (maDanhMuc <= 0)
+                throw new ArgumentException("Mã dịch vụ không hợp lệ.");
+
+            ChiDinhDichVus ??= new List<ChiDinhDichVu>();
+
+            var parsedStatus = Enum.TryParse<TrangThaiChiDinhDichVu>(trangThai, true, out var status)
+                ? status
+                : TrangThaiChiDinhDichVu.DaChiDinh;
+
+            var item = new ChiDinhDichVu
+            {
+                MaLuotKham = Id,
+                MaDanhMuc = maDanhMuc,
+                MaBacSiChiDinh = maBacSiChiDinh,
+                MaNguoiThucHien = maNguoiThucHien,
+                CreatedBy = createdBy > 0 ? createdBy : null,
+                TrangThai = parsedStatus,
+                KetLuan = ketLuan ?? string.Empty,
+                UrlKetQua = urlKetQua ?? string.Empty,
+                NgayChiDinh = ngayChiDinh ?? DateTime.UtcNow,
+                NgayThucHien = ngayThucHien,
+                NgayCoKetQua = ngayCoKetQua,
+                LuotKham = this
+            };
+
+            if (parsedStatus == TrangThaiChiDinhDichVu.DaCoKetQua && string.IsNullOrWhiteSpace(item.KetLuan))
+                throw new InvalidOperationException("Kết luận dịch vụ không được để trống khi đã có kết quả.");
+
+            ChiDinhDichVus.Add(item);
+        }
+
+        public void AssignDoctor(int maBacSi)
+        {
+            if (TrangThai != TrangThaiLuotKham.CHO_KHAM)
+                throw new InvalidOperationException(
+                    "Chỉ có thể phân bác sĩ cho lượt khám đang chờ khám.");
+            MaBacSi = maBacSi;
+        }
+
+        public void SetLyDoKham(string lyDoKham)
+        {
+            LyDoKham = string.IsNullOrWhiteSpace(lyDoKham) 
+                ? string.Empty 
+                : lyDoKham.Trim();
+        }
+
+    }
+}

@@ -1,0 +1,36 @@
+## Các thư mục sinh ra khi build và chạy code .NET
+bin/
+obj/
+
+## File rác của hệ điều hành macOS
+.DS_Store
+
+## Thư mục thư viện của Frontend (nếu có)
+node_modules/
+dist/
+
+## Local package/cache directories
+.nuget/
+.local/
+Library/
+.dotnet/
+.dotnet_temp/
+
+## IDE and Editor files
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+xcuserdata/
+*.xcuserstate
+
+## Maven & Java build artifacts
+target/
+*.class
+
+## Compressed archives
+*.zip
+
