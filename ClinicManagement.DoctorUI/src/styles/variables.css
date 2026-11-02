@@ -1,0 +1,89 @@
+/* Reset & Variables */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+:root {
+    --primary: #0b4f6c;
+    --primary-hover: #083b51;
+    --primary-2: #0b4f6c;
+    --primary-soft: #ecf3fa;
+    --primary-light: #f0f4fa;
+    --primary-dark: #062a3a;
+    --text: #0b2a3c;
+    --text-secondary: #3d566e;
+    --muted: #6a7f96;
+    --line: #e9edf4;
+    --line-light: #f0f4fa;
+    --bg: #ffffff;
+    --bg-subtle: #f8fafc;
+    --bg-hover: #f0f4fa;
+    --white: #fff;
+    --success: #16834f;
+    --success-soft: #ecfdf5;
+    --warning: #ae7209;
+    --warning-soft: #fffbeb;
+    --danger: #dc3545;
+    --danger-soft: #fef2f2;
+    --info: #0b4f6c;
+    --info-soft: #ecf3fa;
+    --shadow: none;
+    --header-height: 44px;
+    --context-height: 36px;
+    --ribbon-height: 42px;
+    --toolbar-height: 46px;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+button {
+    cursor: pointer;
+}
+.app {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #ffffff;
+}
+.workspace {
+    flex: 1;
+    min-height: 0;
+    height: calc(100vh - var(--header-height) - var(--context-height));
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    padding: 0;
+    margin: 0;
+}
+.workspace-grid {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    min-height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+}

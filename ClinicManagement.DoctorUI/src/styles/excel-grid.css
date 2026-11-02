@@ -1,0 +1,214 @@
+/* ==========================================================================
+   EXCEL HIGH-DENSITY ENTERPRISE DATA GRID STANDARD (ZERO COLLISION SPEC)
+   ========================================================================== */
+
+/* 1. TẦNG 1: KHUNG BẢNG TOÀN DIỆN VỚI RESIZE CONTAINER */
+.excel-grid-container {
+  resize: both;
+  overflow: auto;
+  min-width: 600px;
+  min-height: 280px;
+  max-height: calc(100vh - 120px);
+  border: 2px solid #cbd5e1;
+  background-color: #ffffff;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* 2. KHUNG BẢNG KHÓA CỘNG DỒN / CHỐNG VỠ DÒNG (ZERO COLLISION) */
+table.excel-table,
+.excel-table {
+  table-layout: fixed !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  border-collapse: collapse !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  color: #1e293b;
+}
+
+/* 3. CHIỀU CAO DÒNG CHUẨN */
+.excel-table tr.h-9,
+.excel-table th.h-9,
+.excel-table td.h-9 {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+
+.excel-table tr.h-10,
+.excel-table th.h-10,
+.excel-table td.h-10 {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+.excel-table th,
+.excel-table td {
+  box-sizing: border-box !important;
+  border: 1px solid #cbd5e1 !important;
+  vertical-align: middle !important;
+  padding: 4px 8px !important;
+  position: relative;
+}
+
+/* HEADER TH */
+.excel-table thead th {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: -0.01em;
+  border-bottom: 2px solid #94a3b8 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 15 !important;
+  user-select: none;
+}
+
+/* 4. CỘT STT CHUẨN HÓA (CỘT ĐẦU TIÊN) */
+.excel-table th.col-stt,
+.excel-table td.col-stt,
+.col-stt {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  text-align: center !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-weight: 600 !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 12 !important;
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+.excel-table thead th.col-stt {
+  z-index: 25 !important;
+}
+
+/* 5. CĂN LỀ DỮ LIỆU NGHIÊM NGẶT */
+.excel-table .text-center {
+  text-align: center !important;
+}
+
+.excel-table .text-left {
+  text-align: left !important;
+}
+
+.excel-table .text-right {
+  text-align: right !important;
+}
+
+/* Tabular numbers for monetary & counts */
+.excel-table .font-mono,
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* 6. Ô VĂN BẢN DÀI BỌC TRUNCATE (ZERO COLLISION) */
+.cell-truncate,
+.excel-cell-text {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: block !important;
+}
+
+/* 7. DÒNG SO LE & HOVER CHUẨN VĂN PHÒNG */
+.excel-table tbody tr:nth-child(even) td {
+  background-color: #f8fafc;
+}
+
+.excel-table tbody tr:hover td {
+  background-color: #f0f9ff !important;
+}
+
+.excel-table tbody tr.active-row td {
+  background-color: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+}
+
+/* 8. TAY NẮM KÉO THẢ (RESIZER HANDLES) */
+/* Tầng 2: Cột resize */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 20;
+}
+
+.col-resizer:hover,
+.col-resizer.is-resizing {
+  background-color: #2563eb !important;
+}
+
+/* Tầng 3: Hàng resize */
+.row-resizer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  cursor: row-resize;
+  user-select: none;
+  z-index: 10;
+}
+
+.row-resizer:hover,
+.row-resizer.is-resizing {
+  background-color: #2563eb !important;
+}
+
+/* Enterprise status badge */
+.excel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 2px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.excel-badge.success {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.excel-badge.warning {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.excel-badge.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.excel-badge.info {
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}

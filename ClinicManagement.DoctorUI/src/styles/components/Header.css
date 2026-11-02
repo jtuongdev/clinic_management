@@ -1,0 +1,135 @@
+/* src/styles/components/Header.css - Enterprise Desktop Header (Hospital White Theme) */
+.header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--header-height, 44px);
+    flex: 0 0 var(--header-height, 44px);
+    box-sizing: border-box;
+}
+.header-main {
+    height: var(--header-height, 44px);
+    padding: 0 16px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+}
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    padding-right: 16px;
+    margin-right: 6px;
+    border-right: 1px solid var(--line);
+    white-space: nowrap;
+}
+.brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--primary);
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    color: #ffffff;
+}
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    height: 100%;
+}
+.nav a {
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    height: var(--header-height, 44px);
+    padding: 0 14px;
+    border-radius: 0;
+    font-weight: 500;
+    font-size: 12.5px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+}
+.nav a:hover {
+    background: var(--bg-hover);
+    color: var(--primary);
+}
+.nav a.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    font-weight: 600;
+    box-shadow: none;
+}
+.user-menu {
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 14px;
+    border-left: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 12.5px;
+    cursor: default;
+}
+.user-menu .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--primary);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+}
+.user-menu i {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    min-width: 180px;
+    padding: 4px;
+    z-index: 100;
+}
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+.dropdown-item i {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+}
+.dropdown-item:hover {
+    background: var(--bg-hover);
+}

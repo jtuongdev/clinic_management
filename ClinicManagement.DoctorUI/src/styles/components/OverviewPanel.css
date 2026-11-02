@@ -1,0 +1,23 @@
+/* OverviewPanel.css
+ * Phần này chỉ giữ các style không thể diễn đạt bằng Tailwind utility.
+ * Toàn bộ layout và component style được xử lý trực tiếp bằng Tailwind CSS
+ * trong OverviewPanel.tsx.
+ */
+
+/* Smooth scroll cho queue list */
+.overview-queue-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Animation cho pulse indicator */
+@keyframes overview-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* Đảm bảo print không hiện dashboard */
+@media print {
+  .overview-root {
+    display: none;
+  }
+}
