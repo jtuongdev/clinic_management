@@ -1,0 +1,114 @@
+/* ============================================================
+   EXAMINATION PATIENTS - CSS RIÊNG
+   ============================================================ */
+
+.patients-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg, #f1f5f9);
+  font-family: var(--font-family, "Inter", sans-serif);
+  font-size: var(--font-size-base, 14px);
+  color: var(--text, #0f172a);
+}
+
+/* Fullscreen mode */
+.patients-container.fullscreen-mode {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.patients-container.fullscreen-mode .page-header,
+.patients-container.fullscreen-mode .kpi-grid {
+  display: none !important;
+}
+
+.patients-container.fullscreen-mode .patients-panelFlex {
+  flex: 1;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.patients-container.fullscreen-mode .patients-tableWrapScroll {
+  flex: 1;
+}
+
+.patients-panelFlex {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius, 10px);
+  overflow: hidden;
+  box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.045));
+}
+
+.patients-tableWrapScroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.patients-tableWrapScroll table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+}
+
+.patients-tableWrapScroll thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 5;
+}
+
+.patients-paginationBar {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--surface-soft, #fafcfc);
+  flex-wrap: wrap;
+}
+
+/* Tuỳ chỉnh thanh cuộn cho bảng */
+.patients-tableWrapScroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.patients-tableWrapScroll::-webkit-scrollbar-track {
+  background: var(--border-light, #f1f5f9);
+  border-radius: 4px;
+}
+.patients-tableWrapScroll::-webkit-scrollbar-thumb {
+  background: var(--muted, #94a3b8);
+  border-radius: 4px;
+}
+.patients-tableWrapScroll::-webkit-scrollbar-thumb:hover {
+  background: var(--primary, #12657d);
+}
+
+/* Nút icon trong panel header */
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  padding: 0 10px;
+  min-width: 36px;
+  justify-content: center;
+}
+.row-selected {
+  background: var(--primary-soft-2, #f2f9fb) !important;
+  border-left: 4px solid var(--primary, #12657d);
+}

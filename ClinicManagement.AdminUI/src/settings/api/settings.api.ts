@@ -1,0 +1,104 @@
+import { api } from '../../shared/api/axios.api';
+
+export interface RolePermissionMatrixDto {
+  id: number;
+  code?: string;
+  maCode?: string;
+  name?: string;
+  ten?: string;
+  description?: string;
+  moTa?: string;
+  dataScope?: string;
+  phamViDuLieu?: string;
+  permissions?: Record<string, string[]>;
+  phanQuyen?: Record<string, string[]>;
+}
+
+export interface EmrAuditLogDto {
+  id: number;
+  patientId?: number;
+  recordId?: number;
+  userId?: number;
+  userName: string;
+  userRole: string;
+  patientCode?: string;
+  patientName?: string;
+  action: string;
+  actionName?: string;
+  module: string;
+  ipAddress: string;
+  timestamp: string;
+  details: string;
+  status: string;
+}
+
+export interface IntegrationSettingDto {
+  category: string;
+  code: string;
+  name: string;
+  value: string;
+  description?: string;
+  isEncrypted?: boolean;
+}
+
+export const settingsApi = {
+  // Roles & RBAC Matrix
+  getRoles: () => {
+    return api.get<{ success: boolean; data: RolePermissionMatrixDto[] }>('/admin/roles');
+  },
+  updateRole: (payload: any) => {
+    const body = {
+      id: payload.id,
+      maCode: payload.maCode || payload.code || '',
+      ten: payload.ten || payload.name || '',
+      moTa: payload.moTa || payload.description || '',
+      phamViDuLieu: payload.phamViDuLieu || payload.dataScope || 'TOAN_HE_THONG',
+      phanQuyen: payload.phanQuyen || payload.permissions || {},
+    };
+    return api.post<{ success: boolean; data: RolePermissionMatrixDto }>('/admin/roles', body);
+  },
+  createRole: (payload: any) => {
+    const body = {
+      maCode: payload.maCode || payload.code || '',
+      ten: payload.ten || payload.name || '',
+      moTa: payload.moTa || payload.description || '',
+      phamViDuLieu: payload.phamViDuLieu || payload.dataScope || 'TOAN_HE_THONG',
+      phanQuyen: payload.phanQuyen || payload.permissions || {},
+    };
+    return api.post<{ success: boolean; data: RolePermissionMatrixDto; message?: string }>('/admin/roles/create', body);
+  },
+  deleteRole: (id: number) => {
+    return api.delete<{ success: boolean; message?: string }>(`/admin/roles/${id}`);
+  },
+  updateFeaturePermissions: (payload: { featureId: string; rolePermissions: Record<number, string[]> }) => {
+    return api.post<{ success: boolean; message?: string }>('/admin/roles/feature', {
+      phanHe: payload.featureId,
+      rolePermissions: payload.rolePermissions,
+    });
+  },
+
+  // EMR Audit Logs
+  getAuditLogs: (params?: {
+    patientId?: number;
+    userId?: number;
+    action?: string;
+    module?: string;
+    from?: string;
+    to?: string;
+    pageIndex?: number;
+    pageSize?: number;
+  }) => {
+    return api.get<{ success: boolean; data: EmrAuditLogDto[]; total?: number }>('/admin/audit-logs', { params });
+  },
+  exportAuditLogsCsv: (params?: any) => {
+    return api.get('/admin/audit-logs/export', { params, responseType: 'blob' });
+  },
+
+  // Integration Settings
+  getIntegrationConfig: (category?: string) => {
+    return api.get<{ success: boolean; data: IntegrationSettingDto[] }>('/admin/integration-config', { params: { category } });
+  },
+  upsertIntegrationSetting: (payload: IntegrationSettingDto) => {
+    return api.post<{ success: boolean; data: IntegrationSettingDto }>('/admin/integration-config', payload);
+  },
+};

@@ -1,0 +1,823 @@
+/* =========================================================
+   EXAMINATION LIST
+   ========================================================= */
+
+.examination-list-wrapper {
+  width: 100%;
+  min-width: 0;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.examination-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.examination-page-kicker {
+  margin-bottom: 5px;
+
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  color: #6b7785;
+}
+
+.examination-page-title {
+  margin: 0;
+
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 700;
+
+  color: #1d2939;
+}
+
+.examination-page-desc {
+  margin-top: 6px;
+
+  font-size: 13px;
+  color: #667085;
+}
+
+
+/* =========================================================
+   KPI
+   ========================================================= */
+
+.examination-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.examination-kpi {
+  min-height: 88px;
+
+  padding: 16px 18px;
+
+  border: 1px solid #e4e9ef;
+  border-radius: 8px;
+
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.examination-kpi-label {
+  margin-bottom: 8px;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  color: #667085;
+}
+
+.examination-kpi-value {
+  font-size: 24px;
+  line-height: 1;
+
+  font-weight: 700;
+  color: #1d2939;
+}
+
+
+/* KPI accent */
+
+.examination-kpi-primary {
+  border-left: 3px solid #1677c8;
+}
+
+.examination-kpi-blue {
+  border-left: 3px solid #3b82f6;
+}
+
+.examination-kpi-green {
+  border-left: 3px solid #22a06b;
+}
+
+.examination-kpi-orange {
+  border-left: 3px solid #e59b25;
+}
+
+.examination-loading-kpi {
+  grid-column: 1 / -1;
+
+  padding: 20px;
+
+  border: 1px solid #e4e9ef;
+  border-radius: 8px;
+
+  background: #fff;
+
+  text-align: center;
+  color: #667085;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   PANEL
+   ========================================================= */
+
+.examination-panel {
+  width: 100%;
+
+  border: 1px solid #e1e7ed;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   PANEL HEADER
+   ========================================================= */
+
+.examination-panel-header {
+  min-height: 56px;
+
+  padding: 0 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom: 1px solid #e7ebef;
+
+  box-sizing: border-box;
+}
+
+.examination-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  font-size: 14px;
+  font-weight: 650;
+
+  color: #263445;
+}
+
+.examination-panel-title i {
+  font-size: 14px;
+  color: #66788a;
+}
+
+.examination-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.examination-panel-badge {
+  min-width: 28px;
+  height: 24px;
+
+  padding: 0 8px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 5px;
+
+  background: #f0f3f6;
+  color: #526273;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   ICON BUTTON
+   ========================================================= */
+
+.examination-icon-button {
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+
+  background: #ffffff;
+  color: #526273;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.examination-icon-button:hover {
+  border-color: #b7cce0;
+  background: #f4f8fb;
+  color: #1677c8;
+}
+
+.examination-icon-button i {
+  display: inline-block;
+
+  font-size: 13px;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   TABLE TOOLS
+   ========================================================= */
+
+.examination-table-tools {
+  min-height: 62px;
+
+  padding: 12px 16px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border-bottom: 1px solid #e7ebef;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.examination-search-box {
+  position: relative;
+
+  flex: 1;
+  min-width: 240px;
+  max-width: 430px;
+}
+
+.examination-search-box > i {
+  position: absolute;
+
+  left: 12px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: #8a97a5;
+
+  font-size: 13px;
+
+  pointer-events: none;
+}
+
+.examination-search-box input {
+  width: 100%;
+  height: 36px;
+
+  padding: 0 12px 0 34px;
+
+  border: 1px solid #d9e1e8;
+  border-radius: 6px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #253342;
+
+  font-size: 13px;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.examination-search-box input::placeholder {
+  color: #9aa5b1;
+}
+
+.examination-search-box input:focus {
+  border-color: #80afd2;
+
+  box-shadow: 0 0 0 2px rgba(22, 119, 200, 0.08);
+}
+
+
+/* =========================================================
+   SELECT
+   ========================================================= */
+
+.examination-filter-select {
+  height: 36px;
+
+  min-width: 155px;
+
+  padding: 0 30px 0 11px;
+
+  border: 1px solid #d9e1e8;
+  border-radius: 6px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #344454;
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+}
+
+.examination-filter-select:focus {
+  border-color: #80afd2;
+
+  box-shadow: 0 0 0 2px rgba(22, 119, 200, 0.08);
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.examination-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.examination-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  table-layout: fixed;
+
+  font-size: 13px;
+}
+
+.examination-table thead {
+  background: #f7f9fb;
+}
+
+.examination-table th {
+  height: 42px;
+
+  padding: 0 12px;
+
+  border-bottom: 1px solid #dfe5ea;
+
+  text-align: left;
+  white-space: nowrap;
+
+  font-size: 11px;
+  font-weight: 650;
+
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+
+  color: #667585;
+}
+
+.examination-table td {
+  height: 52px;
+
+  padding: 0 12px;
+
+  border-bottom: 1px solid #edf0f3;
+
+  color: #344454;
+
+  vertical-align: middle;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.examination-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.examination-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.examination-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* =========================================================
+   COLUMN WIDTH
+   ========================================================= */
+
+.examination-table th:nth-child(1),
+.examination-table td:nth-child(1) {
+  width: 110px;
+}
+
+.examination-table th:nth-child(2),
+.examination-table td:nth-child(2) {
+  width: 190px;
+}
+
+.examination-table th:nth-child(3),
+.examination-table td:nth-child(3) {
+  width: 130px;
+}
+
+.examination-table th:nth-child(4),
+.examination-table td:nth-child(4) {
+  width: 150px;
+}
+
+.examination-table th:nth-child(5),
+.examination-table td:nth-child(5) {
+  width: 100px;
+}
+
+.examination-table th:nth-child(6),
+.examination-table td:nth-child(6) {
+  width: 100px;
+}
+
+.examination-table th:nth-child(7),
+.examination-table td:nth-child(7) {
+  width: 125px;
+}
+
+.examination-table th:nth-child(8),
+.examination-table td:nth-child(8) {
+  width: 75px;
+}
+
+
+/* =========================================================
+   CELL
+   ========================================================= */
+
+.examination-cell-code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #526273;
+}
+
+.examination-cell-main {
+  font-weight: 600;
+  color: #263445;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.examination-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  min-height: 25px;
+
+  padding: 0 8px;
+
+  border-radius: 5px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.examination-status-dot {
+  width: 6px;
+  height: 6px;
+
+  flex: 0 0 6px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+}
+
+
+/* Chờ */
+
+.status-wait {
+  background: #f2f5f8;
+  color: #637282;
+}
+
+
+/* Đang khám */
+
+.status-doing {
+  background: #edf7f2;
+  color: #20835b;
+}
+
+
+/* Chờ CLS */
+
+.status-alert {
+  background: #fff7e8;
+  color: #b97812;
+}
+
+
+/* Hoàn tất */
+
+.status-done {
+  background: #eef4fb;
+  color: #2872a8;
+}
+
+
+/* Không xác định */
+
+.status-idle {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+
+/* =========================================================
+   ACTION
+   ========================================================= */
+
+.examination-action-column {
+  text-align: right !important;
+}
+
+.examination-action-cell {
+  text-align: right;
+}
+
+.examination-row-action {
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  color: #536273;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.examination-row-action:hover {
+  border-color: #b7cce0;
+
+  background: #f2f7fb;
+
+  color: #1677c8;
+}
+
+.examination-row-action:active {
+  transform: scale(0.95);
+}
+
+.examination-row-action i {
+  display: inline-block;
+
+  font-size: 13px;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   TABLE MESSAGE
+   ========================================================= */
+
+.examination-table-message {
+  height: 180px !important;
+
+  text-align: center !important;
+
+  color: #7b8794 !important;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+.examination-pagination {
+  min-height: 56px;
+
+  padding: 10px 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  border-top: 1px solid #e7ebef;
+
+  box-sizing: border-box;
+}
+
+.examination-pagination-page {
+  min-width: 80px;
+
+  text-align: center;
+
+  font-size: 12px;
+  color: #667585;
+}
+
+.examination-pagination-button {
+  height: 32px;
+
+  padding: 0 12px;
+
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+
+  background: #ffffff;
+  color: #526273;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.examination-pagination-button:hover:not(:disabled) {
+  border-color: #b7cce0;
+  background: #f4f8fb;
+  color: #1677c8;
+}
+
+.examination-pagination-button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   FULLSCREEN
+   ========================================================= */
+
+.examination-list-wrapper.fullscreen-mode {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  width: 100vw;
+  height: 100vh;
+
+  padding: 16px;
+
+  overflow: auto;
+
+  background: #f4f6f8;
+
+  box-sizing: border-box;
+}
+
+.examination-list-wrapper.fullscreen-mode
+.examination-panel {
+  height: calc(100vh - 32px);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.examination-list-wrapper.fullscreen-mode
+.examination-table-wrap {
+  flex: 1;
+
+  min-height: 0;
+
+  overflow: auto;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .examination-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+
+  .examination-list-wrapper {
+    padding: 16px;
+  }
+
+  .examination-table-tools {
+    flex-wrap: wrap;
+  }
+
+  .examination-search-box {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .examination-filter-select {
+    flex: 1;
+  }
+}
+
+@media (max-width: 700px) {
+
+  .examination-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .examination-page-title {
+    font-size: 20px;
+  }
+
+  .examination-panel-header {
+    padding: 0 12px;
+  }
+
+  .examination-table-tools {
+    padding: 10px 12px;
+  }
+
+  .examination-pagination {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .examination-list-wrapper {
+    padding: 10px;
+  }
+
+  .examination-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .examination-table-tools {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .examination-filter-select {
+    width: 100%;
+  }
+}
+.row-selected {
+  background: var(--primary-soft-2, #f2f9fb) !important;
+  border-left: 4px solid var(--primary, #12657d);
+}
