@@ -1,4 +1,3 @@
-// ClinicManagement.AdminUl > src › Auth › context ›AuthProvider.tsx
 import {
   createContext,
   useContext,

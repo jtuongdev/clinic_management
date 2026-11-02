@@ -10,7 +10,6 @@ namespace ClinicManagement.Domain.Appointment
     /// </summary>
     public interface IPaymentGatewayService
     {
-        // TODO: Tích hợp cổng thanh toán trực tuyến (VNPay / MoMo / ZaloPay) giai đoạn tiếp theo
         Task<PaymentGatewayResult> CreatePaymentUrlAsync(int appointmentId, decimal amount, string returnUrl, CancellationToken cancellationToken = default);
         Task<PaymentGatewayCallbackResult> ProcessCallbackAsync(string queryParams, CancellationToken cancellationToken = default);
     }

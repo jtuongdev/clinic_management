@@ -113,7 +113,6 @@ export const useExam = () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Gọi API lấy chi tiết lượt khám
       console.log(`Fetch detail for lượt khám ${luotKhamId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi tải chi tiết');

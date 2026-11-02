@@ -296,45 +296,7 @@ namespace ClinicManagement.Infrastructure.Persistence.Repositories
 
             return (items, totalCount);
         }
-            
-        //hoá đơn
-        // public async Task<(IReadOnlyList<HoaDon> Items, int TotalCount)> GetHoaDonPagedAsync(
-        //     int pageIndex,
-        //     int pageSize,
-        //     int? maKhoa = null,
-        //     int? maBenhNhan = null,
-        //     string? trangThai = null,
-        //     DateTime? fromDate = null,
-        //     DateTime? toDate = null,
-        //     CancellationToken cancellationToken = default){
 
-        //         var query =  await _context.LuotKhams
-        //             .AsNoTracking()
-        //             .Include(l => l.BenhNhan)
-        //             .Include(l=>l.HoaDon)
-        //             .Where(l => !l.IsDeleted)
-        //             .SelectMany(l => l.HoaDon.Select(d => new { LuotKham = l, HoaDon = h }))
-        //             .Where(x => !x.HoaDon.IsDeleted);
-        //         // Lọc theo khoa
-        //         if (maKhoa.HasValue)
-        //             query = query.Where(x => x.LuotKham.MaKhoa == maKhoa.Value);
-        //         if(maBenhNhan.HasValue)
-        //             query = query.Where(x=>x.luotKham.MaBenhNhan == maBenhNhan.Value);
-        //         // Lọc theo trạng thái đơn thuốc
-        //         if (!string.IsNullOrEmpty(trangThai) && Enum.TryParse<TrangThaiHoaDon>(trangThai, true, out var status))
-        //             query = query.Where(x => x.HoaDon.TrangThai == status);
-        //         // Lọc theo ngày phát hoá đơn
-        //         if (fromDate.HasValue)
-        //             query = query.Where(x => x.DonThuoc.NgayKe.Date >= fromDate.Value.Date);
-        //         if (toDate.HasValue)
-        //             query = query.Where(x => x.DonThuoc.NgayKe.Date <= toDate.Value.Date);
-
-        //         // Đếm tổng
-        //         var totalCount = await query.CountAsync(cancellationToken);
-
-
-
-        //     }
         public async Task<IEnumerable<LuotKham>> GetAllWithIncludesAsync(CancellationToken cancellationToken = default)
         {
             return await _context.LuotKhams

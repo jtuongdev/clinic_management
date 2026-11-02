@@ -93,39 +93,11 @@ builder.Services
 
         options.Events = new JwtBearerEvents
         {
-            OnMessageReceived = context =>
-            {
-                var authHeader = context.Request.Headers["Authorization"].ToString();
-                Console.WriteLine($"📩 Authorization header: {authHeader}");
-                
-                if (string.IsNullOrEmpty(authHeader))
-                {
-                    Console.WriteLine("⚠️ Không tìm thấy header Authorization!");
-                }
-                else if (!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("⚠️ Header Authorization không có tiền tố 'Bearer '!");
-                }
-                else
-                {
-                    var token = authHeader.Substring("Bearer ".Length).Trim();
-                    Console.WriteLine($"🔑 Token nhận được: {token[..Math.Min(token.Length, 20)]}...");
-                }
-                return Task.CompletedTask;
-            },
-
             OnAuthenticationFailed = context =>
             {
                 var logger = context.HttpContext.RequestServices
                     .GetRequiredService<ILogger<Program>>();
-                
-                logger.LogError(context.Exception, "JWT authentication failed");
-                
-                Console.WriteLine($"❌ Authentication failed: {context.Exception.Message}");
-                if (context.Exception.InnerException != null)
-                {
-                    Console.WriteLine($"   Inner: {context.Exception.InnerException.Message}");
-                }
+                logger.LogError(context.Exception, "JWT authentication failed: {Message}", context.Exception.Message);
                 return Task.CompletedTask;
             },
 
@@ -133,9 +105,7 @@ builder.Services
             {
                 var logger = context.HttpContext.RequestServices
                     .GetRequiredService<ILogger<Program>>();
-                
-                logger.LogInformation("Token validated successfully");
-                Console.WriteLine("✅ Token validated successfully.");
+                logger.LogInformation("Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
                 return Task.CompletedTask;
             },
 
@@ -143,13 +113,7 @@ builder.Services
             {
                 var logger = context.HttpContext.RequestServices
                     .GetRequiredService<ILogger<Program>>();
-                
-                logger.LogWarning("Challenge: {Error} - {Description}", 
-                    context.Error, context.ErrorDescription);
-                Console.WriteLine($"⚠️ Challenge: {context.Error}, {context.ErrorDescription}");
-                
-                Console.WriteLine($"   Request path: {context.HttpContext.Request.Path}");
-                Console.WriteLine($"   Method: {context.HttpContext.Request.Method}");
+                logger.LogWarning("JWT Challenge: {Error} - {Description}", context.Error, context.ErrorDescription);
                 return Task.CompletedTask;
             },
 
@@ -157,9 +121,7 @@ builder.Services
             {
                 var logger = context.HttpContext.RequestServices
                     .GetRequiredService<ILogger<Program>>();
-                
                 logger.LogWarning("Forbidden: user does not have required permissions.");
-                Console.WriteLine("⛔ Forbidden: User không có quyền truy cập.");
                 return Task.CompletedTask;
             }
         };

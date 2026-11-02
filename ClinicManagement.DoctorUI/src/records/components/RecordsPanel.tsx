@@ -86,13 +86,6 @@ const RecordsPanel: React.FC = () => {
     return Math.abs(ageDate.getUTCFullYear() - 1970);
   };
 
-  // const getInitials = (fullName?: string) => {
-  //   if (!fullName) return 'BN';
-  //   const parts = fullName.trim().split(' ');
-  //   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-  //   return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
-  // };
-
   const activeInsurance = patientDetail?.baoHiems?.find(b => b.isValid) || patientDetail?.baoHiems?.[0];
   const allergies = patientDetail?.tienSuBenhs?.filter(t => t.loaiTienSu?.toLowerCase().includes('dị ứng') || t.loaiTienSu?.toLowerCase().includes('diung')) || [];
   const latestVisit = visits[0];

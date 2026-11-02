@@ -8,7 +8,6 @@ namespace ClinicManagement.Domain.Appointment
     /// </summary>
     public interface INotificationService
     {
-        // TODO: Gửi tin nhắn SMS Brandname hoặc Zalo ZNS xác nhận lịch hẹn và nhắc lịch khám
         Task SendAppointmentConfirmationAsync(int appointmentId, string phoneNumber, string patientName, string doctorName, string timeString, CancellationToken cancellationToken = default);
         Task SendAppointmentReminderAsync(int appointmentId, string phoneNumber, string patientName, string timeString, CancellationToken cancellationToken = default);
     }

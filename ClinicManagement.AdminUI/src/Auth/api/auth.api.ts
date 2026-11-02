@@ -1,4 +1,3 @@
-//ClinicManagement.AdminUl › src › Auth › api › TS auth.api.ts › [e]
 import { api } from '../../shared/api/axios.api';
 import type { LoginRequest, LoginResponse, ChangePasswordRequest } from '../types/type.auth';
 

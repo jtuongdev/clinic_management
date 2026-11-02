@@ -1,4 +1,3 @@
-// ClinicManagement. AdminUl › src › Auth › types › Ts type.auth.ts › ao Userinfo > 8 id
 export interface LoginRequest {
   username: string;
   password: string;

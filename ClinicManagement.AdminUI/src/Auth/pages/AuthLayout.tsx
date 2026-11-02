@@ -1,4 +1,3 @@
-// ClinicManagement.AdminUl › sc › Auth › pages ›
 import { useNavigate } from 'react-router-dom';
 import { useLogin } from '../hooks/useLogin';
 import './AuthLayout.css';

@@ -1,4 +1,3 @@
-// ClinicManagement.AdminUI › src › routes › AppRoutes.tsx
 import {
   createBrowserRouter,
   RouterProvider,

@@ -1,6 +1,4 @@
 
-// ClinicManagement.AdminUl › src › patient › type › TS profile.patient.type.ts › o BenhNhanProfileDto >\
-
 export interface TaiKhoanDto {
   username: string;
   hasPassword: boolean;

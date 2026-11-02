@@ -1,4 +1,3 @@
-// ClinicManagement.AdminUl › src › Auth › hooks › Ts useLogin.ts 
 import { useState } from 'react';
 import { authApi } from '../api/auth.api';
 import { useAuth } from '../context/AuthProvider';
