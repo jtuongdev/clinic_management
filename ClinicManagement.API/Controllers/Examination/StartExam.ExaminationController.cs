@@ -1,0 +1,48 @@
+using ClinicManagement.Domain.Common.Enums;
+using ClinicManagement.API.Authorization;
+using System;
+using System.Threading.Tasks;
+using ClinicManagement.Application.Features.LuotKham.Commands;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ClinicManagement.API.Controllers
+{
+    /// <summary>
+    /// Phân hệ Khám bệnh (Clinical Examination) - Tiếp nhận và Bắt đầu khám bệnh.
+    /// Cho phép bác sĩ bắt đầu phiên khám bệnh cho bệnh nhân từ hàng đợi.
+    /// </summary>
+    [ClinicalAuthorize("examination", HanhDongQuyen.XEM, PhamViDuLieu.KHOA_PHONG)]
+    public partial class LuotKhamController : BaseController
+    {
+        /// <summary>
+        /// Bắt đầu lượt khám bệnh, gán bác sĩ phụ trách và chuyển trạng thái lượt khám sang 'ĐANG KHÁM'.
+        /// </summary>
+        [HttpPost("{id}/start-exam")]
+        public async Task<IActionResult> StartExam(int id)
+        {
+            try
+            {
+                var command = new BatDauKhamCommand
+                {
+                    Id = id,
+                    MaBacSi = CurrentUserId
+                };
+
+                var result = await _mediator.Send(command);
+                return Success(result, "Bắt đầu khám thành công");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Failure(ex.Message, 404);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Failure(ex.Message, ex.Message.Contains("đang được khám", StringComparison.OrdinalIgnoreCase) ? 409 : 400);
+            }
+            catch (ArgumentException ex)
+            {
+                return Failure(ex.Message, 400);
+            }
+        }
+    }
+}
