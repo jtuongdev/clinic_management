@@ -4,6 +4,7 @@ using ClinicManagement.Application.Features.Billing;
 using ClinicManagement.Domain.Common.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace ClinicManagement.API.Controllers;
 
@@ -15,7 +16,7 @@ namespace ClinicManagement.API.Controllers;
 [ApiController]
 [ClinicalAuthorize("billing", HanhDongQuyen.XEM, PhamViDuLieu.CO_SO)]
 [Route("api/billing")]
-public sealed class BillingController(IMediator mediator) : BaseController
+public sealed class BillingController(IMediator mediator, IConfiguration config) : BaseController
 {
     /// <summary>
     /// Lấy danh sách hóa đơn viện phí có phân trang và bộ lọc
@@ -33,6 +34,48 @@ public sealed class BillingController(IMediator mediator) : BaseController
         => Success(await mediator.Send(
             new LayDanhSachHoaDonQuery(facilityId, fromDate, toDate, status, keyword, pageIndex, pageSize),
             cancellationToken));
+
+    /// <summary>
+    /// Tạo thông tin và mã QR thanh toán chuẩn VietQR cho hóa đơn viện phí
+    /// </summary>
+    [HttpGet("invoices/{id:int}/vietqr")]
+    public async Task<IActionResult> GetInvoiceVietQR(int id, CancellationToken cancellationToken)
+    {
+        var invoice = await mediator.Send(new LayHoaDonTheoIdQuery(id), cancellationToken);
+        if (invoice is null) return Failure("Không tìm thấy hóa đơn.", 404);
+
+        var bankId = config["VietQRSettings:BankId"] ?? "MB";
+        var bankName = config["VietQRSettings:BankName"] ?? "Ngân hàng TMCP Quân Đội (MBBank)";
+        var accountNumber = config["VietQRSettings:AccountNumber"] ?? "0388888888";
+        var accountName = config["VietQRSettings:AccountName"] ?? "PHONG KHAM DA KHOA CLINIC";
+        var template = config["VietQRSettings:Template"] ?? "compact2";
+        var prefix = config["VietQRSettings:PrefixMemo"] ?? "PK";
+
+        var conNo = (invoice.SoTienBenhNhanChiTra > 0
+            ? invoice.SoTienBenhNhanChiTra
+            : invoice.TongTien - invoice.SoTienBaoHiemChiTra) - invoice.DaThanhToan;
+        var amount = Math.Max(0, conNo);
+
+        var memo = $"{prefix} {invoice.SoHoaDon}".Trim();
+        var qrUrl = $"https://img.vietqr.io/image/{bankId}-{accountNumber}-{template}.png?amount={(long)amount}&addInfo={Uri.EscapeDataString(memo)}&accountName={Uri.EscapeDataString(accountName)}";
+        var quickLink = $"https://api.vietqr.io/{bankId}/{accountNumber}/{(long)amount}/{Uri.EscapeDataString(memo)}/{template}.jpg?accountName={Uri.EscapeDataString(accountName)}";
+
+        var dto = new VietQRDto
+        {
+            InvoiceId = invoice.Id,
+            InvoiceNumber = invoice.SoHoaDon,
+            Amount = amount,
+            BankId = bankId,
+            BankName = bankName,
+            AccountNumber = accountNumber,
+            AccountName = accountName,
+            TransferContent = memo,
+            QrUrl = qrUrl,
+            QrQuickLink = quickLink
+        };
+
+        return Success(dto);
+    }
 
     /// <summary>
     /// Lấy chi tiết hóa đơn viện phí theo ID

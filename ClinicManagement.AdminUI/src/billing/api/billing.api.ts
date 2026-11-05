@@ -16,6 +16,7 @@ import {
   GetSupplierDebtsParams,
   DanhSachCongNoBenhNhanResponseDto,
   GetPatientDebtsParams,
+  VietQRDto,
 } from '../types/billing.types';
 
 export const billingApi = {
@@ -43,6 +44,10 @@ export const billingApi = {
   /** Ghi nhận thanh toán cho hóa đơn (tạo phiếu thu) */
   recordPayment: (id: number, data: RecordPaymentRequest) =>
     api.post<ApiResponse<HoaDonDetailDto>>(`/billing/invoices/${id}/payments`, data),
+
+  /** Lấy thông tin mã VietQR động cho hóa đơn */
+  getInvoiceVietQR: (id: number) =>
+    api.get<ApiResponse<VietQRDto>>(`/billing/invoices/${id}/vietqr`),
 
   /** Áp dụng / cập nhật số tiền BHYT chi trả */
   applyInsurance: (id: number, data: ApplyInsuranceRequest) =>

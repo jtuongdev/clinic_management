@@ -233,3 +233,17 @@ export interface GetPatientDebtsParams {
   pageIndex?: number;
   pageSize?: number;
 }
+
+export interface VietQRDto {
+  invoiceId: number;
+  invoiceNumber: string;
+  amount: number;
+  bankId: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  transferContent: string;
+  qrUrl: string;
+  qrQuickLink: string;
+}
+
