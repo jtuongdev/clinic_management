@@ -14,6 +14,8 @@ import {
   ReloadOutlined,
   CheckCircleOutlined,
   EnvironmentOutlined,
+  SoundOutlined,
+  DesktopOutlined,
 } from '@ant-design/icons';
 import { useExamination } from '../hook/useExamination';
 import '../components/style/Examination.css';
@@ -30,7 +32,10 @@ type TabKey =
   | 'finance'
   | 'hr'
   | 'facility'
-  | 'reports';
+  | 'reports'
+  | 'room-monitor'
+  | 'paraclinical-station'
+  | 'queue-display';
 
 const ExaminationManagement: React.FC = () => {
   const location = useLocation();
@@ -96,6 +101,9 @@ const ExaminationManagement: React.FC = () => {
     if (path.includes('/examination/finance')) return 'finance';
     if (path.includes('/examination/hr')) return 'hr';
     if (path.includes('/examination/facility')) return 'facility';
+    if (path.includes('/examination/room-monitor')) return 'room-monitor';
+    if (path.includes('/examination/paraclinical-station')) return 'paraclinical-station';
+    if (path.includes('/examination/queue-display')) return 'queue-display';
     if (path.includes('/examination/reports')) return 'reports';
     return 'overview';
   };
@@ -177,6 +185,30 @@ const ExaminationManagement: React.FC = () => {
         label: (
           <span>
             <BuildOutlined /> Cơ sở & Phòng
+          </span>
+        ),
+      },
+      {
+        key: 'room-monitor',
+        label: (
+          <span>
+            <DesktopOutlined /> Giám sát phòng khám
+          </span>
+        ),
+      },
+      {
+        key: 'paraclinical-station',
+        label: (
+          <span>
+            <ExperimentOutlined /> Trả KQ CLS
+          </span>
+        ),
+      },
+      {
+        key: 'queue-display',
+        label: (
+          <span>
+            <SoundOutlined /> Màn hình TV gọi số
           </span>
         ),
       },

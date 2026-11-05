@@ -68,9 +68,9 @@
 
 /* Sidebar header */
 .exam-sidebar-header {
-  flex: 0 0 42px;
-  height: 42px;
-  padding: 0 12px;
+  flex: 0 0 40px;
+  height: 40px;
+  padding: 0 10px;
   border-bottom: 1px solid var(--line);
   background: #f8fafc;
   display: flex;
@@ -79,30 +79,222 @@
   box-sizing: border-box;
 }
 
-.exam-sidebar-header h4 {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
+.header-title-box {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.exam-sidebar-header h4 i {
+.sidebar-title-text {
   font-size: 12px;
-  color: var(--primary);
+  font-weight: 700;
+  color: #0f172a;
 }
 
-/* Patient count */
-.exam-sidebar-header .badge-count {
+.header-stats-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #bae6fd;
+}
+
+.header-stats-tag b {
+  font-weight: 800;
+}
+
+/* Filter tabs on sidebar */
+.exam-sidebar-filter-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 3px 6px;
+  gap: 4px;
+}
+
+.filter-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-tab-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.filter-tab-btn.active {
+  background: #ffffff;
+  color: #0284c7;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.filter-tab-btn.alert-cls {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+/* Sidebar Footer */
+.exam-sidebar-footer {
+  flex: 0 0 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.room-select-dropdown {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #334155;
+  padding: 2px 4px;
+  outline: none;
+}
+
+/* Status dots & indicators */
+.status-dot-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.dot-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-indicator.cls-orange {
+  background: #ea580c;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.3);
+}
+
+.dot-indicator.exam-blue {
+  background: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+}
+
+.dot-indicator.done-green {
+  background: #16a34a;
+}
+
+.dot-indicator.wait-grey {
+  background: #94a3b8;
+}
+
+.queue-stt {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.urgent-badge {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: 4px;
+}
+
+.tag-type {
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: var(--primary-soft);
-  color: var(--primary);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+.tag-type.bh {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tag-type.vp {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.status-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
   white-space: nowrap;
+}
+
+.status-pill.cls {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #ffedd5;
+}
+
+.status-pill.exam {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.status-pill.done {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.status-pill.wait {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-print-slip {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.btn-print-slip:hover {
+  background: #e2e8f0;
+  color: #0284c7;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
 }
 
 /* Sidebar search */

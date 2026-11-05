@@ -14,6 +14,11 @@ import { examinationApi } from '../api/examination.api';
 import type { BenhNhanListDto } from '../types/examination/queue.types';
 import '../../styles/components/ExamPanel.css';
 import type { ActionToolbarClickContext } from '../types/examination/action-toolbar.types';
+import ClinicalPatientBanner from './ClinicalPatientBanner';
+import ClinicalHistoryDrawer from './ClinicalHistoryDrawer';
+import { useClinicalHotkeys } from '../hooks/useClinicalHotkeys';
+import { useClinicalAutoSave } from '../hooks/useClinicalAutoSave';
+import { useAuth } from '../../Auth/context/AuthProvider';
 
 const workflowItems = [
   { key: 'patient', label: 'Bệnh nhân', icon: 'fa-user' },
@@ -46,6 +51,58 @@ const ExamPage: React.FC = () => {
   const [isSendingCls, setIsSendingCls] = useState(false);
   const [isResumingExam, setIsResumingExam] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState('Khoa khám bệnh > PK Nhi 1');
+  const { user } = useAuth();
+
+  const handleSelectNextPatient = () => {
+    if (!patients || patients.length === 0) return;
+    const next = patients.find(
+      (p) => p.trangThaiLuotKham !== 'HOAN_THANH' && p.id !== selectedPatient?.id
+    );
+    if (next) {
+      handleSelectPatient(next);
+    }
+  };
+
+  const handleQuickAction = (actionKey: string) => {
+    switch (actionKey) {
+      case 'next-patient':
+        handleSelectNextPatient();
+        break;
+      case 'order-cls':
+      case 'order-rx':
+      case 'print-rx':
+        if (selectedPatient) setActiveWorkspace('treatment');
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Global Function Hotkeys (F2, F3, F4, F12, Escape)
+  useClinicalHotkeys({
+    onF2NextPatient: () => handleSelectNextPatient(),
+    onF3OrderCls: () => {
+      if (selectedPatient) setActiveWorkspace('treatment');
+    },
+    onF4OrderRx: () => {
+      if (selectedPatient) setActiveWorkspace('treatment');
+    },
+    onF12FinishExam: () => {
+      if (selectedPatient) handleExamFinished();
+    },
+    onEscape: () => {
+      setIsHistoryOpen(false);
+    },
+  });
+
+  // Auto-save clinical draft to localStorage every 25s
+  const { lastSavedTime } = useClinicalAutoSave({
+    patientId: selectedPatient?.id,
+    data: examData,
+    enabled: Boolean(selectedPatient),
+  });
 
   const patientStatus = String(selectedPatient?.trangThaiLuotKham ?? '').trim();
   const isAlreadyExamining = ['DANG_KHAM', 'DangKham', 'exam', 'Dang_Kham'].includes(patientStatus);
@@ -248,14 +305,24 @@ const ExamPage: React.FC = () => {
   });
 
   return (
-    <div className="panel-exam active">
+    <div className="panel-exam active" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh', overflow: 'hidden' }}>
+      {/* 1. Header Patient Ribbon Banner (Wine-red standard from Java desktop) */}
+      <ClinicalPatientBanner
+        patient={selectedPatient}
+        visitCode={selectedPatient?.id}
+        doctorName={user?.fullName || user?.username || 'BS. Bàn Khám'}
+        roomName={selectedRoom}
+        onQuickAction={handleQuickAction}
+      />
+
       {error && (
-        <div className="api-error-banner" style={{ background: '#fef2f2', color: '#dc2626', padding: '8px 16px', fontSize: '14px', borderBottom: '1px solid #fee2e2' }}>
+        <div className="api-error-banner" style={{ background: '#fef2f2', color: '#dc2626', padding: '6px 16px', fontSize: '13px', borderBottom: '1px solid #fee2e2' }}>
           <i className="fa-solid fa-circle-exclamation" style={{ marginRight: '6px' }}></i> Lỗi hệ thống: {error}
         </div>
       )}
 
-      <div className={`exam-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* 2. Main split view: Sidebar + Workspace */}
+      <div className={`exam-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
         <ExamSidebar
           patients={patients}
           loading={loading}
@@ -264,9 +331,11 @@ const ExamPage: React.FC = () => {
           onSearchChange={setSearchQueue}
           onSelectPatient={handleSelectPatient}
           collapsed={isSidebarCollapsed}
+          selectedRoom={selectedRoom}
+          onRoomChange={setSelectedRoom}
         />
 
-        <div className="exam-main">
+        <div className="exam-main" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div className="workspace-bar">
             <div className="workspace-title">
               <button
@@ -296,7 +365,7 @@ const ExamPage: React.FC = () => {
             {selectedPatient && <ActionToolbar actions={examActions} align="right" />}
           </div>
 
-          <div className="exam-content">
+          <div className="exam-content" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <div
               style={{
                 display: activeWorkspace === 'patient' ? 'flex' : 'none',
@@ -346,6 +415,22 @@ const ExamPage: React.FC = () => {
               <ElectronicRecordWorkspace data={examData} luotKhamId={selectedPatient?.id} onFinish={handleExamFinished} />
             </div>
           </div>
+
+          {/* 3. Lưới Lịch Sử Khám và Điều Trị Cũ (Collapsible Bottom Drawer) */}
+          <ClinicalHistoryDrawer
+            patientId={selectedPatient?.id}
+            patientName={selectedPatient?.hoTen}
+            isOpen={isHistoryOpen}
+            onToggle={() => setIsHistoryOpen(!isHistoryOpen)}
+          />
+
+          {/* 4. Mini Status Bar at bottom showing auto-save */}
+          {lastSavedTime && (
+            <div style={{ padding: '2px 10px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', fontSize: '10px', color: '#64748b', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <i className="fa-solid fa-cloud-arrow-up" style={{ color: '#16a34a' }}></i>
+              <span>Bản nháp lâm sàng tự động lưu lúc {lastSavedTime}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

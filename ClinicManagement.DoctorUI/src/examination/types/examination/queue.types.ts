@@ -27,6 +27,11 @@ export interface BenhNhanListDto {
   trangThaiLuotKham: string;
   thoiGianBatDauKham: string | null;
   soThuTu: number | null;
+  namSinh?: string | number;
+  soDienThoai?: string;
+  diaChi?: string;
+  loaiDoiTuong?: string;
+  soTheBHYT?: string;
 }
 
 export interface ExamSidebarProps {

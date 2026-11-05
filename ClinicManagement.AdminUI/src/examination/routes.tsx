@@ -11,6 +11,9 @@ import ExaminationHR from './components/ExaminationHR';
 import ExaminationFacility from './components/ExaminationFacility';
 import ExaminationReports from './components/ExaminationReports';
 import NhapKetQuaPage from './page/NhapKetQuaPage';
+import ClinicRoomMonitorPage from './page/ClinicRoomMonitorPage';
+import ParaclinicalStationPage from './page/ParaclinicalStationPage';
+import QueuePublicDisplayPage from './page/QueuePublicDisplayPage';
 
 export const examinationRoutes = [
   {
@@ -32,6 +35,9 @@ export const examinationRoutes = [
       { path: 'hr', element: <ExaminationHR /> },
       { path: 'facility', element: <ExaminationFacility /> },
       { path: 'reports', element: <ExaminationReports /> },
+      { path: 'room-monitor', element: <ClinicRoomMonitorPage /> },
+      { path: 'paraclinical-station', element: <ParaclinicalStationPage /> },
+      { path: 'queue-display', element: <QueuePublicDisplayPage /> },
     ],
   },
 ];
