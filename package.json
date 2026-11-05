@@ -1,0 +1,12 @@
+{
+  "name": "clinic-management-workspace",
+  "version": "1.0.0",
+  "description": "Clinic Management HIS - Dual Workstations (AdminUI & DoctorUI)",
+  "scripts": {
+    "start": "bash start.sh",
+    "dev": "bash start.sh",
+    "dev:admin": "npm run dev --prefix ClinicManagement.AdminUI",
+    "dev:doctor": "npm run dev --prefix ClinicManagement.DoctorUI",
+    "build": "npm run build --prefix ClinicManagement.AdminUI && npm run build --prefix ClinicManagement.DoctorUI"
+  }
+}
