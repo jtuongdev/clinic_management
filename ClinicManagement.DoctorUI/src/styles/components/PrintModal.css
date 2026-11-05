@@ -1,0 +1,459 @@
+/* ==========================================================================
+   EHC HIS/EMR MEDICAL PRINT PREVIEW SYSTEM - 1:1 CLONE
+   ========================================================================== */
+
+.print-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.print-station-window {
+  width: 95vw;
+  max-width: 1280px;
+  height: 92vh;
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #94a3b8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* 1. TOP TOOLBAR & PATIENT BANNER */
+.print-station-header {
+  height: 52px;
+  background: #eef2f7;
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  user-select: none;
+}
+
+.print-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-print-action {
+  height: 32px;
+  padding: 0 14px;
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0369a1;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-print-action:hover {
+  background: #0369a1;
+}
+
+.signature-check-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 1px solid #cbd5e1;
+}
+
+.btn-verify-sig {
+  height: 26px;
+  padding: 0 8px;
+  background: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  color: #334155;
+}
+
+.print-header-patient {
+  text-align: right;
+  line-height: 1.25;
+}
+
+.patient-banner-l1 {
+  font-size: 13px;
+  font-weight: bold;
+  color: #881337;
+}
+
+.bhyt-badge {
+  display: inline-block;
+  background: #ffe4e6;
+  color: #be123c;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.patient-banner-l2, .patient-banner-l3 {
+  font-size: 11px;
+  color: #475569;
+}
+
+/* 2. BODY SPLIT: SIDEBAR + PAPER WORKSPACE */
+.print-station-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: #5a626e;
+}
+
+/* Sidebar Bệnh Án Điện Tử */
+.print-station-sidebar {
+  width: 120px;
+  background: #f1f5f9;
+  border-right: 1px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px;
+  gap: 8px;
+  user-select: none;
+}
+
+.sidebar-emr-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.sidebar-emr-btn {
+  width: 104px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-emr-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.sidebar-emr-btn:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+
+.sidebar-emr-btn i {
+  font-size: 14px;
+}
+
+.sidebar-export-label {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 10px;
+}
+
+.sidebar-export-row {
+  display: flex;
+  gap: 4px;
+}
+
+.sidebar-export-btn {
+  height: 30px;
+  padding: 0 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-status-tag {
+  margin-top: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #dc2626;
+  text-align: center;
+  padding: 6px;
+}
+
+/* Paper Viewport & Scrolling */
+.print-paper-viewport {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  background: #5a626e;
+}
+
+/* A4 Sheet */
+.paper-sheet-a4 {
+  width: 794px; /* Standard A4 96DPI */
+  min-height: 1123px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border: 1px solid #cbd5e1;
+  padding: 44px 52px;
+  box-sizing: border-box;
+  font-family: "Times New Roman", Times, serif;
+  color: #000000;
+  line-height: 1.4;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+/* A6 Sheet */
+.paper-sheet-a6 {
+  width: 320px;
+  min-height: 580px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border: 1px solid #475569;
+  padding: 20px 22px;
+  box-sizing: border-box;
+  font-family: "Times New Roman", Times, serif;
+  color: #102a6e;
+  line-height: 1.35;
+  margin-bottom: 24px;
+}
+
+/* 3. BOTTOM FOOTER NAVIGATION & ZOOM */
+.print-station-footer {
+  height: 38px;
+  background: #eef2f7;
+  border-top: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 12px;
+  color: #475569;
+  user-select: none;
+}
+
+.footer-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-nav-btn {
+  padding: 2px 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.footer-zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 4. PRINT TYPOGRAPHY & SECTIONS */
+.sheet-header-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.sheet-title-center {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin: 14px 0 4px 0;
+}
+
+.sheet-subtitle-center {
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+  margin-bottom: 14px;
+}
+
+.sheet-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.sheet-info-table td {
+  padding: 3px 0;
+  vertical-align: top;
+}
+
+.sheet-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin: 12px 0;
+}
+
+.sheet-grid-table th,
+.sheet-grid-table td {
+  border: 1px solid #000000;
+  padding: 5px 6px;
+  text-align: left;
+}
+
+.sheet-grid-table th {
+  background: #f1f5f9;
+  font-weight: bold;
+  text-align: center;
+}
+
+.sheet-signature-block {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  text-align: center;
+}
+
+.doctor-sign-box {
+  width: 240px;
+}
+
+.doctor-sign-box .sign-title {
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.doctor-sign-box .sign-sub {
+  font-size: 11px;
+  font-style: italic;
+}
+
+.doctor-blue-signature {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.doctor-sign-name {
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+/* Barcode Simulation */
+.barcode-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.barcode-stripes {
+  height: 28px;
+  display: flex;
+  align-items: stretch;
+  gap: 1.5px;
+}
+
+.barcode-stripe {
+  background: #000000;
+  width: 2px;
+}
+
+.barcode-stripe.thin { width: 1px; }
+.barcode-stripe.thick { width: 3.5px; }
+
+.barcode-text {
+  font-size: 10px;
+  font-family: monospace;
+  letter-spacing: 2px;
+}
+
+/* 5. MEDIA PRINT RULES */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-modal-overlay {
+    position: static;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+  }
+  .print-station-window {
+    box-shadow: none;
+    border: none;
+    width: 100%;
+    height: auto;
+  }
+  .print-station-header,
+  .print-station-sidebar,
+  .print-station-footer {
+    display: none !important;
+  }
+  .print-paper-viewport {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+  }
+  .paper-sheet-a4,
+  .paper-sheet-a6 {
+    visibility: visible;
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 20mm;
+    box-shadow: none;
+    border: none;
+    width: 100%;
+    page-break-after: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .paper-sheet-a4 *,
+  .paper-sheet-a6 * {
+    visibility: visible;
+  }
+}

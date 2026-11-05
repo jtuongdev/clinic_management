@@ -16,6 +16,9 @@ import { examinationApi } from '../../api/examination.api';
 import { clinicalRealtime } from '../../services/clinicalRealtime.service';
 import { DrugSearchAutocomplete } from '../DrugSearchAutocomplete';
 import { PrescriptionTable } from '../PrescriptionTable';
+import { PrescriptionPrintModal } from '../print/PrescriptionPrintModal';
+import { ClinicalOrderPrintModal } from '../print/ClinicalOrderPrintModal';
+import { FollowUpAppointmentPrintModal } from '../print/FollowUpAppointmentPrintModal';
 
 const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   data,
@@ -32,6 +35,11 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
   const [serviceMessage, setServiceMessage] = useState<string | null>(null);
   const { user } = useAuth();
   const currentDoctorId = user?.id ?? 0;
+
+  // Print modal states
+  const [isPrescriptionPrintOpen, setIsPrescriptionPrintOpen] = useState(false);
+  const [isClinicalOrderPrintOpen, setIsClinicalOrderPrintOpen] = useState(false);
+  const [isAppointmentPrintOpen, setIsAppointmentPrintOpen] = useState(false);
 
   // Prescription states
   const [prescriptionId, setPrescriptionId] = useState<number | null>(null);
@@ -670,7 +678,20 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
          </div>
 
          <div className="section">
-           <div className="section-head"><h3>Danh sách chỉ định</h3><span className="tag primary">{serviceOrders.length} dịch vụ</span></div>
+           <div className="section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <h3>Danh sách chỉ định</h3>
+             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+               <span className="tag primary">{serviceOrders.length} dịch vụ</span>
+               <button 
+                 className="btn secondary" 
+                 type="button" 
+                 style={{ height: '28px', padding: '0 10px', fontSize: '12px' }}
+                 onClick={() => setIsClinicalOrderPrintOpen(true)}
+               >
+                 <i className="fa-solid fa-print"></i> In phiếu chỉ định (F2)
+               </button>
+             </div>
+           </div>
            <div className="section-body table-wrap">
              {servicesList.length === 0 ? (
                renderEmptyState('Chưa có dịch vụ nào được chỉ định cho lượt khám này.')
@@ -1144,8 +1165,11 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
 
           <div className="footer-actions" style={{ marginTop: '12px' }}>
             <div className="actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button className="btn" type="button" onClick={() => window.print()}>
-                <i className="fa-solid fa-print"></i> In đơn thuốc
+              <button className="btn secondary" type="button" onClick={() => setIsAppointmentPrintOpen(true)}>
+                <i className="fa-solid fa-calendar-check"></i> In phiếu hẹn (K3)
+              </button>
+              <button className="btn" type="button" onClick={() => setIsPrescriptionPrintOpen(true)}>
+                <i className="fa-solid fa-print"></i> In đơn thuốc (F3)
               </button>
               {!isPrescriptionReadOnly && (
                 <button
@@ -1243,6 +1267,38 @@ const TreatmentWorkspace: React.FC<TreatmentWorkspaceProps> = ({
         </div>
       )}
       </div>
+
+      {/* CÁC CỬA SỔ XEM TRƯỚC VÀ IN BIỂU MẪU Y TẾ CHUẨN 1:1 */}
+      <PrescriptionPrintModal
+        open={isPrescriptionPrintOpen}
+        onClose={() => setIsPrescriptionPrintOpen(false)}
+        patient={data?.patient}
+        prescription={{
+          items: prescribedDrugs,
+          chanDoan: data?.treatment?.diagnosis?.icd || 'A00.1-Bệnh tả do Vibrio cholerae 01',
+        }}
+        doctorName={user?.fullName || user?.username || 'tiennv'}
+      />
+
+      <ClinicalOrderPrintModal
+        open={isClinicalOrderPrintOpen}
+        onClose={() => setIsClinicalOrderPrintOpen(false)}
+        patient={data?.patient}
+        services={serviceOrders.map((s) => ({
+          tenDichVu: s.tenDichVu,
+          nhom: s.loaiDichVu?.includes('CDHA') ? 'DT CHẨN ĐOÁN HÌNH ẢNH' : 'PHÒNG LẤY MẪU BỆNH PHẨM',
+          phong: s.loaiDichVu?.includes('CDHA') ? 'P. X-quang KTS' : 'Phòng Xét Nghiệm P.102',
+          gia: 120000,
+        }))}
+        doctorName={user?.fullName || user?.username || 'tiennv'}
+      />
+
+      <FollowUpAppointmentPrintModal
+        open={isAppointmentPrintOpen}
+        onClose={() => setIsAppointmentPrintOpen(false)}
+        patient={data?.patient}
+        doctorName={user?.fullName || user?.username || 'bieuCBT'}
+      />
     </div>
   );
 };

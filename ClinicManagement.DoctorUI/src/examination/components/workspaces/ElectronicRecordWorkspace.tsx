@@ -8,6 +8,7 @@ import type {
   DiagnosisItem, 
   ServiceOrderDto 
 } from '../../types/examination/index';
+import { OutpatientMedicalRecordPrintModal } from '../print/OutpatientMedicalRecordPrintModal';
 
 interface ExtendedElectronicRecordProps extends ElectronicRecordWorkspaceProps {
   luotKhamId?: number;
@@ -29,6 +30,7 @@ const ElectronicRecordWorkspace: React.FC<ExtendedElectronicRecordProps> = ({
   const [digitalSignature, setDigitalSignature] = useState<string | null>(null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Dữ liệu thật từ backend API
   const [patientInfo, setPatientInfo] = useState<ThongTinBenhNhanTrongLuotKhamDto | null>(null);
@@ -296,7 +298,7 @@ const ElectronicRecordWorkspace: React.FC<ExtendedElectronicRecordProps> = ({
           <button 
             type="button"
             className="btn" 
-            onClick={() => window.print()}
+            onClick={() => setIsPrintModalOpen(true)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', fontSize: '12px', fontWeight: 600, borderRadius: '4px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', cursor: 'pointer' }}
           >
             <i className="fa-solid fa-print"></i> In bệnh án
@@ -475,7 +477,7 @@ const ElectronicRecordWorkspace: React.FC<ExtendedElectronicRecordProps> = ({
           <i className="fa-solid fa-circle-check"></i> {isLocked ? 'Hồ sơ đã khóa bất biến' : 'Bản nháp tự động lưu'}
         </div>
         <div className="actions" style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn" onClick={() => window.print()}>
+          <button className="btn" onClick={() => setIsPrintModalOpen(true)}>
             <i className="fa-solid fa-print"></i> In bệnh án
           </button>
           {!isLocked && (
@@ -491,6 +493,14 @@ const ElectronicRecordWorkspace: React.FC<ExtendedElectronicRecordProps> = ({
           )}
         </div>
       </div>
+
+      <OutpatientMedicalRecordPrintModal
+        open={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        patient={patientInfo || patient}
+        examData={{ reason: displayReason, diagnosis: { icd: displayIcdCode } }}
+        doctorName="tiennv"
+      />
     </div>
   );
 };

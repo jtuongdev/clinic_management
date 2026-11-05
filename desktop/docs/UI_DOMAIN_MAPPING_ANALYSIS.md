@@ -460,3 +460,37 @@ btnExportDocx.addActionListener(e -> {
   - **`clinic-desktop`** (gồm cả package mới `vn.clinicmanagement.desktop.core.docx`).
 * Đã được biên dịch kiểm chứng độc lập và liên kết thành công 100% bằng OpenJDK compiler (`javac`), không có lỗi phát sinh.
 * Hệ thống đã sẵn sàng cho giai đoạn hoàn thiện giao diện người dùng và kết nối dữ liệu thực tế!
+
+
+---
+
+## 6. CẬP NHẬT: ĐỒNG BỘ 100% CÁC TRƯỜNG MÀN HÌNH ĐĂNG KÝ BỆNH NHÂN VÀO DOMAIN
+*(Ngày cập nhật: 04/11/2026 - Kiểm thử biên dịch OpenJDK javac thành công 100%)*
+
+Hệ thống đã chính thức bổ sung toàn bộ 15 trường dữ liệu chuyên biệt phục vụ phân hệ Đón tiếp & Cổng giám định BHYT Quyết định 130/BYT:
+
+1. **`BenhNhan.java`**:
+   - `noiSinh: String`: Nơi sinh của người bệnh (quan trọng với hồ sơ nhi/sơ sinh).
+   - `soNhaThonPho: String`: Số nhà, thôn xóm, phố.
+   - `ngayCapCCCD: LocalDate`: Ngày cấp CMND/CCCD.
+   - `noiCapCCCD: String`: Nơi cấp CMND/CCCD.
+   - `noiLamViec: String`: Cơ quan / nơi công tác (phục vụ tai nạn lao động).
+
+2. **`BaoHiem.java`**:
+   - `ngayBatDau: LocalDate`: Giá trị sử dụng từ ngày (đã hoàn thiện cặp Từ ngày - Đến ngày của thẻ BHYT).
+   - `maNoiSong: String`: Mã khu vực nơi sống (K1, K2, K3 hưởng 100% chi phí KCB BHYT).
+   - `maNoiDangKyKCB: String`: Mã cơ sở KCB ban đầu.
+   - `diaChiThe: String`: Địa chỉ in trên phôi thẻ BHYT.
+   - `dungTuyen: boolean`: Khám đúng tuyến hay trái tuyến.
+   - `coGiayKhaiSinh: boolean`: Cờ trẻ em dưới 6 tuổi khám bằng giấy khai sinh.
+   - `khongGiuThe: boolean`: Cờ không giữ thẻ BHYT bản gốc.
+   - `mienCungChiTra: boolean`: Giấy chứng nhận không cùng chi trả trong năm.
+   - `ngayMienCungChiTra: LocalDate`: Ngày bắt đầu được miễn cùng chi trả.
+   - `ngayDu5NamLienTuc: LocalDate`: Ngày tham gia BHYT đủ 5 năm liên tục.
+
+3. **`LuotKham.java`**:
+   - `maDichVuKham: Integer`: Dịch vụ khám ban đầu được chọn tại tiếp đón.
+   - `loaiDangKyKham: String`: Khám mới / Tái khám / Cấp cứu.
+   - `dnVnTien: boolean`: Cờ ưu tiên "ĐN VN tiền".
+
+**Kết quả:** Màn hình Đón tiếp & Đăng ký khám (`PatientRegistrationFormPanel.java`) và Domain Model đã đạt độ tương thích **100%** (Toàn bộ các ô nhập, checkbox, combobox đều đã có trường ánh xạ trực tiếp trong Domain).

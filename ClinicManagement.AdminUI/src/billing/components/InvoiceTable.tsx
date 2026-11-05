@@ -34,6 +34,7 @@ import {
   UserOutlined,
   TableOutlined,
   SafetyCertificateOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -50,6 +51,7 @@ import RecordPaymentModal from './RecordPaymentModal';
 import InvoicePrintModal from './InvoicePrintModal';
 import CancelInvoiceModal from './CancelInvoiceModal';
 import ApplyInsuranceModal from './ApplyInsuranceModal';
+import { MedicalBillingSlipModal } from './MedicalBillingSlipModal';
 import '../../styles/excel-grid.css';
 
 const { Text } = Typography;
@@ -145,6 +147,9 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({ initialStatus }) => 
 
   const [printDetail, setPrintDetail] = useState<HoaDonDetailDto | null>(null);
   const [printModalOpen, setPrintModalOpen] = useState(false);
+
+  const [billingSlipDetail, setBillingSlipDetail] = useState<HoaDonDetailDto | null>(null);
+  const [billingSlipModalOpen, setBillingSlipModalOpen] = useState(false);
 
   const [cancelInvoice, setCancelInvoice] = useState<HoaDonListItemDto | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -335,6 +340,23 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({ initialStatus }) => 
       }
     } catch {
       message.error('Lỗi khi tải chi tiết để in hóa đơn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenBillingSlip = async (record: HoaDonListItemDto) => {
+    try {
+      setLoading(true);
+      const res = await billingApi.getInvoiceById(record.id);
+      if (res.data?.success && res.data.data) {
+        setBillingSlipDetail(res.data.data);
+        setBillingSlipModalOpen(true);
+      } else {
+        message.error(res.data?.message || 'Không thể tải thông tin in bảng kê KCB');
+      }
+    } catch {
+      message.error('Lỗi khi tải chi tiết để in bảng kê chi phí KCB');
     } finally {
       setLoading(false);
     }
@@ -625,6 +647,16 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({ initialStatus }) => 
                 icon={<PrinterOutlined />}
                 onClick={() => handleOpenPrint(record)}
                 style={{ color: '#475569' }}
+              />
+            </Tooltip>
+
+            <Tooltip title="In Bảng kê chi phí KCB (Mẫu 01/BV - F7)">
+              <Button
+                type="text"
+                size="small"
+                icon={<FileTextOutlined />}
+                onClick={() => handleOpenBillingSlip(record)}
+                style={{ color: '#0284c7' }}
               />
             </Tooltip>
 
@@ -1015,6 +1047,16 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({ initialStatus }) => 
         onClose={() => {
           setPrintModalOpen(false);
           setPrintDetail(null);
+        }}
+      />
+
+      {/* 5.3b In bảng kê chi phí KCB (Mẫu 01/BV) */}
+      <MedicalBillingSlipModal
+        open={billingSlipModalOpen}
+        data={billingSlipDetail}
+        onClose={() => {
+          setBillingSlipModalOpen(false);
+          setBillingSlipDetail(null);
         }}
       />
 

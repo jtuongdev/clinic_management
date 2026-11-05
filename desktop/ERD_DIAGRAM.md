@@ -33,6 +33,11 @@ erDiagram
         string email
         string soCCCD
         string diaChi
+        string soNhaThonPho
+        string noiSinh
+        date ngayCapCCCD
+        string noiCapCCCD
+        string noiLamViec
         string ngheNghiep
         string danToc
         string quocTich
@@ -48,9 +53,19 @@ erDiagram
         int maBenhNhan FK
         string loaiBaoHiem
         string soBaoHiem
+        date ngayBatDau
         date ngayHetHan
         int mucHuong
+        string maNoiSong
+        string maNoiDangKyKCB
         string noiDangKyKCB
+        string diaChiThe
+        boolean dungTuyen
+        boolean coGiayKhaiSinh
+        boolean khongGiuThe
+        boolean mienCungChiTra
+        date ngayMienCungChiTra
+        date ngayDu5NamLienTuc
     }
 
     TienSuBenh {

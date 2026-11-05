@@ -38,6 +38,7 @@ import RecordPaymentModal from './RecordPaymentModal';
 import ApplyInsuranceModal from './ApplyInsuranceModal';
 import CancelInvoiceModal from './CancelInvoiceModal';
 import InvoicePrintModal from './InvoicePrintModal';
+import { MedicalBillingSlipModal } from './MedicalBillingSlipModal';
 
 const { Text, Title } = Typography;
 
@@ -63,6 +64,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   const [insModalOpen, setInsModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [billingSlipModalOpen, setBillingSlipModalOpen] = useState(false);
 
   const fetchDetail = useCallback(async (id: number) => {
     setLoading(true);
@@ -256,6 +258,16 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             onClick={() => setPrintModalOpen(true)}
           >
             In hóa đơn
+          </Button>
+        ),
+        detail && (
+          <Button
+            key="billingSlip"
+            icon={<FileTextOutlined />}
+            style={{ borderColor: '#0284c7', color: '#0284c7' }}
+            onClick={() => setBillingSlipModalOpen(true)}
+          >
+            In bảng kê (Mẫu 01/BV)
           </Button>
         ),
         canCancel && (
@@ -509,6 +521,12 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         open={printModalOpen}
         data={detail}
         onClose={() => setPrintModalOpen(false)}
+      />
+
+      <MedicalBillingSlipModal
+        open={billingSlipModalOpen}
+        data={detail}
+        onClose={() => setBillingSlipModalOpen(false)}
       />
     </Modal>
   );

@@ -1,6 +1,7 @@
-import React from 'react';
-import type { ExamSidebarProps } from '../types/examination/queue.types';
+import React, { useState } from 'react';
+import type { ExamSidebarProps, BenhNhanListDto } from '../types/examination/queue.types';
 import '../../styles/components/ExamPanel.css';
+import { TransferSlipPrintModal } from './print/TransferSlipPrintModal';
 
 interface ExamSidebarExtendedProps extends ExamSidebarProps {
   collapsed?: boolean;
@@ -15,6 +16,8 @@ const ExamSidebar: React.FC<ExamSidebarExtendedProps> = ({
   loading = false,
   collapsed = false,
 }) => {
+  const [printSlipPatient, setPrintSlipPatient] = useState<BenhNhanListDto | null>(null);
+
   const filteredPatients = (patients || []).filter((p) => {
     const hoTenStr = p?.hoTen || '';
     const maBNStr = p?.maBenhNhanNoiBo || '';
@@ -62,6 +65,11 @@ const ExamSidebar: React.FC<ExamSidebarExtendedProps> = ({
                 key={p.id}
                 className={`exam-queue-item ${selectedPatient?.id === p.id ? 'active' : ''} ${isExamining ? 'examining' : ''}`}
                 onClick={() => onSelectPatient(p)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setPrintSlipPatient(p);
+                }}
+                title="Click để chọn khám, chuột phải để in Phiếu Khám Bệnh A6"
               >
                 <div className="exam-queue-stt">{displayOrder}</div>
                 <div className="exam-queue-info">
@@ -77,12 +85,38 @@ const ExamSidebar: React.FC<ExamSidebarExtendedProps> = ({
                   {isExamining && <span className="status exam">Đang khám</span>}
                   {isUrgent && <span className="priority urgent">Ưu tiên</span>}
                   {!isExamining && !isUrgent && <span className="status waiting" style={{ fontSize: '11px', color: '#64748b' }}>{p.trangThaiLuotKham}</span>}
+                  <button
+                    type="button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748b',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                      marginLeft: '4px',
+                    }}
+                    title="In phiếu khám A6 (F1)"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPrintSlipPatient(p);
+                    }}
+                  >
+                    <i className="fa-solid fa-print"></i>
+                  </button>
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      <TransferSlipPrintModal
+        open={!!printSlipPatient}
+        onClose={() => setPrintSlipPatient(null)}
+        patientName={printSlipPatient?.hoTen}
+        patientCode={printSlipPatient?.maBenhNhanNoiBo}
+        queueNumber={printSlipPatient?.soThuTu || 1}
+      />
     </div>
   );
 };
